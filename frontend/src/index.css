@@ -1,0 +1,169 @@
+:root {
+  /* Latte Theme */
+  --font-main: 'Poppins', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  --bg-page: #faf7f2;         /* page background */
+  --bg-navbar: #fffaf4;       /* navbar + filter background */
+  --text-main: #2f2f2f;       /* default body text */
+  --text-header: #4b3621;     /* headings */
+  --accent: #d2a679;          /* primary accent (active/contained) */
+  --accent-hover: #c0905d;    /* hover accent */
+  --border-soft: #e8e2d9;     /* soft borders */
+
+  /* Legacy vars mapped to Latte to keep existing CSS working */
+  --border-light: #e8e2d9;
+  --bg-main: #ffffff;         /* cards background */
+  --bg-dark: #d2a679;         /* used by old buttons -> remapped to accent */
+  --text-on-dark: #ffffff;    /* text on accent */
+}
+
+html {
+  height: 100%;
+  background: #FAF7F1;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-main);
+  color: var(--text-main);
+  background: #FAF7F1;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  background: #FAF7F1;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-main);
+  font-weight: 600;
+  color: var(--text-header);
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+p, span {
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+button {
+  font-family: var(--font-main);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 0.95rem;
+}
+
+.MuiChip-root {
+  border-color: var(--border-soft) !important;
+  color: #6b4f2d !important;
+  background-color: #ffffff !important;
+  border-radius: 10px !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-main) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiChip-root:hover {
+  background-color: #f5ecdf !important;
+}
+
+.MuiChip-root.Mui-selected,
+.MuiButton-containedPrimary {
+  background-color: var(--accent) !important;
+  color: #ffffff !important;
+}
+
+.MuiChip-root.Mui-selected:hover,
+.MuiButton-containedPrimary:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+.MuiAppBar-root {
+  background-color: var(--bg-navbar) !important;
+  color: #6b4f2d !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+  box-shadow: none !important;
+}
+
+.MuiTypography-root {
+  font-family: var(--font-main) !important;
+}
+
+.MuiTypography-h5 {
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+}
+
+.MuiTypography-h6 {
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root {
+  font-family: var(--font-main) !important;
+}
+
+.MuiButton-root {
+  font-family: var(--font-main) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Global cart button dark style */
+.btn-cart--dark{
+  background:#0b0b1a !important;
+  color:#fff !important;
+  border-color:#0b0b1a !important;
+  border-radius:10px !important;
+  font-weight:600 !important;
+  box-shadow:0 2px 8px rgba(0,0,0,0.2) !important;
+  transition:all .25s ease !important;
+}
+.btn-cart--dark:hover{ background:#1a1a2e !important; }
+.btn-cart--dark svg{ color:#fff !important; }
+
+/* Sepet butonları için siyah stil */
+.btn-cart-black {
+  background: #0B0B20 !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+}
+
+
+/* Responsive baseline utilities */
+:root{ --maxw:1200px; }
+img,video,canvas{ max-width:100%; height:auto; }
+svg{ max-width:100%; height:auto; }
+table{ width:100%; overflow:auto; display:block; }
+.container{ max-width:var(--maxw); margin-inline:auto; padding-inline:clamp(12px,4vw,24px); }
+.wrap{ word-break: break-word; overflow-wrap: anywhere; }
+
+/* Global box-sizing */
+html{ box-sizing: border-box; }
+*,*::before,*::after{ box-sizing: inherit; }
+
+/* Generic auto grid helper */
+.grid-auto{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+

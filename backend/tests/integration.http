@@ -1,0 +1,195 @@
+### RBAC ve Durum Makinesi Test Senaryoları
+### REST Client (VS Code) veya HTTPie ile kullanılabilir
+
+@baseUrl = http://localhost:5001
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+@waiterToken = YOUR_WAITER_TOKEN_HERE
+@kitchenToken = YOUR_KITCHEN_TOKEN_HERE
+
+### ============================================
+### Senaryo A: Garson Sipariş → Send → Kitchen Start → Ready → Waiter Served → Payment Paid
+### ============================================
+
+### 1. Garson: Sipariş Oluştur
+POST {{baseUrl}}/api/waiter/orders
+Authorization: Bearer {{waiterToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": "5",
+  "items": [
+    {
+      "productId": "PRODUCT_ID_1",
+      "qty": 2,
+      "note": "Az baharatlı"
+    },
+    {
+      "productId": "PRODUCT_ID_2",
+      "qty": 1,
+      "note": ""
+    }
+  ],
+  "notes": "Masa 5 siparişi"
+}
+
+### 2. Garson: Siparişi Mutfağa Gönder
+POST {{baseUrl}}/api/waiter/orders/{{orderId}}/send
+Authorization: Bearer {{waiterToken}}
+
+### 3. Mutfak: İlk Item'ı Hazırlamaya Başla
+POST {{baseUrl}}/api/kitchen/items/{{itemId1}}/start
+Authorization: Bearer {{kitchenToken}}
+
+### 4. Mutfak: İlk Item'ı Hazır Olarak İşaretle
+POST {{baseUrl}}/api/kitchen/items/{{itemId1}}/ready
+Authorization: Bearer {{kitchenToken}}
+
+### 5. Mutfak: İkinci Item'ı Hazırlamaya Başla
+POST {{baseUrl}}/api/kitchen/items/{{itemId2}}/start
+Authorization: Bearer {{kitchenToken}}
+
+### 6. Mutfak: İkinci Item'ı Hazır Olarak İşaretle
+POST {{baseUrl}}/api/kitchen/items/{{itemId2}}/ready
+Authorization: Bearer {{kitchenToken}}
+
+### 7. Garson: İlk Item'ı Servis Edildi Olarak İşaretle
+POST {{baseUrl}}/api/waiter/items/{{itemId1}}/served
+Authorization: Bearer {{waiterToken}}
+
+### 8. Garson: İkinci Item'ı Servis Edildi Olarak İşaretle
+POST {{baseUrl}}/api/waiter/items/{{itemId2}}/served
+Authorization: Bearer {{waiterToken}}
+
+### 9. Garson: Ödeme Yap
+POST {{baseUrl}}/api/payments
+Authorization: Bearer {{waiterToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "method": "cash",
+  "amount": 150.00
+}
+
+### ============================================
+### Senaryo B: İptal Akışı
+### ============================================
+
+### 1. Garson: Sipariş Oluştur
+POST {{baseUrl}}/api/waiter/orders
+Authorization: Bearer {{waiterToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": "3",
+  "items": [
+    {
+      "productId": "PRODUCT_ID_1",
+      "qty": 1
+    }
+  ]
+}
+
+### 2. Admin: Siparişi İptal Et (CREATED durumunda)
+PUT {{baseUrl}}/api/admin/orders/{{orderId}}/cancel
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "Müşteri iptal etti"
+}
+
+### 3. Admin: Ödenmiş Siparişi İptal Etmeye Çalış (HATA BEKLENİYOR)
+PUT {{baseUrl}}/api/admin/orders/{{paidOrderId}}/cancel
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "reason": "Test"
+}
+
+### ============================================
+### Senaryo C: Metriklerin Artışı
+### ============================================
+
+### 1. Admin: Bugünün İstatistiklerini Al
+GET {{baseUrl}}/api/admin/stats/today
+Authorization: Bearer {{adminToken}}
+
+### 2. Garson: Sipariş Oluştur ve Öde
+POST {{baseUrl}}/api/waiter/orders
+Authorization: Bearer {{waiterToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": "10",
+  "items": [
+    {
+      "productId": "PRODUCT_ID_1",
+      "qty": 1
+    }
+  ]
+}
+
+### 3. Garson: Mutfağa Gönder
+POST {{baseUrl}}/api/waiter/orders/{{orderId}}/send
+Authorization: Bearer {{waiterToken}}
+
+### 4. Mutfak: Hazırla ve Hazır İşaretle
+POST {{baseUrl}}/api/kitchen/items/{{itemId}}/start
+Authorization: Bearer {{kitchenToken}}
+
+POST {{baseUrl}}/api/kitchen/items/{{itemId}}/ready
+Authorization: Bearer {{kitchenToken}}
+
+### 5. Garson: Servis Et
+POST {{baseUrl}}/api/waiter/items/{{itemId}}/served
+Authorization: Bearer {{waiterToken}}
+
+### 6. Garson: Ödeme Yap
+POST {{baseUrl}}/api/payments
+Authorization: Bearer {{waiterToken}}
+Content-Type: application/json
+
+{
+  "orderId": "{{orderId}}",
+  "method": "card",
+  "amount": 75.00
+}
+
+### 7. Admin: İstatistikleri Tekrar Al (revenue ve orders artmış olmalı)
+GET {{baseUrl}}/api/admin/stats/today
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### Ek Testler
+### ============================================
+
+### Mutfak: Kuyruk Listesi (Tüm Station'lar)
+GET {{baseUrl}}/api/kitchen/queue
+Authorization: Bearer {{kitchenToken}}
+
+### Mutfak: Kuyruk Listesi (Sadece Hot Station)
+GET {{baseUrl}}/api/kitchen/queue?station=hot
+Authorization: Bearer {{kitchenToken}}
+
+### Admin: Günlük Rapor (CSV)
+GET {{baseUrl}}/api/reports/daily?from=2024-01-01&to=2024-01-31
+Authorization: Bearer {{adminToken}}
+
+### Admin: Sipariş Listesi
+GET {{baseUrl}}/api/admin/orders?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Admin: Ürün Listesi
+GET {{baseUrl}}/api/admin/products
+Authorization: Bearer {{adminToken}}
+
+### Admin: Kategori Listesi
+GET {{baseUrl}}/api/admin/categories
+Authorization: Bearer {{adminToken}}
+
+
+
+
+

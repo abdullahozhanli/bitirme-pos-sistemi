@@ -1,0 +1,19 @@
+# Bağımlılıklar (Her iki klasör için de)
+node_modules/
+
+# Gizli Şifre Dosyaları (ÇOK ÖNEMLİ)
+.env
+backend/.env
+frontend/.env
+
+# Build/Cache Dosyaları
+frontend/dist
+frontend/.vite/
+
+# Loglar
+npm-debug.log*
+
+# OS/IDE dosyaları
+.DS_Store
+.vscode/
+.cursor/

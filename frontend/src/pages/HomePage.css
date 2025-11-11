@@ -1,0 +1,77 @@
+/* HomePage.css - Müşteri Menü Stilleri */
+
+.menu-container {
+    padding: 20px;
+  }
+  
+  .products-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 24px;
+  }
+  
+  .product-card {
+    border: 1px solid #eee; /* Daha yumuşak bir kenarlık */
+    border-radius: 12px; /* Figma'daki gibi modern, yuvarlak köşeler */
+    background-color: #ffffff; /* Kart arka planı beyaz */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Yumuşak gölge */
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Üzerine gelince animasyon */
+  }
+  
+  .product-card:hover {
+    transform: translateY(-5px); /* Üzerine gelince hafifçe kalksın */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Ürün resminin yeri */
+  .product-image {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    border-radius: 12px;
+    background-color: #f6f6f6;
+  }
+
+  @media (min-width: 769px) {
+    .product-image {
+      aspect-ratio: 4/3;
+    }
+  }
+  
+  .product-card h4 {
+    margin: 10px 0 5px 0;
+    font-size: 1.1rem;
+    color: #333;
+  }
+  
+  .product-card .category {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 10px;
+  }
+  
+  .product-card .price {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #007bff; /* Fiyat için birincil renk (mavi - Figma'ya göre değişir) */
+    margin-bottom: 15px;
+  }
+  
+  .product-card button {
+    background-color: #007bff; /* Ana Eylem Rengi */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s ease;
+  }
+  
+  .product-card button:hover {
+    background-color: #0056b3; /* Hover rengi */
+  }

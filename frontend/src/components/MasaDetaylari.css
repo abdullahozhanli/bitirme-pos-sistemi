@@ -1,0 +1,169 @@
+/* MasaDetaylari.css - Styles for table details component */
+
+:root {
+  --primary-color: #6a5acd;
+  --available-color: #e8f5e9;
+  --available-border: #4caf50;
+  --full-color: #fff3e0;
+  --full-border: #ff9800;
+  --reserved-color: #e1f5fe;
+  --reserved-border: #5bc0de;
+  --text-color: #333;
+  --light-text: #666;
+  --border-color: #e0e0e0;
+  --white: #ffffff;
+  --light-gray: #f8f9fa;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --border-radius: 12px;
+}
+
+.masa-detaylari-container {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: 0 2px 8px var(--shadow);
+  min-width: 0;
+}
+
+.masa-detaylari-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-color);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.masa-detaylari-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-row:last-of-type {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-size: 0.9em;
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 0.9em;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.status-badge.full {
+  background-color: var(--full-border);
+}
+
+.status-badge.available {
+  background-color: var(--available-border);
+}
+
+.status-badge.reserved {
+  background-color: var(--reserved-border);
+}
+
+.active-orders-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 2px solid var(--border-color);
+}
+
+.orders-title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 12px;
+}
+
+.order-card {
+  background-color: var(--light-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.order-header {
+  margin-bottom: 4px;
+}
+
+.order-number {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.order-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85em;
+  color: var(--light-text);
+}
+
+.order-total-amount {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.no-orders {
+  font-size: 0.85em;
+  color: var(--light-text);
+  text-align: center;
+  padding: 12px;
+}
+
+.view-details-btn {
+  margin-top: 16px;
+  width: 100%;
+  padding: 10px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.view-details-btn:hover {
+  background-color: #5548b2;
+}
+
+.no-selection {
+  text-align: center;
+  padding: 20px;
+  color: var(--light-text);
+  font-size: 0.9em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .masa-detaylari-container {
+    padding: 16px;
+  }
+}
+

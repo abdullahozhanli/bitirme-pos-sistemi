@@ -1,0 +1,160 @@
+/* MasaKart.css - Styles for table card component */
+
+.masa-kart {
+  background-color: var(--light-gray);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-width: 0;
+}
+
+.masa-kart:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px var(--shadow);
+}
+
+.masa-kart.available {
+  background-color: var(--available-color);
+  border-color: var(--available-border);
+}
+
+.masa-kart.full {
+  background-color: var(--full-color);
+  border-color: var(--full-border);
+}
+
+.masa-kart.reserved {
+  background-color: var(--reserved-color);
+  border-color: var(--reserved-border);
+}
+
+.masa-kart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.masa-kart-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.masa-kart-kapasite {
+  font-size: 0.85em;
+  color: var(--light-text);
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.masa-kart-durum {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.masa-kart-durum.available {
+  background-color: var(--available-border);
+}
+
+.masa-kart-durum.full {
+  background-color: var(--full-border);
+}
+
+.masa-kart-durum.reserved {
+  background-color: var(--reserved-border);
+}
+
+.masa-kart-garson {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+.masa-kart-garson-label {
+  color: var(--light-text);
+  font-weight: 500;
+}
+
+.masa-kart-garson-name {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.masa-kart-siparis {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85em;
+}
+
+.masa-kart-siparis-count {
+  color: var(--text-color);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.masa-kart-siparis-tutar {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.masa-kart-garson-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.masa-kart-garson-btn:hover:not(:disabled) {
+  background-color: #5548b2;
+}
+
+.masa-kart-garson-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .masa-kart {
+    padding: 12px;
+  }
+
+  .masa-kart-title {
+    font-size: 1em;
+  }
+
+  .masa-kart-kapasite {
+    font-size: 0.8em;
+  }
+}
+
+
+
+
+
+
