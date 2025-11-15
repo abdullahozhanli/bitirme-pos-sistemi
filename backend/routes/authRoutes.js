@@ -37,7 +37,6 @@ router.post('/register', async (req, res, next) => {
     user = new User({ 
       email, 
       passwordHash: password, // pre-save hook otomatik hashleyecek
-      password: password, // Eski sistem uyumluluğu için
       name: userName, 
       role: validRole 
     });
@@ -81,31 +80,18 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'E-posta ve şifre gerekli' });
     }
 
-    // Kullanıcıyı bul - passwordHash veya password'u getir
+    // Kullanıcıyı bul - passwordHash'i de getir
     let user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
 
-    // Debug: Kullanıcı alanlarını kontrol et
-    console.log('🔍 Login Debug:', {
-      email: user.email,
-      hasPasswordHash: !!user.passwordHash,
-      hasPassword: !!user.password,
-      passwordHashType: typeof user.passwordHash,
-      passwordType: typeof user.password,
-      userKeys: Object.keys(user.toObject ? user.toObject() : user)
-    });
-
-    // passwordHash veya password kontrolü - eğer ikisi de yoksa hata döndür
-    const hashedPassword = user.passwordHash || user.password;
-    if (!hashedPassword || typeof hashedPassword !== 'string') {
-      console.error('Kullanıcıda şifre yok veya geçersiz:', {
+    // passwordHash kontrolü - eğer yoksa hata döndür
+    if (!user.passwordHash || typeof user.passwordHash !== 'string') {
+      console.error('Kullanıcıda passwordHash yok veya geçersiz:', {
         email: user.email,
         passwordHash: !!user.passwordHash,
-        password: !!user.password,
-        passwordHashType: typeof user.passwordHash,
-        passwordType: typeof user.password
+        passwordHashType: typeof user.passwordHash
       });
       return res.status(400).json({ message: 'Kullanıcı şifresi bulunamadı. Lütfen yönetici ile iletişime geçin.' });
     }
@@ -116,12 +102,12 @@ router.post('/login', async (req, res, next) => {
     }
 
     // bcrypt.compare() için parametreleri kontrol et
-    if (!password || typeof password !== 'string' || !hashedPassword || typeof hashedPassword !== 'string') {
+    if (!password || typeof password !== 'string' || !user.passwordHash || typeof user.passwordHash !== 'string') {
       console.error('bcrypt.compare() için geçersiz parametreler:', {
         password: !!password,
         passwordType: typeof password,
-        hashedPassword: !!hashedPassword,
-        hashedPasswordType: typeof hashedPassword
+        passwordHash: !!user.passwordHash,
+        passwordHashType: typeof user.passwordHash
       });
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
@@ -129,12 +115,12 @@ router.post('/login', async (req, res, next) => {
     // bcrypt.compare() hatasını yakala
     let isMatch;
     try {
-      isMatch = await bcrypt.compare(password, hashedPassword);
+      isMatch = await bcrypt.compare(password, user.passwordHash);
     } catch (bcryptError) {
       console.error('bcrypt.compare() hatası:', bcryptError);
       console.error('Parametreler:', {
         password: password ? `${password.substring(0, 3)}...` : 'undefined',
-        hashedPassword: hashedPassword ? `${hashedPassword.substring(0, 10)}...` : 'undefined'
+        passwordHash: user.passwordHash ? `${user.passwordHash.substring(0, 10)}...` : 'undefined'
       });
       return res.status(500).json({ message: 'Şifre kontrolü sırasında hata oluştu' });
     }
