@@ -1,5 +1,5 @@
 import React from 'react';
-import { createContext, useState, useContext, useEffect } from 'react'; 
+import { createContext, useState, useContext, useEffect, useRef } from 'react'; 
 import { SIZE_OPTIONS, getSizeMeta } from '../constants/sizeOptions';
 
 const CartContext = createContext();
@@ -37,6 +37,8 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(getInitialCartState());
   // YENİ: Masa Numarası state'i
   const [tableNumber, setTableNumber] = useState(getInitialTableNumber());
+  // Önceki masa numarasını takip etmek için ref
+  const prevTableNumberRef = useRef(tableNumber);
 
   // --- EFEKTLER (EFFECT - Hafızaya Kaydetme) ---
 
@@ -62,6 +64,21 @@ export function CartProvider({ children }) {
       console.error("Masa N_ hafızaya kaydedilirken hata:", error);
     }
   }, [tableNumber]); // [tableNumber] -> "Sadece 'tableNumber' değiştiğinde bu kodu çalıştır"
+
+  // YENİ: Masa numarası değiştiğinde sepeti temizle
+  useEffect(() => {
+    const prevTable = prevTableNumberRef.current;
+    const currentTable = tableNumber;
+    
+    // Eğer masa numarası değiştiyse ve önceki masa null değilse sepeti temizle
+    if (prevTable !== null && currentTable !== null && prevTable !== currentTable) {
+      console.log(`Masa numarası değişti: ${prevTable} -> ${currentTable}. Sepet temizleniyor.`);
+      setCartItems([]);
+    }
+    
+    // Önceki masa numarasını güncelle
+    prevTableNumberRef.current = currentTable;
+  }, [tableNumber]);
 
 
   // --- SEPET FONKSİYONLARI (boyut destekli) ---

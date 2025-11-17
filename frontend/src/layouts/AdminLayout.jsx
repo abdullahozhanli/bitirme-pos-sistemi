@@ -5,6 +5,7 @@ import DashboardIcon from '@mui/icons-material/SpaceDashboard';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CategoryIcon from '@mui/icons-material/Category';
+import QrCodeIcon from '@mui/icons-material/QrCode';
 import LaunchIcon from '@mui/icons-material/Launch';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -22,6 +23,7 @@ export default function AdminLayout() {
     { to: '/admin/siparisler', label: 'Sipariş Yönetimi', icon: <ReceiptLongIcon /> },
     { to: '/admin/urunler', label: 'Ürün Yönetimi', icon: <Inventory2Icon /> },
     { to: '/admin/kategoriler', label: 'Kategori Yönetimi', icon: <CategoryIcon /> },
+    { to: '/admin/qr-kodlar', label: 'QR Kod Yönetimi', icon: <QrCodeIcon /> },
     { to: '/', label: 'Müşteri Arayüzünü Gör', icon: <LaunchIcon /> },
   ];
 

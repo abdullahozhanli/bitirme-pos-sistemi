@@ -23,6 +23,7 @@ import OrderManagementPage from './pages/OrderManagementPage.jsx';
 import KitchenDisplayPage from './pages/KitchenDisplayPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import QRScannerPage from './pages/QRScannerPage.jsx';
+import QRCodeManagementPage from './pages/QRCodeManagementPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 import CashierDashboard from './pages/CashierDashboard.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
@@ -96,6 +97,7 @@ function App() {
         <Route path="siparisler" element={<OrderManagementPage />} />
         <Route path="urunler" element={<ProductManagementPage />} />
         <Route path="kategoriler" element={<CategoryManagementPage />} />
+        <Route path="qr-kodlar" element={<QRCodeManagementPage />} />
       </Route>
     </Routes>
     {import.meta.env.DEV && <ViewportProbe />}
