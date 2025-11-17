@@ -61,14 +61,59 @@ export function AuthProvider({ children }) {
   
   const isAuthenticated = !!user;
 
-  // axios baseURL (Vite .env → VITE_API_URL) - sadece bir kez ayarla
+  // axios baseURL (Vite .env → VITE_API_URL) - her zaman güncelle
   useEffect(() => {
-    const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
-    axios.defaults.baseURL = baseURL;
+    const updateBaseURL = () => {
+      // Dinamik backend URL: Eğer environment variable yoksa, frontend'in hostname'ini kullan
+      let baseURL = import.meta.env?.VITE_API_URL;
+      
+      if (!baseURL) {
+        // Development: window.location.hostname kullan (localhost veya network IP)
+        const hostname = window.location.hostname;
+        console.log('🔍 window.location.hostname:', hostname);
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          baseURL = 'http://localhost:5001';
+        } else {
+          // Network üzerinden erişiliyorsa, aynı IP'yi kullan (sadece port değişir)
+          baseURL = `http://${hostname}:5001`;
+        }
+      }
+      
+      // Her zaman güncelle (telefon IP değişebilir)
+      axios.defaults.baseURL = baseURL;
+      console.log('🔧 AuthContext - Axios baseURL ayarlandı:', baseURL);
+    };
+    
+    // İlk yüklemede ayarla
+    updateBaseURL();
+    
+    // Her 100ms'de bir kontrol et (sayfa yüklenene kadar)
+    const interval = setInterval(() => {
+      const currentHostname = window.location.hostname;
+      const currentBaseURL = axios.defaults.baseURL?.replace(':5001', '') || '';
+      if (currentHostname !== 'localhost' && currentHostname !== '127.0.0.1' && 
+          !currentBaseURL.includes(currentHostname)) {
+        updateBaseURL();
+      }
+    }, 100);
+    
+    // 5 saniye sonra interval'i temizle
+    setTimeout(() => clearInterval(interval), 5000);
 
-    // Axios interceptor: Her istekte token'ı otomatik ekle
+    // Axios interceptor: Her istekte baseURL'i kontrol et ve token'ı ekle
     axios.interceptors.request.use(
       (config) => {
+        // Her istekte baseURL'i güncelle (telefon IP değişebilir)
+        const hostname = window.location.hostname;
+        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+          const expectedBaseURL = `http://${hostname}:5001`;
+          if (axios.defaults.baseURL !== expectedBaseURL) {
+            axios.defaults.baseURL = expectedBaseURL;
+            console.log('🔧 Interceptor - baseURL güncellendi:', expectedBaseURL);
+          }
+        }
+        
+        // Token'ı ekle
         const token = localStorage.getItem('token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;

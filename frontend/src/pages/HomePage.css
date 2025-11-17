@@ -1,77 +1,383 @@
 /* HomePage.css - Müşteri Menü Stilleri */
 
 .menu-container {
-    padding: 20px;
-  }
-  
-  .products-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 24px;
-  }
-  
-  .product-card {
-    border: 1px solid #eee; /* Daha yumuşak bir kenarlık */
-    border-radius: 12px; /* Figma'daki gibi modern, yuvarlak köşeler */
-    background-color: #ffffff; /* Kart arka planı beyaz */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Yumuşak gölge */
-    padding: 15px;
-    text-align: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Üzerine gelince animasyon */
-  }
-  
-  .product-card:hover {
-    transform: translateY(-5px); /* Üzerine gelince hafifçe kalksın */
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  }
-  
-  /* Ürün resminin yeri */
-  .product-image {
-    width: 100%;
-    aspect-ratio: 1/1;
-    object-fit: cover;
-    border-radius: 12px;
-    background-color: #f6f6f6;
-  }
+  padding: 20px;
+}
 
-  @media (min-width: 769px) {
-    .product-image {
-      aspect-ratio: 4/3;
-    }
+.products-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.product-card {
+  border: none;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.product-image-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+  background-color: #f6f6f6;
+}
+
+@media (max-width: 768px) {
+  .product-image {
+    aspect-ratio: 1/1;
   }
-  
-  .product-card h4 {
-    margin: 10px 0 5px 0;
-    font-size: 1.1rem;
-    color: #333;
+}
+
+.product-out-of-stock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.product-card-content {
+  padding: clamp(8px, 2vw, 16px);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+@media (min-width: 600px) {
+  .product-card-content {
+    padding: 16px 20px;
   }
-  
-  .product-card .category {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 10px;
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.product-name {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 700;
+  color: #000;
+  margin: 0;
+  flex: 1;
+}
+
+.product-price {
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 700;
+  color: #000;
+  white-space: nowrap;
+  margin: 0;
+}
+
+@media (min-width: 600px) {
+  .product-price {
+    font-size: 1.25rem;
   }
-  
-  .product-card .price {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #007bff; /* Fiyat için birincil renk (mavi - Figma'ya göre değişir) */
-    margin-bottom: 15px;
+}
+
+@media (min-width: 960px) {
+  .product-price {
+    font-size: 1.375rem;
   }
-  
-  .product-card button {
-    background-color: #007bff; /* Ana Eylem Rengi */
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
-    transition: background-color 0.2s ease;
+}
+
+.product-description {
+  font-size: clamp(12px, 1.8vw, 16px);
+  color: #777;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  margin-top: auto;
+}
+
+.product-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  height: 24px;
+  line-height: 16px;
+}
+
+.product-tag.category {
+  background-color: #e6e6e6;
+  color: #555;
+}
+
+.product-tag.out-of-stock {
+  background-color: #f44336;
+  color: #fff;
+}
+
+.product-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.875rem;
+  color: #888;
+}
+
+.product-info-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.add-to-cart-btn {
+  margin-top: 16px;
+  width: 100%;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: clamp(12px, 1.8vw, 14px) 16px;
+  min-height: 44px;
+  font-size: clamp(14px, 1.8vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  text-transform: none;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  background-color: #1a1a1a;
+}
+
+.add-to-cart-btn:disabled {
+  background-color: #ccc;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.add-to-cart-btn-icon {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
+
+/* Kategori Chip'leri */
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-height: 36px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e0e0e0;
+  background-color: #f5f5f5;
+  color: #333;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-chip.active {
+  background-color: #000;
+  color: #fff;
+  border-color: #000;
+  font-weight: 600;
+  box-shadow: none;
+  transform: none;
+}
+
+.category-chip:hover:not(.active) {
+  background-color: #e8e8e8;
+  transform: none;
+}
+
+.category-chip.active:hover {
+  background-color: #1a1a1a;
+}
+
+/* Arama çubuğu */
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px 0 36px;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  background-color: #f5f5f5;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  box-shadow: none;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #d0d0d0;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #999;
+  pointer-events: none;
+}
+
+/* Sepet butonu */
+.cart-btn {
+  flex: 0 0 auto;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 0 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+  text-transform: none;
+  text-decoration: none;
+}
+
+.cart-btn,
+.cart-btn span {
+  color: #fff;
+}
+
+.cart-btn:hover {
+  background-color: #1a1a1a;
+}
+
+.cart-btn-icon {
+  width: 18px;
+  height: 18px;
+  color: #fff;
+}
+
+.cart-badge {
+  position: relative;
+  display: inline-block;
+}
+
+.cart-badge-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #f44336;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Loading ve Error States */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.error-alert {
+  padding: 16px;
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 16px;
+  color: #777;
+}
+
+/* Responsive Grid */
+@media (max-width: 599px) {
+  .products-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
-  
-  .product-card button:hover {
-    background-color: #0056b3; /* Hover rengi */
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .products-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  .products-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .products-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

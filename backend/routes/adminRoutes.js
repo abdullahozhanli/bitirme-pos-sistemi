@@ -11,56 +11,195 @@ const OrderEvent = require('../models/OrderEvent');
 
 /**
  * GET /api/admin/stats/today
- * Bugünün dashboard istatistiklerini döner
+ * Bugünün dashboard istatistiklerini döner (önceki dönem karşılaştırmaları ile)
  */
 router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Bugünün başlangıcı (local timezone'da bugünün 00:00:00'ı)
+    const now = new Date();
+    const localYear = now.getFullYear();
+    const localMonth = now.getMonth();
+    const localDate = now.getDate();
+    
+    // Local timezone'da bugünün başlangıcı (00:00:00 local time)
+    const localToday = new Date(localYear, localMonth, localDate, 0, 0, 0, 0);
+    
+    // MongoDB UTC kullanıyor, bu yüzden local timezone'daki bugünün başlangıcını UTC'ye çevir
+    // localToday zaten Date objesi olarak UTC timestamp'i içeriyor
+    // localToday.toISOString() çağrıldığında UTC'ye çevrilmiş değeri gösterir
+    // Yani localToday zaten UTC'de doğru değeri temsil ediyor, ekstra dönüşüm gerekmez
+    // Örnek: Local timezone GMT+3, bugün 2025-11-16 00:00:00 local = 2025-11-15 21:00:00 UTC
+    // localToday.toISOString() = "2025-11-15T21:00:00.000Z" (doğru!)
+    const today = localToday; // localToday zaten UTC'de doğru değeri temsil ediyor
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    console.log('🔍 Tarih hesaplamaları:', {
+      'now (local)': now.toISOString(),
+      'localToday (local timezone)': localToday.toString(),
+      'localToday (ISO)': localToday.toISOString(),
+      'today (UTC)': today.toISOString(),
+      'tomorrow (UTC)': tomorrow.toISOString(),
+      'KONTROL': {
+        'today === localToday?': today === localToday,
+        'today.getTime() === localToday.getTime()?': today.getTime() === localToday.getTime(),
+      }
+    });
 
-    // Revenue: PAID olan order'ların toplamı
+    // Dünün tarihleri
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayEnd = new Date(yesterday);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
+
+    // Bu haftanın başlangıcı (Pazartesi)
+    const thisWeekStart = new Date(today);
+    const dayOfWeek = today.getDay();
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Pazartesi'ye ayarla
+    thisWeekStart.setDate(diff);
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    // Geçen haftanın başlangıcı ve bitişi
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(thisWeekStart);
+
+    // Bugünün verileri - Bugün ödenen tüm siparişler (paidAt'e göre)
+    // Local timezone'da bugün ödenen siparişleri bul
+    console.log('🔍 Bugünün tarihleri:', { 
+      'today (UTC)': today.toISOString(), 
+      'tomorrow (UTC)': tomorrow.toISOString(),
+      'localToday (local)': localToday.toISOString()
+    });
+    
+    // Önce tüm PAID siparişleri kontrol et
+    const allPaidOrders = await Order.find({ status: 'PAID' }).limit(5).lean();
+    console.log('🔍 Toplam PAID sipariş sayısı:', await Order.countDocuments({ status: 'PAID' }));
+    console.log('🔍 İlk 5 PAID sipariş:', allPaidOrders.map(o => ({
+      id: o._id,
+      status: o.status,
+      paidAt: o.paidAt,
+      paidAtISO: o.paidAt ? o.paidAt.toISOString() : null,
+      createdAt: o.createdAt,
+      total: o.total,
+      'paidAt >= today?': o.paidAt ? (o.paidAt >= today) : false,
+      'paidAt < tomorrow?': o.paidAt ? (o.paidAt < tomorrow) : false,
+    })));
+    
     const revenueData = await Order.aggregate([
       {
         $match: {
-          status: 'PAID',
-          createdAt: { $gte: today, $lt: tomorrow }
+          status: 'PAID'
+        }
+      },
+      {
+        $addFields: {
+          // paidAt varsa onu kullan, yoksa createdAt'i kullan
+          paymentDate: { $ifNull: ['$paidAt', '$createdAt'] }
+        }
+      },
+      {
+        $match: {
+          paymentDate: { $gte: today, $lt: tomorrow }
         }
       },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$totalPrice' }
+          totalRevenue: { $sum: { $ifNull: ['$total', '$totalPrice', 0] } },
+          count: { $sum: 1 }
         }
       }
     ]);
+    console.log('🔍 Revenue aggregation sonucu:', revenueData);
     const revenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
 
-    // Toplam sipariş sayısı (bugün)
     const orders = await Order.countDocuments({
       createdAt: { $gte: today, $lt: tomorrow },
       status: { $ne: 'CANCELED' }
     });
 
-    // Bekleyen sipariş sayısı
     const pending = await Order.countDocuments({
       status: { $in: ['CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] }
     });
 
-    // İptal edilen sipariş sayısı (bugün)
     const canceled = await Order.countDocuments({
       status: 'CANCELED',
       createdAt: { $gte: today, $lt: tomorrow }
     });
 
-    res.json({
-      revenue,
-      orders,
-      pending,
-      canceled,
-      date: today.toISOString().split('T')[0],
+    // Dünün verileri - Dün ödenen tüm siparişler (paidAt'e göre)
+    const yesterdayRevenueData = await Order.aggregate([
+      {
+        $match: {
+          status: 'PAID'
+        }
+      },
+      {
+        $addFields: {
+          // paidAt varsa onu kullan, yoksa createdAt'i kullan
+          paymentDate: { $ifNull: ['$paidAt', '$createdAt'] }
+        }
+      },
+      {
+        $match: {
+          paymentDate: { $gte: yesterday, $lt: yesterdayEnd }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $ifNull: ['$total', '$totalPrice', 0] } }
+        }
+      }
+    ]);
+    const yesterdayRevenue = yesterdayRevenueData.length > 0 ? yesterdayRevenueData[0].totalRevenue : 0;
+
+    const yesterdayOrders = await Order.countDocuments({
+      createdAt: { $gte: yesterday, $lt: yesterdayEnd },
+      status: { $ne: 'CANCELED' }
     });
+
+    const yesterdayCanceled = await Order.countDocuments({
+      status: 'CANCELED',
+      createdAt: { $gte: yesterday, $lt: yesterdayEnd }
+    });
+
+    // Bu haftanın sipariş sayısı
+    const thisWeekOrders = await Order.countDocuments({
+      createdAt: { $gte: thisWeekStart, $lt: tomorrow },
+      status: { $ne: 'CANCELED' }
+    });
+
+    // Geçen haftanın sipariş sayısı
+    const lastWeekOrders = await Order.countDocuments({
+      createdAt: { $gte: lastWeekStart, $lt: lastWeekEnd },
+      status: { $ne: 'CANCELED' }
+    });
+
+    const responseData = {
+      today: {
+        revenue,
+        orders,
+        pending,
+        canceled,
+      },
+      yesterday: {
+        revenue: yesterdayRevenue,
+        orders: yesterdayOrders,
+        canceled: yesterdayCanceled,
+      },
+      lastWeek: {
+        orders: lastWeekOrders,
+      },
+      thisWeek: {
+        orders: thisWeekOrders,
+      },
+      date: today.toISOString().split('T')[0],
+    };
+    
+    console.log('📤 Stats endpoint response:', JSON.stringify(responseData, null, 2));
+    res.json(responseData);
   } catch (e) {
     next(e);
   }
@@ -270,14 +409,38 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
-    if (order.status === 'tamamlandi') {
-      return res.status(409).json({ message: 'Sipariş zaten tamamlanmış' });
+    if (order.status === 'PAID' || order.status === 'tamamlandi') {
+      return res.status(409).json({ message: 'Sipariş zaten ödendi' });
     }
 
-    order.status = 'tamamlandi';
-    await order.save();
+    // Önceki durumu sakla
+    const previousStatus = order.status;
+    
+    // Sipariş durumunu 'PAID' yap ve paidAt'i kaydet
+    const paidAtDate = new Date();
+    const updatedOrder = await Order.findByIdAndUpdate(
+      order._id,
+      { 
+        status: 'PAID',
+        paidAt: paidAtDate
+      },
+      { new: true, runValidators: true }
+    );
+    
+    // Debug: paidAt'in kaydedildiğini kontrol et
+    console.log('✅ Sipariş ödendi - paidAt:', updatedOrder.paidAt, 'status:', updatedOrder.status, 'total:', updatedOrder.total);
 
-    res.json(order);
+    // OrderEvent kaydı
+    await OrderEvent.create({
+      orderId: updatedOrder._id,
+      actorId: req.user.id,
+      type: 'payment',
+      from: previousStatus,
+      to: 'PAID',
+      metadata: { method: 'admin', amount: updatedOrder.total || updatedOrder.totalPrice || 0 },
+    });
+
+    res.json(updatedOrder);
   } catch (e) {
     next(e);
   }

@@ -29,6 +29,7 @@ import { getKpis } from '../lib/api/dashboard.ts';
 import EmptyState from '../components/state/EmptyState.tsx';
 import ErrorState from '../components/state/ErrorState.tsx';
 import ViewportProbe from '../components/dev/ViewportProbe.tsx';
+import { COLORS } from '../constants/colors.js';
 
 // İstatistik kartı
 function StatCard({ title, value, unit, icon, subtitle, trend, trendDirection, accentColor }) {
@@ -106,15 +107,85 @@ export default function AdminDashboard() {
     fetchData();
   }, []); 
 
-  // KPIs via React Query (mock)
+  // KPIs via React Query
   const { data: kpis, isLoading: kpisLoading, isError: kpisError, refetch: refetchKpis, error: kpisErrObj } = useQuery({
     queryKey: ['kpis'],
     queryFn: getKpis,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    gcTime: 0, // cacheTime yerine gcTime (React Query v5)
+    retry: false, // Hata durumunda tekrar deneme
   });
+  
+  // Debug: kpis değerini logla
+  console.log('🔍 AdminDashboard - kpis değeri:', kpis);
 
   const nf = useMemo(() => new Intl.NumberFormat('tr-TR'), []);
 
-  const isZeroData = !!kpis && (kpis.revenue === 0 && kpis.orders === 0 && kpis.pending === 0 && kpis.canceled === 0);
+  // Yüzdelik değişim hesaplama fonksiyonu
+  const calculatePercentageChange = (current, previous) => {
+    if (previous === undefined || previous === null) {
+      return null; // Önceki dönem verisi yoksa delta gösterme
+    }
+    
+    if (previous === 0) {
+      // Önceki dönem 0 ise
+      if (current > 0) {
+        return { trend: 'up', value: '+100%' };
+      }
+      return null; // Her ikisi de 0 ise delta gösterme
+    }
+    
+    const change = ((current - previous) / previous) * 100;
+    const rounded = Math.abs(change) < 0.1 ? 0 : Math.round(change * 10) / 10; // 0.1'den küçükse 0, yoksa 1 ondalık basamak
+    
+    if (rounded === 0) {
+      return null; // Değişim yoksa delta gösterme
+    }
+    
+    const sign = rounded > 0 ? '+' : '';
+    return {
+      trend: rounded > 0 ? 'up' : 'down',
+      value: `${sign}${rounded}%`
+    };
+  };
+
+  // Delta değerlerini hesapla
+  const revenueDelta = useMemo(() => {
+    if (!kpis?.yesterday) return null;
+    return calculatePercentageChange(kpis.revenue, kpis.yesterday.revenue);
+  }, [kpis]);
+
+  const ordersDelta = useMemo(() => {
+    if (!kpis?.lastWeek || !kpis?.thisWeek) return null;
+    return calculatePercentageChange(kpis.thisWeek.orders, kpis.lastWeek.orders);
+  }, [kpis]);
+
+  const canceledDelta = useMemo(() => {
+    if (!kpis?.yesterday) return null;
+    return calculatePercentageChange(kpis.canceled, kpis.yesterday.canceled);
+  }, [kpis]);
+
+  // isZeroData kontrolü - sadece tüm değerler 0 ise true
+  // kpis undefined veya null ise false döndür (henüz yükleniyor)
+  const isZeroData = kpis !== undefined && kpis !== null && 
+    kpis.revenue === 0 && 
+    (kpis.thisWeek?.orders ?? kpis.orders ?? 0) === 0 && 
+    kpis.pending === 0 && 
+    kpis.canceled === 0;
+  
+  // Debug: isZeroData kontrolü
+  console.log('🔍 isZeroData kontrolü:', {
+    'kpis === undefined': kpis === undefined,
+    'kpis === null': kpis === null,
+    'kpis': kpis,
+    'revenue': kpis?.revenue,
+    'orders': kpis?.thisWeek?.orders ?? kpis?.orders,
+    'pending': kpis?.pending,
+    'canceled': kpis?.canceled,
+    'isZeroData': isZeroData
+  });
 
   if (loading) {
     return (
@@ -136,8 +207,8 @@ export default function AdminDashboard() {
         flexGrow: 1,
         maxWidth: '100%',
         mx: 'auto',
-        px: { xs: 'clamp(12px, 4vw, 24px)', sm: 'clamp(12px, 4vw, 24px)', md: 'clamp(12px, 4vw, 24px)' },
-        py: { xs: 'clamp(8px, 2vw, 16px)', sm: 2, md: 3 },
+        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 3, md: 4 },
         minW: 0,
         overflowX: 'hidden',
       }}
@@ -147,14 +218,7 @@ export default function AdminDashboard() {
       {/* İstatistik Kartları */}
       <Box
         sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          bgcolor: 'background.paper',
-          backdropFilter: 'blur(6px)',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          mb: { xs: 2, sm: 3 },
+          mb: { xs: 3, sm: 4 },
           minW: 0,
           overflowX: 'hidden',
         }}
@@ -167,7 +231,7 @@ export default function AdminDashboard() {
           sx={{
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
-            gap: 2,
+            gap: { xs: 2, sm: 2.5, lg: 3 },
             minW: 0,
           }}
         >
@@ -175,18 +239,20 @@ export default function AdminDashboard() {
           label="Toplam Ciro (Ödenenler)"
           value={`${nf.format(kpis?.revenue ?? 0)} TL`}
           hint="dünden"
-          delta={{ trend: 'up', value: '+12.5%' }}
-          icon={<CheckCircleIcon sx={{ color: 'success.main' }} />}
+          delta={revenueDelta}
+          icon={<CheckCircleIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.success}
           loading={kpisLoading}
           error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
           onRetry={() => refetchKpis()}
         />
         <KpiCard
           label="Toplam Sipariş"
-          value={`${nf.format(kpis?.orders ?? 0)} Adet`}
+          value={`${nf.format(kpis?.thisWeek?.orders ?? kpis?.orders ?? 0)} Adet`}
           hint="bu hafta"
-          delta={{ trend: 'up', value: '+8.2%' }}
-          icon={<ShoppingCartIcon sx={{ color: 'text.primary' }} />}
+          delta={ordersDelta}
+          icon={<ShoppingCartIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.info}
           loading={kpisLoading}
           error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
           onRetry={() => refetchKpis()}
@@ -195,7 +261,8 @@ export default function AdminDashboard() {
           label="Bekleyen Sipariş"
           value={`${nf.format(kpis?.pending ?? 0)} Adet`}
           hint="aktif"
-          icon={<AccessTimeIcon sx={{ color: 'warning.main' }} />}
+          icon={<AccessTimeIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.warning}
           loading={kpisLoading}
           error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
           onRetry={() => refetchKpis()}
@@ -204,8 +271,9 @@ export default function AdminDashboard() {
           label="İptal Edilen"
           value={`${nf.format(kpis?.canceled ?? 0)} Adet`}
           hint="dünden"
-          delta={{ trend: 'down', value: '-2.1%' }}
-          icon={<PersonIcon sx={{ color: 'error.main' }} />}
+          delta={canceledDelta}
+          icon={<PersonIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.error}
           loading={kpisLoading}
           error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
           onRetry={() => refetchKpis()}

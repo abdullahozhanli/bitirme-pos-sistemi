@@ -35,17 +35,6 @@ export default function OrderDetailModal({
 }) {
   if (!order) return null;
 
-  // Debug: Sipariş notunu kontrol et
-  if (open && order) {
-    console.log('🔍 OrderDetailModal - Sipariş notu:', {
-      hasNotes: !!order.notes,
-      notesValue: order.notes,
-      notesType: typeof order.notes,
-      notesLength: order.notes?.length,
-      orderKeys: Object.keys(order)
-    });
-  }
-
   const normalizeTr = (text) => String(text || '')
     .replace(/İ/g, 'I').replace(/I/g, 'I')
     .replace(/ı/g, 'i').replace(/i/g, 'i')
@@ -57,9 +46,9 @@ export default function OrderDetailModal({
     .toLowerCase();
 
   const statusNorm = normalizeTr(order.status);
-  const isCancelled = statusNorm === 'iptal';
-  const isPreparing = statusNorm === 'hazirlaniyor';
-  const isPaid = statusNorm === 'tamamlandi';
+  const isCancelled = statusNorm === 'iptal' || order.status === 'CANCELED';
+  const isPreparing = statusNorm === 'hazirlaniyor' || order.status === 'CREATED' || order.status === 'IN_PREP';
+  const isPaid = statusNorm === 'tamamlandi' || order.status === 'PAID';
 
   const disabledPaid = isPaid || isCancelled;
   const disabledReady = !isPreparing;
@@ -93,17 +82,10 @@ export default function OrderDetailModal({
               </li>
             ))}
           </ul>
-          {order.notes && order.notes.trim() && (
-            <Box sx={{ 
-              marginTop: 2, 
-              padding: 2, 
-              bgcolor: '#f5f5f5', 
-              borderRadius: 1,
-              border: '1px solid #e0e0e0'
-            }}>
-              <strong style={{ display: 'block', marginBottom: 4, color: '#333' }}>Sipariş Notu:</strong>
-              <div style={{ color: '#555', fontSize: '0.95em', whiteSpace: 'pre-wrap' }}>{order.notes}</div>
-            </Box>
+          {order.notes && (
+            <div style={{ marginTop: 8 }}>
+              <strong>Not:</strong> {order.notes}
+            </div>
           )}
         </div>
 
@@ -122,7 +104,20 @@ export default function OrderDetailModal({
             variant="contained"
             color="success"
             disabled={disabledPaid}
-            onClick={() => { console.debug('onMarkPaid click'); onMarkPaid?.(order._id || order.id); }}
+            onClick={() => { 
+              console.log('🔍 Ödendi Yap butonu tıklandı');
+              console.log('🔍 Order:', order);
+              console.log('🔍 Order ID:', order._id || order.id);
+              console.log('🔍 disabledPaid:', disabledPaid);
+              console.log('🔍 onMarkPaid fonksiyonu:', onMarkPaid);
+              if (onMarkPaid) {
+                const orderId = order._id || order.id;
+                console.log('📞 onMarkPaid çağrılıyor, orderId:', orderId);
+                onMarkPaid(orderId);
+              } else {
+                console.error('❌ onMarkPaid fonksiyonu tanımlı değil!');
+              }
+            }}
             sx={{ textTransform:'none', cursor: disabledPaid ? 'not-allowed' : 'pointer' }}
           >
             Ödendi Yap

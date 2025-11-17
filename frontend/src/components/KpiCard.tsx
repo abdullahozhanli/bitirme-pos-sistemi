@@ -44,10 +44,11 @@
  * @returns {React.ReactElement} The KPI card component with responsive layout.
  */
 import React from 'react';
-import { Card, CardContent, Stack, Typography, Chip, Skeleton, Button, Alert, useMediaQuery } from '@mui/material';
+import { Card, CardContent, Stack, Typography, Chip, Skeleton, Button, Alert, useMediaQuery, Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { COLORS } from '../constants/colors.js';
 
 export type Delta = { trend: 'up' | 'down'; value: string };
 
@@ -56,13 +57,14 @@ export interface KpiCardProps {
   value: string;
   delta?: Delta;
   icon?: React.ReactNode;
+  iconBgColor?: string;
   hint?: string;
   loading?: boolean;
   error?: string;
   onRetry?: () => void;
 }
 
-export default function KpiCard({ label, value, delta, icon, hint, loading, error, onRetry }: KpiCardProps) {
+export default function KpiCard({ label, value, delta, icon, iconBgColor, hint, loading, error, onRetry }: KpiCardProps) {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   if (error) {
@@ -93,40 +95,154 @@ export default function KpiCard({ label, value, delta, icon, hint, loading, erro
   }
 
   return (
-    <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
-      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
+    <Card sx={{ 
+      height: '100%', 
+      borderRadius: 2, 
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
+      position: 'relative',
+      overflow: 'hidden',
+      border: 'none',
+      backgroundColor: '#FFFFFF',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+        transform: 'translateY(-1px)'
+      }
+    }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 }, position: 'relative' }}>
         {isMdUp ? (
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
-            <Stack spacing={0.5}>
-              <Typography variant="body2" color="text.secondary">{label}</Typography>
-              <Typography sx={{ fontSize: { xs: '1.25rem', md: '1.75rem' }, fontWeight: 700 }}>
-                {value}
+          <Stack spacing={1.25}>
+            {/* Header: Label ve Icon */}
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5, pr: delta ? 7 : 0 }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ 
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: COLORS.textSecondary,
+                  flex: 1,
+                  lineHeight: 1.4,
+                  letterSpacing: '0.01em'
+                }}
+              >
+                {label}
               </Typography>
-              {hint && (
-                <Typography variant="caption" color="text.secondary">{hint}</Typography>
-              )}
+              <Box sx={{ 
+                width: 32, 
+                height: 32, 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                flexShrink: 0,
+                backgroundColor: iconBgColor || 'rgba(0, 0, 0, 0.04)',
+                color: iconBgColor ? '#fff' : 'inherit',
+                position: 'relative',
+                zIndex: 0,
+                ml: 1
+              }}>
+                {icon}
+              </Box>
             </Stack>
-            <Stack alignItems="flex-end" spacing={1}>
-              {icon}
-              {delta && (
-                <Chip
-                  size="small"
-                  color={delta.trend === 'down' ? 'error' : 'success'}
-                  icon={delta.trend === 'down' ? <ArrowDownwardIcon fontSize="small" aria-label="trend-down" /> : <ArrowUpwardIcon fontSize="small" aria-label="trend-up" />}
-                  label={delta.value}
-                  sx={{ fontWeight: 700 }}
-                />
-              )}
-            </Stack>
+            
+            {/* Value */}
+            <Typography 
+              sx={{ 
+                fontSize: { xs: '22px', md: '28px' }, 
+                fontWeight: 700,
+                color: COLORS.textPrimary,
+                lineHeight: 1.2,
+                mb: 0.25,
+                letterSpacing: '-0.02em'
+              }}
+            >
+              {value}
+            </Typography>
+            
+            {/* Hint */}
+            {hint && (
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                sx={{ 
+                  fontSize: '12px', 
+                  color: COLORS.textTertiary,
+                  lineHeight: 1.4,
+                  fontWeight: 400
+                }}
+              >
+                {hint}
+              </Typography>
+            )}
+            
+            {/* Trend Indicator - Sağ üstte, renkli daire içinde */}
+            {delta && (
+              <Box sx={{ 
+                position: 'absolute', 
+                top: 8, 
+                right: 8, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: 0.25,
+                minWidth: 56,
+                height: 22,
+                borderRadius: '11px',
+                padding: '0 6px',
+                backgroundColor: delta.trend === 'down' ? COLORS.error : COLORS.success,
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '11px',
+                zIndex: 2
+              }}>
+                {delta.trend === 'down' ? (
+                  <ArrowDownwardIcon sx={{ fontSize: 12 }} />
+                ) : (
+                  <ArrowUpwardIcon sx={{ fontSize: 12 }} />
+                )}
+                <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '11px', lineHeight: 1, color: '#fff' }}>
+                  {delta.value}
+                </Typography>
+              </Box>
+            )}
           </Stack>
         ) : (
           <Stack spacing={0.5}>
-            <Typography sx={{ fontSize: 'clamp(18px, 6vw, 28px)', fontWeight: 700 }}>
+            <Typography sx={{ 
+              fontSize: '22px', 
+              fontWeight: 700,
+              color: COLORS.textPrimary,
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em'
+            }}>
               {value}
             </Typography>
-            <Typography variant="body2" color="text.secondary">{label}</Typography>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ 
+                fontSize: '13px',
+                fontWeight: 500,
+                color: COLORS.textSecondary,
+                lineHeight: 1.4
+              }}
+            >
+              {label}
+            </Typography>
             {hint && (
-              <Typography variant="caption" color="text.secondary">{hint}</Typography>
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                sx={{ 
+                  fontSize: '12px',
+                  color: COLORS.textTertiary,
+                  lineHeight: 1.4,
+                  fontWeight: 400
+                }}
+              >
+                {hint}
+              </Typography>
             )}
             <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mt: 0.5 }}>
               {icon}

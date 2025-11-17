@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { TextField, Box, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Card, CardContent, Stack, IconButton, useMediaQuery, useTheme } from '@mui/material';
+import { useMediaQuery, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import './CartPage.css';
 
 export default function CartPage() {
   const { cartItems, addToCart, removeFromCart, clearCart, tableNumber } = useCart();
@@ -16,6 +19,36 @@ export default function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
+
+  // Debug: Masa numarasını kontrol et
+  useEffect(() => {
+    console.log('CartPage - tableNumber:', tableNumber);
+    console.log('CartPage - localStorage tableNumber:', localStorage.getItem('tableNumber'));
+  }, [tableNumber]);
+
+  // Kategori bazlı fallback görseller
+  const FALLBACK_IMAGES = {
+    'Ana Yemek': '/img/steak.jpg',
+    'İçecekler': '/img/drink.jpg',
+    'Tatlılar': '/img/dessert.jpg',
+    'Salatalar': '/img/salad.jpg',
+    'Çerez': '/img/snack.jpg',
+    'Ara Sıcak': '/img/appetizer.jpg',
+    'Kahveler': '/img/coffee.jpg',
+  };
+  const PLACEHOLDER_IMAGE = '/img/placeholder.webp';
+
+  const getImageUrl = (item) => {
+    if (item.imageUrl) {
+      return item.imageUrl;
+    }
+    const categoryName = item.category?.name || '';
+    return FALLBACK_IMAGES[categoryName] || PLACEHOLDER_IMAGE;
+  };
+
+  const handleImageError = (e) => {
+    e.currentTarget.src = PLACEHOLDER_IMAGE;
+  };
 
   const calculateTotalPrice = () =>
     Number(cartItems.reduce((t, i) => t + i.qty * Number(i.unitPrice ?? i.price ?? 0), 0).toFixed(2));
@@ -64,274 +97,197 @@ export default function CartPage() {
   };
 
   return (
-    <Box sx={{ px: { xs: 'clamp(8px, 2vw, 16px)', sm: 2, md: 3 }, py: { xs: 2, sm: 3 }, maxWidth: 800, mx: 'auto' }}>
-      <Typography variant="h4" component="h2" fontWeight={700} sx={{ mb: { xs: 2, sm: 3 }, fontSize: 'clamp(18px, 2.5vw, 24px)', color: '#333', display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Box
-          component="span"
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            bgcolor: '#fff',
-            color: '#333',
-            fontSize: '1.5rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          }}
-        >
-          🛒
-        </Box>
-        Sepetiniz {tableNumber && <Typography component="span" sx={{ color: 'text.secondary', fontSize: 'clamp(14px, 1.8vw, 18px)' }}>(Masa: {tableNumber})</Typography>}
-      </Typography>
+    <div className="cart-page">
       {message && (
-        <Typography sx={{ mb: 2, color: message.includes('Hata') ? 'error.main' : 'success.main', fontSize: 'clamp(12px, 1.8vw, 16px)' }}>
+        <div className={`cart-message ${message.includes('Hata') ? 'error' : 'success'}`}>
           {message}
-        </Typography>
+        </div>
       )}
 
       {cartItems.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: { xs: 4, sm: 6 } }}>
-          <Typography variant="body1" sx={{ mb: 3, fontSize: 'clamp(14px, 1.8vw, 18px)', color: 'text.secondary' }}>
-            Sepetiniz şu anda boş.
-          </Typography>
-          <Button
-            component={Link}
-            to="/"
-            variant="contained"
-            sx={{
-              bgcolor: '#0B0B20',
-              color: '#fff',
-              px: 3,
-              py: 1.5,
-              minHeight: '44px',
-              borderRadius: 2,
-              textTransform: 'none',
-            fontWeight: 600,
-              fontSize: 'clamp(14px, 1.8vw, 16px)',
-              '&:hover': { bgcolor: '#1a1a2e' },
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-          }}
-          >
+        <div className="cart-empty">
+          <p className="cart-empty-text">Sepetiniz şu anda boş.</p>
+          <Link to="/" className="cart-back-btn">
             Menüye Dön
-          </Button>
-        </Box>
+          </Link>
+        </div>
       ) : (
-        <Box>
-          {/* Mobil: Stacked Cards */}
-          {isMobile ? (
-            <Stack spacing={2} sx={{ mb: 3 }}>
-              {cartItems.map((item) => (
-                <Card key={item._id} sx={{ borderRadius: 2, boxShadow: 2 }}>
-                  <CardContent sx={{ p: 2 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1, fontSize: 'clamp(16px, 2vw, 18px)' }}>
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
-                      {item.category?.name || 'Kategorisiz'} {item.sizeLabel ? `• ${item.sizeLabel}` : ''}
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, border: '1px solid #e0e0e0', borderRadius: 2 }}>
-                        <IconButton
-                          onClick={() => removeFromCart(item, item.sizeKey)}
+        <div className="cart-container">
+          {/* Sol Panel: Ürünler Listesi */}
+          <div className="cart-items-section">
+            <div className="cart-header">
+              <button 
+                className="cart-close-btn" 
+                onClick={() => navigate('/')}
+                aria-label="Kapat"
+              >
+                <CloseIcon />
+              </button>
+              <div className="cart-header-details">
+                <h1 className="cart-title">
+                  Sepetiniz
+                </h1>
+                {tableNumber ? (
+                  <div className="cart-table-number">
+                    Masa: <strong>{tableNumber}</strong>
+                  </div>
+                ) : (
+                  <div className="cart-edit-delivery">
+                    <Link to="/qr-scan" style={{ color: '#667eea', textDecoration: 'underline' }}>
+                      QR Kod Okut
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="cart-items-list">
+              {cartItems.map((item) => {
+                const imageUrl = getImageUrl(item);
+                return (
+                  <div key={`${item._id}-${item.sizeKey}`} className="cart-item-card">
+                    <div className="cart-item-image-wrapper">
+                      <img
+                        src={imageUrl}
+                        alt={item.name}
+                        className="cart-item-image"
+                        onError={handleImageError}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="cart-item-details">
+                      <div className="cart-item-header">
+                        <h3 className="cart-item-name">{item.name}</h3>
+                        <button
+                          className="cart-item-delete-btn"
+                          onClick={() => {
+                            for (let i = 0; i < item.qty; i++) {
+                              removeFromCart(item, item.sizeKey);
+                            }
+                          }}
                           disabled={submitting}
-                          sx={{ minHeight: '44px', minWidth: '44px' }}
+                          aria-label="Ürünü sil"
                         >
-                          <RemoveIcon />
-                        </IconButton>
-                        <Typography sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600, fontSize: 'clamp(14px, 1.8vw, 16px)' }}>
-                          {item.qty}
-                        </Typography>
-                        <IconButton
-                          onClick={() => addToCart(item, item.sizeKey)}
-                          disabled={submitting}
-                          sx={{ minHeight: '44px', minWidth: '44px' }}
-                        >
-                          <AddIcon />
-                        </IconButton>
-                      </Box>
-                      <Box sx={{ textAlign: 'right' }}>
-                        <Typography variant="h6" fontWeight={700} sx={{ color: '#d17a3a', fontSize: 'clamp(16px, 2vw, 18px)' }}>
-                          {(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)} TL
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 'clamp(11px, 1.5vw, 13px)' }}>
-                          {Number(item.unitPrice ?? item.price).toFixed(2)} TL/adet
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          ) : (
-            /* Desktop: Table View */
-            <Box sx={{ border: '1px solid #e0e0e0', borderRadius: 2, overflow: 'hidden', mb: 3 }}>
-            {cartItems.map((item, index) => (
-                <Box
-                  key={item._id}
-                  sx={{
-                    display: 'flex', 
-                    alignItems: 'center',
-                    p: 2,
-                    borderBottom: index < cartItems.length - 1 ? '1px solid #f0f0f0' : 'none',
-                    bgcolor: index % 2 === 0 ? '#fff' : '#fafafa',
-                  }}
-                >
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.category?.name || 'Kategorisiz'} {item.sizeLabel ? `• ${item.sizeLabel}` : ''}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: 2 }}>
-                      <IconButton
-                      onClick={() => removeFromCart(item, item.sizeKey)} 
-                      disabled={submitting}
-                        sx={{ minHeight: '44px', minWidth: '44px' }}
-                      >
-                        <RemoveIcon />
-                      </IconButton>
-                      <Typography sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600 }}>
-                      {item.qty}
-                      </Typography>
-                      <IconButton
-                      onClick={() => addToCart(item, item.sizeKey)} 
-                      disabled={submitting}
-                        sx={{ minHeight: '44px', minWidth: '44px' }}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </Box>
-                    <Box sx={{ textAlign: 'right', minWidth: 120 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: '#d17a3a' }}>
-                      {(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)} TL
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                      {Number(item.unitPrice ?? item.price).toFixed(2)} TL/adet
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-            ))}
-            </Box>
-          )}
+                          <DeleteIcon />
+                        </button>
+                      </div>
+                      <p className="cart-item-category">
+                        {item.category?.name || 'Kategorisiz'} {item.sizeLabel ? `• ${item.sizeLabel}` : ''}
+                      </p>
+                      <div className="cart-item-footer">
+                        <div className="cart-quantity-control">
+                          <button
+                            className="cart-quantity-btn"
+                            onClick={() => removeFromCart(item, item.sizeKey)}
+                            disabled={submitting}
+                            aria-label="Azalt"
+                          >
+                            <RemoveIcon />
+                          </button>
+                          <span className="cart-quantity-value">{item.qty}</span>
+                          <button
+                            className="cart-quantity-btn"
+                            onClick={() => addToCart(item, item.sizeKey)}
+                            disabled={submitting}
+                            aria-label="Arttır"
+                          >
+                            <AddIcon />
+                          </button>
+                        </div>
+                        <div className="cart-item-price">
+                          <span className="cart-item-price-total">
+                            ₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-          <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-            <TextField
-              label="Sipariş Notu (Opsiyonel)"
-              placeholder="Örn: Soğansız olsun, az acılı..."
-              multiline
-              rows={3}
-              fullWidth
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  minHeight: '44px',
-                },
-              }}
-            />
-          </Box>
+          {/* Sağ Panel: Sipariş Özeti */}
+          <div className="cart-summary-section">
+            <div className="cart-summary-card">
+              <h2 className="cart-summary-title">Sipariş Özeti</h2>
+              
+              <div className="cart-manage-benefits">
+                Manage your benefits
+                <span className="arrow-icon">&gt;</span>
+              </div>
+              
+              <div className="cart-summary-items">
+                {cartItems.map((item) => (
+                  <div key={`${item._id}-${item.sizeKey}`} className="cart-summary-item">
+                    <span className="cart-summary-item-name">
+                      {item.qty}x {item.name}
+                    </span>
+                    <span className="cart-summary-item-price">
+                      ₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-          <Box sx={{ 
-            p: { xs: 2, sm: 2.5 },
-            bgcolor: '#f5f5f5',
-            borderRadius: 2,
-            mb: { xs: 2, sm: 3 },
-          }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6" fontWeight={700} sx={{ fontSize: 'clamp(16px, 2vw, 20px)' }}>
-                Toplam Tutar:
-              </Typography>
-              <Typography variant="h5" fontWeight={700} sx={{ fontSize: 'clamp(20px, 2.5vw, 28px)', color: '#333' }}>
-                {calculateTotalPrice().toFixed(2)} TL
-              </Typography>
-            </Box>
-          </Box>
+              <div className="cart-summary-total">
+                <div className="cart-summary-total-row">
+                  <span className="cart-summary-total-label">Toplam:</span>
+                  <span className="cart-summary-total-value">₺{calculateTotalPrice().toFixed(2)}</span>
+                </div>
+              </div>
 
-          <Box sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
-            <Button
-              onClick={handleCheckout}
-              disabled={submitting || cartItems.length === 0 || !tableNumber}
-              variant="contained"
-              sx={{
-                px: { xs: 4, sm: 5 },
-                py: { xs: 1.5, sm: 1.75 },
-                minHeight: '44px',
-                fontSize: 'clamp(14px, 1.8vw, 18px)',
-                bgcolor: submitting ? '#999' : (!tableNumber ? '#ccc' : '#0B0B20'),
-                color: '#fff',
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 600,
-                width: { xs: '100%', sm: 'auto' },
-                boxShadow: submitting || !tableNumber ? 'none' : '0 2px 8px rgba(0,0,0,0.2)',
-                '&:hover': {
-                  bgcolor: submitting ? '#999' : (!tableNumber ? '#ccc' : '#1a1a2e'),
-                },
-                '&:disabled': {
-                  bgcolor: '#ccc',
-                  color: '#fff',
-                },
-              }}
-            >
-              {submitting ? '🔄 Gönderiliyor...' : !tableNumber ? '📱 QR Kodu Okutun' : 'Siparişi Tamamla'}
-            </Button>
-          </Box>
-        </Box>
+              <div className="cart-notes">
+                <label className="cart-notes-label">Sipariş Notu (Opsiyonel)</label>
+                <textarea
+                  className="cart-notes-textarea"
+                  placeholder="Örn: Soğansız olsun, az acılı..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="cart-checkout-button"
+                onClick={handleCheckout}
+                disabled={submitting || cartItems.length === 0 || !tableNumber}
+              >
+                {submitting ? 'Gönderiliyor...' : !tableNumber ? 'QR Kodu Okutun' : 'Siparişi Tamamla'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Sipariş Onay Modal */}
-      <Dialog
-        open={orderSuccess}
-        onClose={handleCloseSuccessModal}
-        PaperProps={{
-          sx: {
-            bgcolor: '#282828',
-            color: '#fff',
-            borderRadius: 3,
-            width: { xs: '90%', sm: 400 },
-            maxWidth: 500,
-            mx: 'auto',
-          },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1, color: '#fff', fontSize: { xs: '0.8rem', sm: '0.875rem' }, fontWeight: 500 }}>
-          localhost:5173 web sitesinin mesajı
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2, pb: 3, px: { xs: 2, sm: 3 } }}>
-          <Typography sx={{ color: '#fff', fontSize: { xs: '0.9rem', sm: '1rem' }, lineHeight: 1.6 }}>
-            Siparişiniz alındı. Masa {tableNumber} • ID: ...{orderId}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2.5, justifyContent: 'flex-end' }}>
-          <Button
-            onClick={handleCloseSuccessModal}
-            sx={{
-              bgcolor: '#C3A0E8',
-              color: '#5C3E8C',
-              px: { xs: 2.5, sm: 3 },
-              py: { xs: 0.75, sm: 1 },
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: { xs: '0.875rem', sm: '1rem' },
-              border: '2px solid #C3A0E8',
-              width: { xs: '100%', sm: 'auto' },
-              '&:hover': {
-                bgcolor: '#B890D0',
-                borderColor: '#B890D0',
-              },
-            }}
-          >
-            Tamam
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {orderSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }} onClick={handleCloseSuccessModal}>
+          <div className="cart-success-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cart-success-modal-title">
+              localhost:5173 web sitesinin mesajı
+            </div>
+            <div className="cart-success-modal-content">
+              Siparişiniz alındı. Masa {tableNumber} • ID: ...{orderId}
+            </div>
+            <div className="cart-success-modal-actions">
+              <button className="cart-success-modal-button" onClick={handleCloseSuccessModal}>
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

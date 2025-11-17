@@ -15,15 +15,35 @@
  */
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { COLORS } from '../constants/colors.js';
 
 export default function PageHeader({ title, subtitle }) {
   return (
     <Box sx={{ mb: { xs: 2, sm: 3 } }}>
-      <Typography variant="h5" fontWeight={800} sx={{ fontSize: 'clamp(18px, 2.2vw, 24px)' }}>
+      <Typography 
+        variant="h5" 
+        fontWeight={700} 
+        sx={{ 
+          fontSize: '28px',
+          color: COLORS.textPrimary,
+          mb: subtitle ? 0.5 : 0,
+          lineHeight: 1.3,
+          letterSpacing: '-0.02em'
+        }}
+      >
         {title}
       </Typography>
       {subtitle && (
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 'clamp(12px, 1.6vw, 14px)' }}>
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          sx={{ 
+            fontSize: '15px',
+            fontWeight: 400,
+            color: COLORS.textSecondary,
+            lineHeight: 1.4
+          }}
+        >
           {subtitle}
         </Typography>
       )}

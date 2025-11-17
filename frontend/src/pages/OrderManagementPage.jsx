@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, useMediaQuery, useTheme } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { useQueryClient } from '@tanstack/react-query';
 import StatusChip from '../components/ui/StatusChip.jsx';
 import OrderDetailModal from '../components/OrderDetailModal.jsx';
 
@@ -10,6 +11,7 @@ import OrderDetailModal from '../components/OrderDetailModal.jsx';
 export default function OrderManagementPage(){
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const queryClient = useQueryClient();
   const [rows,setRows] = useState([]);
   const [allRows,setAllRows] = useState([]);
   const [loading,setLoading] = useState(true);
@@ -167,27 +169,46 @@ export default function OrderManagementPage(){
 
   // Ödendi yap
   const handleMarkAsPaid = async (orderId) => {
+    console.log('🔍 handleMarkAsPaid çağrıldı, orderId:', orderId);
     try {
+      if (!orderId) {
+        console.error('❌ orderId yok!');
+        setSnack({open:true, message:'Sipariş ID bulunamadı', severity:'error'});
+        return;
+      }
+
       // optimistic
       const prevAll = allRows;
       const prevRow = prevAll.find(r => (r._id === orderId || r.id === orderId));
       if (prevRow) {
-        const optimistic = { ...prevRow, status: 'tamamlandi' };
+        const optimistic = { ...prevRow, status: 'PAID' };
         mergeUpdated(optimistic);
       }
+      
+      console.log('📤 Backend\'e istek gönderiliyor:', `/api/admin/orders/${orderId}/pay`);
       const res = await axios.put(
         `/api/admin/orders/${orderId}/pay`,
         {},
         { headers }
       );
+      console.log('✅ Backend yanıtı:', res.data);
+      
       const updated = res.data;
       mergeUpdated(updated);
+      
+      // KPI verilerini yenile (sipariş ödendi, revenue değişti)
+      queryClient.invalidateQueries({ queryKey: ['kpis'] });
+      
       setSnack({open:true, message:'Ödeme işaretlendi', severity:'success'});
-      // Ödeme işaretlendi, sipariş 'tamamlandi' durumuna geçti
-      // Ek bir işlem gerekmiyor
     } catch(e) {
+      console.error('❌ Ödeme işaretlenemedi:', e);
+      console.error('❌ Hata detayları:', {
+        message: e.message,
+        response: e.response?.data,
+        status: e.response?.status,
+        statusText: e.response?.statusText
+      });
       await fetchOrders();
-      console.error('Ödeme işaretlenemedi:', e);
       setMsg(e.response?.data?.message || 'Ödeme işaretlenemedi.');
       setSnack({open:true, message:(e.response?.data?.message || 'Ödeme işaretlenemedi.'), severity:'error'});
     }
@@ -228,7 +249,7 @@ export default function OrderManagementPage(){
     { field:'status', headerName:'Durum', width:160, renderCell:p=><StatusChip status={p.value}/> },
     { 
       field:'isPaid', 
-      headerName:'Ödendi mi?', 
+      headerName:'Ödeme Durumu', 
       width:110,
       renderCell: (params) => {
         const row = params.row || {};
@@ -329,8 +350,8 @@ export default function OrderManagementPage(){
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
-          <InputLabel>Ödendi mi?</InputLabel>
-          <Select value={paid} onChange={(e)=> setPaid(e.target.value)} label="Ödendi mi?">
+          <InputLabel>Ödeme Durumu</InputLabel>
+          <Select value={paid} onChange={(e)=> setPaid(e.target.value)} label="Ödeme Durumu">
             <MenuItem value="">Tümü</MenuItem>
             <MenuItem value="Evet">Evet</MenuItem>
             <MenuItem value="Hayır">Hayır</MenuItem>

@@ -10,7 +10,7 @@ const palette = {
   info: { main: '#2E90FA' },
   success: { main: '#1B873F' },          // yeşil (EKLE, HAZIR YAP, ÖDENDİ YAP)
   text: { primary: '#1A1A1A', secondary: '#5A5A5A' },
-  background: { default: '#FAF7F1', paper: '#FFFFFF' } // açık bej + beyaz
+  background: { default: '#FFFFFF', paper: '#FFFFFF' } // beyaz
 };
 
 export const theme = createTheme({
@@ -25,7 +25,7 @@ export const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: '#FAF7F1',
+          backgroundColor: '#FFFFFF',
         },
       },
     },

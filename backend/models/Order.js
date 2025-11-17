@@ -14,8 +14,11 @@ const orderSchema = new mongoose.Schema({
   notes: { type: String }, // Genel sipariş notu (müşteri notu)
   status: {
     type: String,
-    enum: ['hazirlaniyor', 'serviste', 'tamamlandi', 'iptal'],
+    enum: ['hazirlaniyor', 'serviste', 'tamamlandi', 'iptal', 'PAID', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY', 'SERVED', 'CANCELED'],
     default: 'hazirlaniyor'
+  },
+  paidAt: {
+    type: Date
   }
 }, { timestamps: true });
 

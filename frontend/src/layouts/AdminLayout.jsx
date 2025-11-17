@@ -5,7 +5,6 @@ import DashboardIcon from '@mui/icons-material/SpaceDashboard';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CategoryIcon from '@mui/icons-material/Category';
-import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import LaunchIcon from '@mui/icons-material/Launch';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -23,7 +22,6 @@ export default function AdminLayout() {
     { to: '/admin/siparisler', label: 'Sipariş Yönetimi', icon: <ReceiptLongIcon /> },
     { to: '/admin/urunler', label: 'Ürün Yönetimi', icon: <Inventory2Icon /> },
     { to: '/admin/kategoriler', label: 'Kategori Yönetimi', icon: <CategoryIcon /> },
-    { to: '/kitchen', label: 'Mutfak Ekranı', icon: <RestaurantMenuIcon /> },
     { to: '/', label: 'Müşteri Arayüzünü Gör', icon: <LaunchIcon /> },
   ];
 
@@ -72,25 +70,42 @@ export default function AdminLayout() {
           zIndex: (t) => t.zIndex.drawer + 1,
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
+          backgroundColor: '#FFFFFF',
+          color: '#000',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: '64px !important' }}>
           {isMobile && (
             <IconButton
               color="inherit"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              sx={{ mr: 2, color: '#333' }}
             >
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 'clamp(16px, 2vw, 20px)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '20px', color: '#000' }}>
             Admin Kontrol Paneli
           </Typography>
           <Box sx={{ flex: 1 }} />
-          <IconButton onClick={logout} color="inherit" sx={{ border: '1px solid #E5E5E5', borderRadius: 2, minHeight: '44px', minWidth: '44px' }}>
-            <LogoutIcon />
+          <IconButton 
+            onClick={logout} 
+            color="inherit" 
+            sx={{ 
+              border: '1px solid #E5E5E5', 
+              borderRadius: 1, 
+              minHeight: '36px', 
+              minWidth: '36px',
+              p: 0.5,
+              color: '#333',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.04)'
+              }
+            }}
+          >
+            <LogoutIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </Toolbar>
         <Divider />
@@ -134,8 +149,9 @@ export default function AdminLayout() {
         component="main"
         sx={{
           flex: 1,
-          p: { xs: 'clamp(8px, 2vw, 16px)', sm: 2, md: 3 },
+          p: { xs: 2, sm: 3, md: 4 },
           width: { md: `calc(100% - ${drawerWidth}px)` },
+          backgroundColor: '#FFFFFF',
         }}
       >
         <Toolbar />

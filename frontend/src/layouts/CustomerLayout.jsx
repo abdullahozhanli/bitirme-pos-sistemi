@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppBar, Toolbar, Container, Box, Button, Typography } from '@mui/material';
-import { RestaurantMenu, SettingsOutlined } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { RestaurantMenu, SettingsOutlined, ArrowBack } from '@mui/icons-material';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Outlet } from 'react-router-dom';
@@ -9,65 +9,91 @@ import { Outlet } from 'react-router-dom';
 export default function CustomerLayout() {
   const { tableNumber } = useCart();
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const isCartPage = location.pathname === '/sepet';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#FAF7F1' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#fff' }}>
       <AppBar 
         position="sticky" 
         elevation={0} 
         sx={(theme) => ({ 
           position: 'sticky',
           top: 0,
-          backgroundColor: '#fffaf4',
-          color: '#6b4f2d',
-          borderBottom: '1px solid #e8e2d9',
+          backgroundColor: isCartPage ? '#fff' : '#333',
+          color: isCartPage ? '#333' : '#fff',
+          borderBottom: isCartPage ? '1px solid #e0e0e0' : 'none',
           zIndex: 100,
-          boxShadow: 'none',
-          backdropFilter: 'blur(6px)',
+          boxShadow: isCartPage ? 'none' : 'none',
         })}
       >
         <Toolbar disableGutters sx={{ minHeight: { xs: 56, md: 64 } }}>
           <Container maxWidth="lg" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            {/* Sol: Logo + Başlık */}
-            <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', borderBottom: '2px solid transparent', '&:hover': { borderBottomColor: '#d2a679' }, borderRadius: 1 }}>
-              <Box sx={{ 
-                width: 28, 
-                height: 28, 
-                borderRadius: 6, 
-                bgcolor: 'var(--accent)', 
-                color: '#fff',
-                display: 'grid', 
-                placeItems: 'center', 
-                mr: 1.25 
-              }}>
-                <RestaurantMenu fontSize="small" />
+            {/* Sol: Geri Butonu + Başlık veya Logo + Başlık */}
+            {isCartPage ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, height: '100%' }}>
+                <Button
+                  onClick={() => navigate(-1)}
+                  sx={{
+                    minWidth: 24,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 0,
+                    bgcolor: 'transparent',
+                    color: '#333',
+                    padding: 0,
+                    boxShadow: 'none',
+                    '&:hover': {
+                      bgcolor: 'transparent',
+                    },
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ArrowBack sx={{ fontSize: 24, color: '#333' }} />
+                </Button>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700, 
+                    color: '#333', 
+                    margin: 0,
+                    lineHeight: 1,
+                    fontSize: '1.25rem',
+                  }}
+                >
+                  Sepetiniz
+                </Typography>
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                Restoran Menüsü
-              </Typography>
-            </Box>
+            ) : (
+              <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
+                <Box sx={{ 
+                  width: 28, 
+                  height: 28, 
+                  borderRadius: 6, 
+                  bgcolor: '#fff', 
+                  color: '#333',
+                  display: 'grid', 
+                  placeItems: 'center', 
+                  mr: 1.25 
+                }}>
+                  <RestaurantMenu fontSize="small" />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
+                  Restoran Menüsü
+                </Typography>
+              </Box>
+            )}
 
-            {/* Sağ: Butonlar */}
+            {/* Sağ: Admin Butonu */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              {/* Masa Numarası */}
-              <Box sx={{ 
-                px: 1.75, 
-                py: 0.5, 
-                borderRadius: '999px', 
-                bgcolor: 'var(--border-light)', 
-                color: 'var(--text-main)',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                fontFamily: 'var(--font-main)'
-              }}>
-                Masa: {tableNumber ?? '—'}
-              </Box>
-
-              {/* Admin Linki */}
               <Button
                 component={Link}
                 to={isAuthenticated ? '/admin' : '/login'}
-                variant="outlined"
+                variant="contained"
                 startIcon={<SettingsOutlined />}
                 sx={{ 
                   borderRadius: '8px', 
@@ -75,10 +101,11 @@ export default function CustomerLayout() {
                   py: 0.5, 
                   textTransform: 'none', 
                   fontWeight: 600,
-                  borderColor: 'var(--border-soft)',
-                  color: '#6b4f2d',
+                  bgcolor: '#333',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.2)',
                   '&:hover': { 
-                    bgcolor: '#f5ecdf'
+                    bgcolor: '#444'
                   }
                 }}
               >
@@ -90,7 +117,7 @@ export default function CustomerLayout() {
       </AppBar>
 
       {/* Ana İçerik */}
-      <Box component="main" sx={{ flex: 1, bgcolor: '#FAF7F1', width: '100%' }}>
+      <Box component="main" sx={{ flex: 1, bgcolor: '#fff', width: '100%' }}>
         <Outlet />
       </Box>
     </Box>

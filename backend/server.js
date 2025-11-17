@@ -13,6 +13,7 @@ const kitchen = require('./routes/kitchen');
 const cashierRoutes = require('./routes/cashier');
 const adminRoutes = require('./routes/adminRoutes');
 const admin = require('./routes/admin');
+const qrRoutes = require('./routes/qrRoutes');
 
 // Eski route'lar (geriye dönük uyumluluk için - deprecated)
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -26,12 +27,33 @@ const app = express();
 
 // CORS whitelist
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-app.use(
-  cors({
-    origin: [FRONTEND_ORIGIN],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  })
-);
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Development'ta tüm local network'e izin ver, production'da sadece belirtilen origin'e
+const corsOptions = isDevelopment
+  ? {
+      origin: function (origin, callback) {
+        // Development: localhost ve local network IP'lerine izin ver
+        if (!origin || 
+            origin.includes('localhost') || 
+            origin.includes('127.0.0.1') ||
+            origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/) || // 192.168.x.x
+            origin.match(/^http:\/\/10\.\d+\.\d+\.\d+:\d+$/) || // 10.x.x.x
+            origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/)) { // 172.16-31.x.x
+          callback(null, true);
+        } else {
+          callback(null, false);
+        }
+      },
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      credentials: true,
+    }
+  : {
+      origin: [FRONTEND_ORIGIN],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    };
+
+app.use(cors(corsOptions));
 
 // body parser
 app.use(express.json());
@@ -129,6 +151,7 @@ app.use('/api/cashier', cashierRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin', admin);
 app.use('/api/payments', waiterRoutes); // payments endpoint'i waiterRoutes içinde
+app.use('/api/qr', qrRoutes); // QR kod oluşturma
 
 // Eski route'lar (geriye dönük uyumluluk - deprecated)
 // TODO: Bu route'lar kaldırılacak, admin routes kullanılmalı
@@ -164,8 +187,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Sunucu http://localhost:${PORT} üzerinde.`);
+  console.log(`Network: http://0.0.0.0:${PORT} (tüm network interface'lerinden erişilebilir)`);
   if (io) {
     console.log(`Socket.io aktif.`);
   } else {

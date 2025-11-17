@@ -14,4 +14,8 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  server: {
+    host: '0.0.0.0', // Tüm network interface'lerinden erişilebilir
+    port: 5173,
+  },
 })

@@ -22,6 +22,7 @@ import ProductManagementPage from './pages/ProductManagementPage.jsx';
 import OrderManagementPage from './pages/OrderManagementPage.jsx';
 import KitchenDisplayPage from './pages/KitchenDisplayPage.jsx';
 import CartPage from './pages/CartPage.jsx';
+import QRScannerPage from './pages/QRScannerPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 import CashierDashboard from './pages/CashierDashboard.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
@@ -30,26 +31,22 @@ import RoleGuard from './components/RoleGuard.jsx';
 import ViewportProbe from './components/dev/ViewportProbe.tsx';
 
 // QR Kod Okuyucu Bileşen (TableSetter)
-// (Bu kod bloğu doğruydu, değişiklik yok)
+// URL parametresinden masa numarasını alır ve CartContext'e kaydeder
 function TableSetter() {
-  // ... (içeriği aynı, kopyalamaya gerek yok, yukarıdaki kodda mevcut)
   const [searchParams] = useSearchParams(); 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
+  const { setTableNumber } = useCart();
+  
   useEffect(() => {
     const table = searchParams.get('table');
     if (table) {
-      try {
-        localStorage.setItem('tableNumber', JSON.stringify(table));
-      } catch (error) {
-        console.error("Masa N_ manuel kaydedilirken hata:", error);
-      }
+      setTableNumber(table);
     } else {
-      try {
-        localStorage.removeItem('tableNumber');
-      } catch (error) {}
+      setTableNumber(null);
     }
     navigate('/');
-  }, []); 
+  }, [searchParams, setTableNumber, navigate]); 
+  
   return <div>Masa numarası ayarlanıyor, lütfen bekleyin...</div>;
 }
 
@@ -67,6 +64,7 @@ function App() {
         <Route path="/menu" element={<MenuPage />} />
         <Route path="/sepet" element={<CartPage />} />
         <Route path="/order" element={<TableSetter />} />
+        <Route path="/qr-scan" element={<QRScannerPage />} />
       </Route>
 
       {/* 2. GİRİŞ ROTASI */}
