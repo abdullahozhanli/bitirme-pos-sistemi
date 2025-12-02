@@ -13,7 +13,7 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
     },
-    dedupe: ['xlsx', 'jspdf'],
+    dedupe: ['jspdf'],
     conditions: ['import', 'module', 'browser', 'default'],
   },
   server: {
@@ -37,18 +37,18 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['xlsx', 'jspdf', 'jspdf-autotable'],
+    include: ['exceljs', 'jspdf', 'jspdf-autotable'],
     exclude: [],
     esbuildOptions: {
       resolveExtensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.mjs'],
     },
   },
   ssr: {
-    noExternal: ['xlsx', 'jspdf', 'jspdf-autotable'],
+    noExternal: ['exceljs', 'jspdf', 'jspdf-autotable'],
   },
   build: {
     commonjsOptions: {
-      include: [/xlsx/, /jspdf/, /node_modules/],
+      include: [/exceljs/, /jspdf/, /node_modules/],
     },
   },
 })

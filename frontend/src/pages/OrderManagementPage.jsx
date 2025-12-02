@@ -261,24 +261,46 @@ export default function OrderManagementPage(){
 
   const exportToExcel = async () => {
     try {
-      const XLSX = await import('xlsx');
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Siparişler');
+      
       const data = getExportData();
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Siparişler');
       
-      // Kolon genişliklerini ayarla
-      const colWidths = [
-        { wch: 20 }, // id
-        { wch: 15 }, // tableName
-        { wch: 12 }, // total
-        { wch: 15 }, // status
-        { wch: 12 }, // odendi
-        { wch: 20 }  // createdAt
+      // Başlıklar
+      worksheet.columns = [
+        { header: 'ID', key: 'id', width: 20 },
+        { header: 'Masa', key: 'tableName', width: 15 },
+        { header: 'Toplam', key: 'total', width: 12 },
+        { header: 'Durum', key: 'status', width: 15 },
+        { header: 'Ödendi', key: 'odendi', width: 12 },
+        { header: 'Tarih', key: 'createdAt', width: 20 }
       ];
-      worksheet['!cols'] = colWidths;
       
-      XLSX.writeFile(workbook, getFileName('xlsx'));
+      // Başlık stilini ayarla
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF111111' }
+      };
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      
+      // Verileri ekle
+      data.forEach(row => {
+        worksheet.addRow(row);
+      });
+      
+      // Dosyayı indir
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = getFileName('xlsx');
+      a.click();
+      URL.revokeObjectURL(url);
+      
       setExportMenuAnchor(null);
     } catch (error) {
       console.error('Excel export hatası:', error);
