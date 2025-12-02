@@ -180,53 +180,7 @@ export default function WaiterDashboard() {
         </button>
       </section>
 
-      {/* Hazır Siparişler Uyarısı */}
-      {stats.readyOrders > 0 && (
-        <section className="notification-bar">
-          <span>
-            <i className="fas fa-info-circle"></i> {stats.readyOrders} hazır sipariş servis edilmeyi bekliyor
-          </span>
-          <button onClick={() => navigate('/waiter/orders?status=READY,serviste')}>
-            Görüntüle
-          </button>
-        </section>
-      )}
 
-      {/* Hazır Siparişler Listesi */}
-      {readyOrders.length > 0 && (
-        <section className="ready-orders">
-          <div className="section-header">
-            <h2>Hazır Siparişler</h2>
-            <div className="badge">{readyOrders.length} Adet</div>
-          </div>
-          <div className="ready-orders-list">
-            {readyOrders.map((order) => {
-              const orderId = order._id || order.id;
-              const table = order.tableId || order.table;
-              const tableName = typeof table === 'object' ? table?.name : table || 'N/A';
-              const itemsCount = (order.items || order.orderItems || []).length;
-              const orderNumber = orderId ? `SIP-${orderId.toString().substring(0, 8).toUpperCase()}` : 'N/A';
-
-              return (
-                <div key={orderId} className="order-item">
-                  <div className="order-details">
-                    <span className="icon">
-                      <i className="fas fa-check-circle"></i>
-                    </span>
-                    <div>
-                      <div className="order-id">{orderNumber}</div>
-                      <div className="order-info">{tableName} • {itemsCount} ürün</div>
-                    </div>
-                  </div>
-                  <button className="serve-button" onClick={() => navigate('/waiter/orders?status=READY,serviste')}>
-                    Servis Et
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Aktif Masalar Grid */}
       {activeTables.length > 0 && (

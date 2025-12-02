@@ -1,0 +1,95 @@
+.table-card {
+  position: relative;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.table-card.selected {
+  border-color: #1976d2;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+/* Durum Göstergesi */
+.status-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.table-card.available .status-indicator {
+  background: #4caf50;
+}
+
+.table-card.full .status-indicator {
+  background: #f44336;
+}
+
+.table-card.reserved .status-indicator {
+  background: #ff9800;
+}
+
+.table-card.payment_pending .status-indicator {
+  background: #2196f3;
+}
+
+/* Durum Renkleri */
+.table-card.available {
+  border-color: #4caf50;
+  background: #f1f8e9;
+}
+
+.table-card.full {
+  border-color: #f44336;
+  background: #ffebee;
+}
+
+.table-card.reserved {
+  border-color: #ff9800;
+  background: #fff3e0;
+}
+
+.table-card.payment_pending {
+  border-color: #2196f3;
+  background: #e3f2fd;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-card {
+    padding: 16px;
+    min-height: 150px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

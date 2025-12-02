@@ -3,13 +3,20 @@ const User = require('../models/User');
 
 module.exports = async function auth(req, res, next) {
   try {
-    const header = req.headers.authorization;
-
-    if (!header || !header.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Token bulunamadı' });
+    // Önce x-auth-token'ı kontrol et (legacy support)
+    let token = req.headers['x-auth-token'];
+    
+    // Sonra Authorization Bearer'ı kontrol et
+    if (!token) {
+      const header = req.headers.authorization;
+      if (header && header.startsWith('Bearer ')) {
+        token = header.split(' ')[1];
+      }
     }
 
-    const token = header.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'Token bulunamadı' });
+    }
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(payload.id).lean();
@@ -17,14 +24,7 @@ module.exports = async function auth(req, res, next) {
       return res.status(401).json({ message: 'Geçersiz kullanıcı' });
     }
 
-    // Debug: user ve role bilgisini logla
-    console.log('🔍 auth middleware:', {
-      userId: user._id.toString(),
-      userEmail: user.email,
-      userRole: user.role,
-      userRoleType: typeof user.role,
-      isActive: user.isActive
-    });
+    // Debug log'ları kaldırıldı (production için)
 
     req.user = {
       id: user._id.toString(),

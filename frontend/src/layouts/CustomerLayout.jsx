@@ -8,7 +8,7 @@ import { Outlet } from 'react-router-dom';
 
 export default function CustomerLayout() {
   const { tableNumber } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -88,11 +88,11 @@ export default function CustomerLayout() {
               </Box>
             )}
 
-            {/* Sağ: Admin Butonu */}
+            {/* Sağ: Admin Butonu - Her zaman görünür */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Button
                 component={Link}
-                to={isAuthenticated ? '/admin' : '/login'}
+                to={isAuthenticated && user?.role === 'admin' ? '/admin' : '/login'}
                 variant="contained"
                 startIcon={<SettingsOutlined />}
                 sx={{ 

@@ -4,14 +4,7 @@ module.exports = function requireRole(...allowedRoles) {
       return res.status(401).json({ message: 'Giriş yapmalısın' });
     }
 
-    // Debug: req.user ve role bilgisini logla
-    console.log('🔍 requireRole check:', {
-      userEmail: req.user.email,
-      userRole: req.user.role,
-      userRoleType: typeof req.user.role,
-      allowedRoles: allowedRoles,
-      hasAccess: allowedRoles.includes(req.user.role)
-    });
+    // Debug log'ları kaldırıldı (production için)
 
     if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ 

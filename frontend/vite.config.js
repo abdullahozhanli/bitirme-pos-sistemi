@@ -13,6 +13,8 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, './src'),
     },
+    dedupe: ['xlsx', 'jspdf'],
+    conditions: ['import', 'module', 'browser', 'default'],
   },
   server: {
     host: '0.0.0.0', // Tüm network interface'lerinden erişilebilir
@@ -22,7 +24,31 @@ export default defineConfig({
         target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // Network üzerinden erişildiğinde backend IP'sini dinamik olarak ayarla
+            const hostname = req.headers.host?.split(':')[0];
+            if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+              proxyReq.setHeader('host', `${hostname}:5001`);
+            }
+          });
+        },
       },
+    },
+  },
+  optimizeDeps: {
+    include: ['xlsx', 'jspdf', 'jspdf-autotable'],
+    exclude: [],
+    esbuildOptions: {
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.mjs'],
+    },
+  },
+  ssr: {
+    noExternal: ['xlsx', 'jspdf', 'jspdf-autotable'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/xlsx/, /jspdf/, /node_modules/],
     },
   },
 })

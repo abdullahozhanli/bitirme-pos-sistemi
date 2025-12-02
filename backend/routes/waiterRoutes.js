@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const { authMiddleware } = require('../middleware/authMiddleware');
+const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
@@ -11,11 +11,141 @@ const OrderEvent = require('../models/OrderEvent');
 const StockMovement = require('../models/StockMovement');
 
 /**
+ * GET /api/waiter/tables
+ * Tüm masaları listele (garson)
+ */
+router.get('/tables', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+  try {
+    const tables = await Table.find().sort({ name: 1 }).lean();
+    
+    // Her masa için aktif siparişleri kontrol et ve durumları güncelle
+    const updatedTables = await Promise.all(
+      tables.map(async (table) => {
+        // Aktif siparişleri kontrol et (hem table hem tableId field'larını kontrol et)
+        const activeOrders = await Order.find({
+          $or: [
+            { table: table._id },
+            { tableId: table._id }
+          ],
+          status: { $nin: ['tamamlandi', 'PAID', 'SERVED', 'CANCELED', 'iptal'] }
+        }).lean();
+        
+        const orderCount = activeOrders.length;
+        
+        // Masa durumunu aktif siparişlere göre güncelle
+        const correctStatus = orderCount > 0 ? 'dolu' : 'bos';
+        if (table.status !== correctStatus) {
+          // Durum yanlışsa güncelle
+          await Table.findByIdAndUpdate(table._id, { status: correctStatus });
+          table.status = correctStatus;
+          
+          // Socket event gönder
+          const io = req.app.get('io');
+          if (io) {
+            io.to('tables').emit('table:status:changed', {
+              tableId: table._id,
+              status: correctStatus,
+              table: { ...table, status: correctStatus },
+            });
+          }
+        }
+        
+        return {
+          ...table,
+          status: correctStatus
+        };
+      })
+    );
+    
+    res.json(updatedTables);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/waiter/orders
+ * Siparişleri listele (garson)
+ * Query: tableId?, status?, limit?, page?
+ */
+router.get('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+  try {
+    const { tableId, status, limit = 100, page = 1 } = req.query;
+    const filter = {};
+    
+    if (tableId) {
+      filter.table = tableId;
+    }
+    if (status) {
+      // READY status'ü sorgulandığında, hem READY hem de tamamlandi status'ündeki siparişleri döndür
+      // (mutfak ekranından tamamlanan siparişler tamamlandi durumunda)
+      if (status === 'READY') {
+        filter.status = { $in: ['READY', 'tamamlandi'] };
+      } else {
+        filter.status = status;
+      }
+    } else {
+      // Status filtresi yoksa, tamamlanmış siparişleri hariç tut (PAID, SERVED, CANCELED hariç)
+      // Ancak tamamlandi status'ündeki siparişleri dahil et (garson servis edebilir)
+      filter.status = { $nin: ['PAID', 'SERVED', 'CANCELED'] };
+    }
+    
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    const [items, total] = await Promise.all([
+      Order.find(filter)
+        .populate('table', 'name capacity status')
+        .populate('tableId', 'name capacity status')
+        .populate('waiter', 'name email')
+        .populate('waiterId', 'name email')
+        .populate('items.menuItem', 'name price category')
+        .populate('orderItems.product', 'name price category station')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
+    
+    res.json({
+      items,
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / Number(limit)),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/waiter/orders/ready
+ * Hazır siparişleri listele (garson)
+ */
+router.get('/orders/ready', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+  try {
+    const orders = await Order.find({
+      status: { $in: ['READY', 'Hazır', 'hazir'] }
+    })
+      .populate('table', 'name capacity')
+      .populate('waiter', 'name email')
+      .populate('items.menuItem', 'name price')
+      .sort({ createdAt: 1 })
+      .lean();
+    
+    res.json(orders);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * POST /api/waiter/orders
  * Garson sipariş oluşturur
  * Body: { tableId?, tableNumber?, items: [{ productId, qty, note? }], notes? }
  */
-router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   const session = await mongoose.startSession();
   try {
     const { tableId, tableNumber, items, notes } = req.body;
@@ -26,6 +156,37 @@ router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili')
     }
 
     if (!tableId && !tableNumber) {
+      return res.status(400).json({ message: 'Masa ID veya masa numarası zorunlu' });
+    }
+
+    // Eğer sadece tableNumber varsa, tableId'yi bul
+    let finalTableId = tableId;
+    if (!finalTableId && tableNumber) {
+      const table = await Table.findOne({ name: String(tableNumber) });
+      if (table) {
+        finalTableId = table._id;
+      } else {
+        // Eğer tableNumber ile bulunamazsa, tableNumber'ı ID olarak kullanmayı dene
+        try {
+          if (mongoose.Types.ObjectId.isValid(tableNumber)) {
+            const tableById = await Table.findById(tableNumber);
+            if (tableById) {
+              finalTableId = tableById._id;
+            }
+          }
+        } catch (e) {
+          // ID değilse devam et
+        }
+      }
+    }
+
+    // finalTableId hala yoksa ve tableNumber varsa, yeni masa oluştur veya hata ver
+    if (!finalTableId) {
+      if (tableNumber) {
+        // TableNumber'dan table oluşturmayı dene (eğer sistem buna izin veriyorsa)
+        // Ya da hata döndür
+        return res.status(400).json({ message: `Masa bulunamadı: ${tableNumber}. Lütfen geçerli bir masa seçin.` });
+      }
       return res.status(400).json({ message: 'Masa ID veya masa numarası zorunlu' });
     }
 
@@ -78,18 +239,45 @@ router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili')
       }
 
       // Toplam hesapla
-      const totalPrice = orderItems.reduce((sum, item) => sum + item.qty * item.price, 0);
+      const totalPrice = orderItems.reduce((sum, item) => {
+        const itemTotal = (item.qty || 0) * (item.price || 0);
+        return sum + itemTotal;
+      }, 0);
+      
+      // Toplam 0'dan büyük olmalı
+      if (totalPrice <= 0) {
+        throw Object.assign(new Error('Sipariş toplamı 0 olamaz'), { statusCode: 400 });
+      }
 
-      // Order oluştur
-      [created] = await Order.create([{
+      // Debug: Oluşturulacak order'ı logla
+      console.log('🔍 [DEBUG] Order oluşturuluyor:', {
+        finalTableId: finalTableId ? String(finalTableId) : 'NULL',
+        totalPrice,
+        orderItemsCount: orderItems.length,
+        waiterId: waiterId ? String(waiterId) : 'NULL'
+      });
+
+      // Order oluştur - Garson siparişleri direkt mutfağa gönderilir
+      const orderData = {
         orderItems,
-        tableId: tableId || null,
+        table: finalTableId, // Eski model için required field
+        tableId: finalTableId, // Yeni model için
         tableNumber: tableNumber || null,
         waiterId,
         notes: notes || '',
-        totalPrice,
-        status: 'CREATED',
-      }], { session });
+        total: totalPrice, // Eski model için required field
+        totalPrice: totalPrice, // Yeni model için
+        status: 'SENT_TO_KITCHEN', // Garson siparişleri direkt mutfağa gönderilir
+      };
+      
+      console.log('🔍 [DEBUG] Order data:', {
+        hasTable: !!orderData.table,
+        hasTotal: orderData.total !== undefined && orderData.total !== null,
+        totalValue: orderData.total,
+        tableValue: orderData.table ? String(orderData.table) : 'NULL'
+      });
+
+      [created] = await Order.create([orderData], { session });
 
       // StockMovement'lara orderId ekle
       await StockMovement.updateMany(
@@ -103,7 +291,7 @@ router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili')
         actorId: waiterId,
         type: 'status_change',
         from: null,
-        to: 'CREATED',
+        to: 'SENT_TO_KITCHEN',
         metadata: { itemsCount: orderItems.length },
       }], { session });
     });
@@ -115,15 +303,114 @@ router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili')
 
     // Socket.io emit: yeni sipariş oluşturuldu
     const io = req.app.get('io');
+    // Debug log'ları kaldırıldı
     if (io) {
+      const branchId = created.branchId || 'default';
+      
+      // Global order:created event'i
       io.emit('order:created', populated);
+      console.log(`📡 [BACKEND] order:created event'i gönderildi (global)`);
+      
+      // Mutfağa bildir (garson siparişi için)
+      // table:order:created event'ini mutfak room'una gönder
+      const kitchenRoom = `kitchen.${branchId}`;
+      const roomSize = io.sockets.adapter.rooms.get(kitchenRoom)?.size || 0;
+      io.to(kitchenRoom).emit('table:order:created', {
+        tableId: populated.tableId?._id || populated.tableId,
+        order: populated.toObject(),
+        table: populated.tableId,
+      });
+      console.log(`📡 [BACKEND] table:order:created event'i gönderildi: ${kitchenRoom} (${roomSize} client dinliyor)`);
+      
+      // Her item için item:queued event'i gönder (garson siparişleri direkt mutfağa gidebilir)
+      if (populated.orderItems && populated.orderItems.length > 0) {
+        const tableId = populated.tableId?._id || populated.tableId;
+        const tableNumber = populated.tableId?.name || populated.tableNumber || 'N/A';
+        
+        for (const item of populated.orderItems) {
+          const itemData = {
+            itemId: String(item._id),
+            orderId: String(created._id),
+            orderNumber: String(created._id).substring(0, 8),
+            station: item.station || 'hot',
+            productName: item.name || 'Ürün Adı Yok',
+            qty: Number(item.qty) || 1,
+            note: String(item.note || ''),
+            status: item.status || 'QUEUED',
+            order: populated.toObject(),
+            table: populated.tableId?.toObject ? populated.tableId.toObject() : populated.tableId,
+            tableId: tableId,
+            tableNumber: tableNumber,
+            orderSource: 'garson',
+            waiterName: populated.waiterId?.name || populated.waiterId?.email || '',
+            orderNote: populated.notes || '',
+            createdAt: item.createdAt || created.createdAt || new Date(),
+            orderCreatedAt: created.createdAt || new Date(),
+          };
+          // Spesifik istasyona gönder
+          const station = item.station || 'hot';
+          const stationRoom = `kitchen.${branchId}.${station}`;
+          const generalRoom = `kitchen.${branchId}`;
+          const stationRoomSize = io.sockets.adapter.rooms.get(stationRoom)?.size || 0;
+          const generalRoomSize = io.sockets.adapter.rooms.get(generalRoom)?.size || 0;
+          
+          io.to(stationRoom).emit('item:queued', itemData);
+          io.to(generalRoom).emit('item:queued', itemData);
+          console.log(`📡 [BACKEND] item:queued gönderildi: ${item._id} (${station}) -> ${stationRoom} (${stationRoomSize} client) ve ${generalRoom} (${generalRoomSize} client)`);
+        }
+        console.log(`📡 [BACKEND] ${populated.orderItems.length} adet item:queued event'i gönderildi: kitchen.${branchId}`);
+        // Debug log'ları kaldırıldı
+      } else {
+        console.warn(`⚠️ [BACKEND] Garson siparişinde orderItems yok:`, created);
+      }
+      
+      // Masa ile ilgili event'ler
+      const tableId = populated.tableId?._id || populated.tableId;
+      if (tableId) {
+        // Masa durumunu güncelle (bos -> dolu)
+        const Table = require('../models/Table');
+        const table = await Table.findById(tableId);
+        if (table && table.status === 'bos') {
+          table.status = 'dolu';
+          await table.save();
+          
+          io.to('tables').emit('table:status:changed', {
+            tableId: table._id,
+            status: table.status,
+            table: table.toObject(),
+          });
+        }
+        
+        // Masa sipariş event'i
+        io.to('tables').emit('table:order:created', {
+          tableId: tableId,
+          order: populated.toObject(),
+        });
+      }
+    } else {
+      console.warn('⚠️ Socket.io mevcut değil, event gönderilemedi');
     }
 
     res.status(201).json(populated);
   } catch (e) {
-    next(e);
-  } finally {
+    console.error('❌ Garson siparişi oluşturulurken hata:', e);
+    console.error('Hata detayları:', {
+      message: e.message,
+      stack: e.stack,
+      statusCode: e.statusCode,
+      tableId,
+      tableNumber,
+      itemsCount: items?.length
+    });
+    // Session'ı kapat
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     session.endSession();
+    // Hata mesajını döndür
+    const statusCode = e.statusCode || 500;
+    const message = e.message || 'Sipariş oluşturulamadı';
+    res.status(statusCode).json({ message });
   }
 });
 
@@ -131,7 +418,7 @@ router.post('/orders', authMiddleware, requireRole('garson', 'admin', 'yetkili')
  * POST /api/waiter/orders/:id/send
  * Siparişi mutfağa gönderir
  */
-router.post('/orders/:id/send', authMiddleware, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+router.post('/orders/:id/send', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
@@ -163,14 +450,54 @@ router.post('/orders/:id/send', authMiddleware, requireRole('garson', 'admin', '
     const io = req.app.get('io');
     if (io) {
       const branchId = order.branchId || 'default';
+      // Debug log'ları kaldırıldı
+      
+      // table:order:created event'ini de gönder
+      const kitchenRoom = `kitchen.${branchId}`;
+      const roomSize = io.sockets.adapter.rooms.get(kitchenRoom)?.size || 0;
+      io.to(kitchenRoom).emit('table:order:created', {
+        tableId: order.tableId?._id || order.tableId,
+        order: order.toObject(),
+      });
+      console.log(`📡 [BACKEND] table:order:created event'i gönderildi (/send): ${kitchenRoom} (${roomSize} client dinliyor)`);
+      
+      const tableId = order.tableId?._id || order.tableId || order.table?._id || order.table;
+      const tableNumber = order.tableId?.name || order.table?.name || order.tableNumber || 'N/A';
+      
       for (const item of order.orderItems) {
-        io.to(`kitchen.${branchId}.${item.station}`).emit('item:queued', {
-          itemId: item._id,
-          orderId: order._id,
-          station: item.station,
-          order: order,
-        });
+        const itemData = {
+          itemId: String(item._id),
+          orderId: String(order._id),
+          orderNumber: String(order._id).substring(0, 8),
+          station: item.station || 'hot',
+          productName: item.name || 'Ürün Adı Yok',
+          qty: Number(item.qty) || 1,
+          note: String(item.note || ''),
+          status: item.status || 'QUEUED',
+          order: order.toObject(),
+          table: order.tableId?.toObject ? order.tableId.toObject() : (order.table?.toObject ? order.table.toObject() : order.table),
+          tableId: tableId,
+          tableNumber: tableNumber,
+          orderSource: 'garson',
+          waiterName: order.waiterId?.name || order.waiter?.name || '',
+          orderNote: order.notes || '',
+          createdAt: item.createdAt || order.createdAt || new Date(),
+          orderCreatedAt: order.createdAt || new Date(),
+        };
+        // Spesifik istasyona gönder
+        const station = item.station || 'hot';
+        const stationRoom = `kitchen.${branchId}.${station}`;
+        const generalRoom = `kitchen.${branchId}`;
+        const stationRoomSize = io.sockets.adapter.rooms.get(stationRoom)?.size || 0;
+        const generalRoomSize = io.sockets.adapter.rooms.get(generalRoom)?.size || 0;
+        
+        io.to(stationRoom).emit('item:queued', itemData);
+        io.to(generalRoom).emit('item:queued', itemData);
+        console.log(`📡 [BACKEND] item:queued gönderildi (/send): ${item._id} (${station}) -> ${stationRoom} (${stationRoomSize} client) ve ${generalRoom} (${generalRoomSize} client)`);
       }
+      console.log(`📡 [BACKEND] ${order.orderItems.length} adet item:queued event'i gönderildi: kitchen.${branchId}`);
+    } else {
+      console.warn('⚠️ Socket.io mevcut değil, event gönderilemedi');
     }
 
     res.json(order);
@@ -183,7 +510,7 @@ router.post('/orders/:id/send', authMiddleware, requireRole('garson', 'admin', '
  * POST /api/waiter/items/:itemId/served
  * Sipariş kalemini servis edildi olarak işaretler
  */
-router.post('/items/:itemId/served', authMiddleware, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+router.post('/items/:itemId/served', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
     const order = await Order.findOne({ 'orderItems._id': req.params.itemId });
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
@@ -248,7 +575,7 @@ router.post('/items/:itemId/served', authMiddleware, requireRole('garson', 'admi
  * POST /api/payments
  * Ödeme kaydı oluşturur ve order'ı PAID yapar
  */
-router.post('/payments', authMiddleware, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+router.post('/payments', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
     const { orderId, method, amount } = req.body;
 
@@ -309,6 +636,47 @@ router.post('/payments', authMiddleware, requireRole('garson', 'admin', 'yetkili
         revenue: order.totalPrice,
         orders: 1,
       });
+      
+      // Masa ile ilgili event'ler
+      const tableId = order.tableId?._id || order.tableId || order.table?._id || order.table;
+      if (tableId) {
+        // Masa durumunu kontrol et - aktif sipariş var mı?
+        const Table = require('../models/Table');
+        const activeOrders = await Order.countDocuments({
+          table: tableId,
+          status: { $in: ['hazirlaniyor', 'serviste', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] }
+        });
+        
+        const table = await Table.findById(tableId);
+        if (table) {
+          // Aktif sipariş yoksa masayı müsait yap
+          if (activeOrders === 0 && table.status !== 'bos') {
+            table.status = 'bos';
+            await table.save();
+            
+            io.to('tables').emit('table:status:changed', {
+              tableId: table._id,
+              from: table.status,
+              to: 'bos',
+              table: table.toObject()
+            });
+          }
+          
+          // Ödeme yapıldı event'i
+          io.to('tables').emit('table:payment:completed', {
+            tableId: table._id,
+            orderId: order._id,
+            amount: payment.amount,
+            table: table.toObject()
+          });
+          
+          // Masa güncellendi
+          io.to('tables').emit('table:updated', {
+            type: 'payment_completed',
+            table: table.toObject()
+          });
+        }
+      }
     }
 
     res.status(201).json(payment);

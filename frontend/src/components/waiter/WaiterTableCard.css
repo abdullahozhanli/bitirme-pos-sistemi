@@ -1,0 +1,112 @@
+/* WaiterTableCard.css - Garson Masa Kartı Stilleri */
+
+.waiter-table-card {
+  position: relative;
+  background: white;
+  border: 3px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.waiter-table-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.waiter-table-card.selected {
+  border-color: #1976d2;
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Durum Göstergesi - Daha Büyük */
+.status-indicator {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  z-index: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.waiter-table-card.available .status-indicator {
+  background: #4caf50;
+}
+
+.waiter-table-card.full .status-indicator {
+  background: #f44336;
+}
+
+.waiter-table-card.reserved .status-indicator {
+  background: #ff9800;
+}
+
+.waiter-table-card.payment_pending .status-indicator {
+  background: #2196f3;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Durum Renkleri - Daha Canlı */
+.waiter-table-card.available {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, #f1f8e9 0%, #ffffff 100%);
+}
+
+.waiter-table-card.full {
+  border-color: #f44336;
+  background: linear-gradient(135deg, #ffebee 0%, #ffffff 100%);
+}
+
+.waiter-table-card.reserved {
+  border-color: #ff9800;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
+}
+
+.waiter-table-card.payment_pending {
+  border-color: #2196f3;
+  background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .waiter-table-card {
+    padding: 20px;
+    min-height: 200px;
+  }
+  
+  .status-indicator {
+    width: 14px;
+    height: 14px;
+    top: 12px;
+    right: 12px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,53 @@
+/* WaiterTableManagementPage.css */
+
+.waiter-table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .waiter-table-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .waiter-table-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Bildirim Animasyonları */
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseNotification {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+    transform: scale(1.02);
+  }
+}
+
+
+
+
+
+
+
+
+
+

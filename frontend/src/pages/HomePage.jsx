@@ -42,6 +42,7 @@ export default function HomePage() {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const sentinelRef = useRef(null);
+  const categoryScrollRef = useRef(null);
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
@@ -89,7 +90,15 @@ export default function HomePage() {
         setPage(1);
       } catch (err) {
         console.error('Veri çekilirken hata:', err);
-        setError(err.response?.data?.message || err.message || 'Menü yüklenemedi. Lütfen tekrar deneyin.');
+        const errorMsg = err.response?.data?.message || err.message || 'Menü yüklenemedi.';
+        console.error('🔴 Backend bağlantı hatası:', {
+          message: errorMsg,
+          hostname: window.location.hostname,
+          baseURL: axios.defaults.baseURL,
+          status: err.response?.status,
+          statusText: err.response?.statusText
+        });
+        setError(`${errorMsg} Backend: ${axios.defaults.baseURL}`);
       } finally {
         setLoading(false);
       }
@@ -154,6 +163,24 @@ export default function HomePage() {
     observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loadMore]);
+
+  // Kategori scroll için non-passive event listener
+  useEffect(() => {
+    const scrollElement = categoryScrollRef.current;
+    if (!scrollElement) return;
+
+    const handleWheel = (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        scrollElement.scrollLeft += e.deltaY;
+      }
+    };
+
+    scrollElement.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      scrollElement.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
 
   // Filtreleme
   const filteredItems = useMemo(() => {
@@ -272,6 +299,7 @@ export default function HomePage() {
 
           {/* Category Filters - Horizontal Scrollable Pill Strip */}
           <div
+            ref={categoryScrollRef}
             className="chip-scroll"
             style={{
               overflowX: 'auto',
@@ -285,12 +313,6 @@ export default function HomePage() {
               marginRight: '-16px',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
-            }}
-            onWheel={(e) => {
-              if (e.deltaY !== 0) {
-                e.currentTarget.scrollLeft += e.deltaY;
-                e.preventDefault();
-              }
             }}
           >
             <div

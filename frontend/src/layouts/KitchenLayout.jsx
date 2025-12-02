@@ -1,136 +1,200 @@
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Box, IconButton, Divider, useMediaQuery, useTheme } from '@mui/material';
-import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
+import { Outlet } from 'react-router-dom';
+import { AppBar, Toolbar, Typography, Box, IconButton, Badge, Button } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
-import MenuIcon from '@mui/icons-material/Menu';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '../context/AuthContext.jsx';
-
-const drawerWidth = 240;
+import { RefreshContext } from '../context/KitchenRefreshContext.jsx';
+import KitchenOrderHistory from '../components/KitchenOrderHistory.jsx';
 
 export default function KitchenLayout() {
-  const { pathname } = useLocation();
   const { logout } = useAuth();
-  
-  // Mutfak menüsü - sadece mutfak ekranı
-  const menuItems = [
-    { to: '/kitchen', label: 'Gelen Siparişler', icon: <RestaurantMenuIcon /> },
-  ];
+  const [refreshHandler, setRefreshHandler] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  // Açık tema renkleri
+  const lightColors = {
+    bgMain: '#F5F5F5',
+    bgCard: '#FAFAFA',
+    bgCardHover: '#F0F0F0',
+    textPrimary: '#2F2F2F',
+    textSecondary: '#666666',
+    border: '#E0E0E0',
   };
 
-  const drawerContent = (
-    <>
-      <Toolbar />
-      <List>
-        {menuItems.map((it) => {
-          const active = pathname === it.to || (it.to !== '/' && pathname.startsWith(it.to));
-          return (
-            <ListItemButton
-              key={it.to}
-              component={Link}
-              to={it.to}
-              selected={active}
-              onClick={() => isMobile && setMobileOpen(false)}
-              sx={{
-                mx: 1, borderRadius: 2,
-                '&.Mui-selected': { bgcolor: 'rgba(11,11,32,0.06)' },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36, color: active ? 'primary.main' : 'text.secondary' }}>
-                {it.icon}
-              </ListItemIcon>
-              <ListItemText primary={it.label} />
-            </ListItemButton>
-          );
-        })}
-      </List>
-    </>
-  );
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: lightColors.bgMain }}>
+      {/* Header - Tam Genişlik, Sidebar Yok */}
       <AppBar
         position="fixed"
         sx={{
-          zIndex: (t) => t.zIndex.drawer + 1,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          zIndex: (t) => t.zIndex.appBar,
+          width: '100%',
+          ml: 0,
+          bgcolor: lightColors.bgCard,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          borderBottom: `1px solid ${lightColors.border}`,
+          height: '64px',
         }}
       >
-        <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+        <Toolbar sx={{ minHeight: '64px !important', px: 3, justifyContent: 'space-between' }}>
+          {/* Sol Taraf - Logo ve Başlık */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Logo - Mavi Kutu, Beyaz L */}
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: '#2196F3',
+                borderRadius: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '1.5rem',
+              }}
             >
-              <MenuIcon />
+              L
+            </Box>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 700, 
+                fontSize: '1.25rem', 
+                color: lightColors.textPrimary,
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
+              Masa Sipariş Yönetimi
+            </Typography>
+          </Box>
+
+          {/* Sağ Taraf - İkonlar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {refreshHandler && (
+              <IconButton 
+                onClick={refreshHandler} 
+                sx={{ color: lightColors.textPrimary }}
+                title="Yenile"
+              >
+                <RefreshIcon />
+              </IconButton>
+            )}
+            {/* Geçmiş Siparişler Butonu */}
+            <Button
+              onClick={() => setHistoryOpen(true)}
+              sx={{
+                bgcolor: '#E3F2FD',
+                color: '#2196F3',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 2,
+                py: 0.75,
+                borderRadius: 0.5,
+                minWidth: 'auto',
+                '&:hover': {
+                  bgcolor: '#BBDEFB',
+                },
+              }}
+              startIcon={<HistoryIcon />}
+            >
+              Geçmiş Siparişler
+            </Button>
+            {/* Bildirim İkonu */}
+            <IconButton sx={{ color: lightColors.textPrimary }} title="Bildirimler">
+              <Badge badgeContent={0} color="error">
+                <NotificationsIcon />
+              </Badge>
             </IconButton>
-          )}
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 'clamp(16px, 2vw, 20px)' }}>
-            Mutfak Ekranı
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          <IconButton onClick={logout} color="inherit" sx={{ border: '1px solid #E5E5E5', borderRadius: 2, minHeight: '44px', minWidth: '44px' }}>
-            <LogoutIcon />
-          </IconButton>
+            {/* Profil İkonu */}
+            <IconButton sx={{ color: lightColors.textPrimary }} title="Profil">
+              <AccountCircleIcon />
+            </IconButton>
+            {/* Çıkış Butonu - Açık Pembe Arka Plan, Kırmızı Parantezler ve Ok, Kırmızı Yazı */}
+            <Button
+              onClick={logout}
+              sx={{
+                bgcolor: '#FFE5E5',
+                backgroundColor: '#FFE5E5',
+                color: '#F44336',
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 2.5,
+                py: 0.75,
+                borderRadius: 0.5,
+                border: 'none',
+                boxShadow: 'none',
+                minWidth: 'auto',
+                '&:hover': {
+                  bgcolor: '#FFD5D5',
+                  backgroundColor: '#FFD5D5',
+                  boxShadow: 'none',
+                },
+                '&:focus': {
+                  outline: 'none',
+                }
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  color: '#F44336',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  mr: 1.5,
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-block',
+                    fontSize: '1rem',
+                    color: '#F44336',
+                    fontWeight: 600,
+                  }}
+                >
+                  [
+                </Box>
+                <ArrowForwardIcon 
+                  sx={{ 
+                    fontSize: '1.1rem',
+                    color: '#F44336',
+                    mx: 0.2,
+                  }} 
+                />
+              </Box>
+              Çıkış
+            </Button>
+          </Box>
         </Toolbar>
-        <Divider />
       </AppBar>
 
-      {/* Mobile Temporary Drawer */}
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{ keepMounted: true }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-
-      {/* Desktop Persistent Drawer */}
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          width: drawerWidth,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            bgcolor: '#FFFFFF',
-          },
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-
+      {/* Ana İçerik - Sidebar Yok, Tam Genişlik */}
       <Box
         component="main"
         sx={{
           flex: 1,
+          width: '100%',
+          pt: '64px', // Header yüksekliği kadar padding
           p: { xs: 'clamp(8px, 2vw, 16px)', sm: 2, md: 3 },
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          bgcolor: lightColors.bgMain,
         }}
       >
-        <Toolbar />
-        <Outlet />
+        <RefreshContext.Provider value={setRefreshHandler}>
+          <Outlet />
+        </RefreshContext.Provider>
       </Box>
+
+      {/* Geçmiş Siparişler Drawer */}
+      <KitchenOrderHistory open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </Box>
   );
 }

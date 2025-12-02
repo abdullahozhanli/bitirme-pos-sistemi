@@ -8,6 +8,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const DailyAggregate = require('../models/DailyAggregate');
 const OrderEvent = require('../models/OrderEvent');
+const Table = require('../models/Table');
 
 /**
  * GET /api/admin/stats/today
@@ -34,17 +35,7 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    console.log('🔍 Tarih hesaplamaları:', {
-      'now (local)': now.toISOString(),
-      'localToday (local timezone)': localToday.toString(),
-      'localToday (ISO)': localToday.toISOString(),
-      'today (UTC)': today.toISOString(),
-      'tomorrow (UTC)': tomorrow.toISOString(),
-      'KONTROL': {
-        'today === localToday?': today === localToday,
-        'today.getTime() === localToday.getTime()?': today.getTime() === localToday.getTime(),
-      }
-    });
+    // Debug log'ları kaldırıldı
 
     // Dünün tarihleri
     const yesterday = new Date(today);
@@ -66,25 +57,7 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
 
     // Bugünün verileri - Bugün ödenen tüm siparişler (paidAt'e göre)
     // Local timezone'da bugün ödenen siparişleri bul
-    console.log('🔍 Bugünün tarihleri:', { 
-      'today (UTC)': today.toISOString(), 
-      'tomorrow (UTC)': tomorrow.toISOString(),
-      'localToday (local)': localToday.toISOString()
-    });
-    
-    // Önce tüm PAID siparişleri kontrol et
-    const allPaidOrders = await Order.find({ status: 'PAID' }).limit(5).lean();
-    console.log('🔍 Toplam PAID sipariş sayısı:', await Order.countDocuments({ status: 'PAID' }));
-    console.log('🔍 İlk 5 PAID sipariş:', allPaidOrders.map(o => ({
-      id: o._id,
-      status: o.status,
-      paidAt: o.paidAt,
-      paidAtISO: o.paidAt ? o.paidAt.toISOString() : null,
-      createdAt: o.createdAt,
-      total: o.total,
-      'paidAt >= today?': o.paidAt ? (o.paidAt >= today) : false,
-      'paidAt < tomorrow?': o.paidAt ? (o.paidAt < tomorrow) : false,
-    })));
+    // Debug log'ları kaldırıldı
     
     const revenueData = await Order.aggregate([
       {
@@ -111,7 +84,7 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
         }
       }
     ]);
-    console.log('🔍 Revenue aggregation sonucu:', revenueData);
+    // Debug log'ları kaldırıldı
     const revenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
 
     const orders = await Order.countDocuments({
@@ -198,7 +171,7 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
       date: today.toISOString().split('T')[0],
     };
     
-    console.log('📤 Stats endpoint response:', JSON.stringify(responseData, null, 2));
+    // Debug log'ları kaldırıldı
     res.json(responseData);
   } catch (e) {
     next(e);
@@ -394,6 +367,21 @@ router.put('/orders/:id/status', auth, requireRole('admin'), async (req, res, ne
     order.status = status;
     await order.save();
 
+    // Socket.io emit: Sipariş durumu değişti
+    const io = req.app.get('io');
+    if (io) {
+      const tableId = order.table?._id || order.table;
+      if (tableId) {
+        io.to('tables').emit('table:order:status:changed', {
+          tableId: tableId,
+          orderId: order._id,
+          status: status,
+          previousStatus: order.status,
+          order: order.toObject(),
+        });
+      }
+    }
+
     res.json(order);
   } catch (e) {
     next(e);
@@ -440,6 +428,36 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
       metadata: { method: 'admin', amount: updatedOrder.total || updatedOrder.totalPrice || 0 },
     });
 
+    // Socket.io emit: Ödeme yapıldı
+    const io = req.app.get('io');
+    if (io) {
+      const tableId = updatedOrder.table?._id || updatedOrder.table;
+      if (tableId) {
+        // Masa durumunu kontrol et - tüm siparişler ödendiyse müsait yap
+        const Table = require('../models/Table');
+        const activeOrders = await Order.countDocuments({
+          table: tableId,
+          status: { $nin: ['PAID', 'tamamlandi', 'CANCELED', 'iptal'] }
+        });
+        
+        if (activeOrders === 0) {
+          const table = await Table.findByIdAndUpdate(tableId, { status: 'bos' }, { new: true });
+          if (table) {
+            io.to('tables').emit('table:status:changed', {
+              tableId: table._id,
+              status: table.status,
+              table: table.toObject(),
+            });
+          }
+        }
+        
+        io.to('tables').emit('table:payment:completed', {
+          tableId: tableId,
+          order: updatedOrder.toObject(),
+        });
+      }
+    }
+
     res.json(updatedOrder);
   } catch (e) {
     next(e);
@@ -453,7 +471,7 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
 router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { reason } = req.body;
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('table', '_id name');
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
     if (order.status === 'PAID') {
@@ -468,6 +486,36 @@ router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, ne
     order.status = 'CANCELED';
     order.cancelReason = reason || '';
     await order.save();
+    
+    // Socket.io emit: Sipariş iptal edildi
+    const io = req.app.get('io');
+    if (io) {
+      const tableId = order.table?._id || order.table;
+      if (tableId) {
+        io.to('tables').emit('table:order:canceled', {
+          tableId: tableId,
+          order: order.toObject(),
+        });
+        
+        // Masa durumunu kontrol et - aktif sipariş kaldı mı?
+        const Table = require('../models/Table');
+        const activeOrders = await Order.countDocuments({
+          table: tableId,
+          status: { $nin: ['PAID', 'tamamlandi', 'CANCELED', 'iptal'] }
+        });
+        
+        if (activeOrders === 0) {
+          const table = await Table.findByIdAndUpdate(tableId, { status: 'bos' }, { new: true });
+          if (table) {
+            io.to('tables').emit('table:status:changed', {
+              tableId: table._id,
+              status: table.status,
+              table: table.toObject(),
+            });
+          }
+        }
+      }
+    }
 
     // OrderEvent kaydı
     await OrderEvent.create({
@@ -637,6 +685,414 @@ router.delete('/categories/:id', auth, requireRole('admin'), async (req, res, ne
     res.json({ message: 'Kategori silindi', id: deleted._id });
   } catch (e) {
     next(e);
+  }
+});
+
+/**
+ * GET /api/admin/tables
+ * Tüm masaları listele (admin) - sipariş bilgileriyle
+ */
+router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const tables = await Table.find().sort({ name: 1 }).lean();
+    
+    // Her masa için aktif siparişleri ve toplam tutarı hesapla
+    const tablesWithOrders = await Promise.all(
+      tables.map(async (table) => {
+        // Aktif siparişleri kontrol et (hem table hem tableId field'larını kontrol et)
+        const activeOrders = await Order.find({
+          $or: [
+            { table: table._id },
+            { tableId: table._id }
+          ],
+          status: { $nin: ['tamamlandi', 'PAID', 'SERVED', 'CANCELED', 'iptal'] }
+        }).lean();
+        
+        // Sadece gerçekten aktif olan siparişleri filtrele
+        const trulyActiveOrders = activeOrders;
+        
+        const totalAmount = trulyActiveOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const orderCount = trulyActiveOrders.length;
+        
+        // Masa durumunu aktif siparişlere göre güncelle
+        const correctStatus = orderCount > 0 ? 'dolu' : 'bos';
+        if (table.status !== correctStatus) {
+          // Durum yanlışsa güncelle
+          await Table.findByIdAndUpdate(table._id, { status: correctStatus });
+          table.status = correctStatus;
+          
+          // Socket event gönder
+          const io = req.app.get('io');
+          if (io) {
+            io.to('tables').emit('table:status:changed', {
+              tableId: table._id,
+              status: correctStatus,
+              table: { ...table, status: correctStatus },
+            });
+          }
+        }
+        
+        return {
+          ...table,
+          status: correctStatus,
+          activeOrderCount: orderCount,
+          totalAmount: totalAmount,
+          hasActiveOrder: orderCount > 0
+        };
+      })
+    );
+    
+    res.json(tablesWithOrders);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/tables/:id
+ * Tek masa detayı (admin)
+ */
+router.get('/tables/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const table = await Table.findById(req.params.id).lean();
+    if (!table) return res.status(404).json({ message: 'Masa bulunamadı' });
+    
+    // Masa siparişlerini getir
+    const orders = await Order.find({ table: table._id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean();
+    
+    const activeOrders = orders.filter(o => 
+      ['hazirlaniyor', 'serviste', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'].includes(o.status)
+    );
+    
+    res.json({
+      ...table,
+      orders: orders,
+      activeOrders: activeOrders,
+      activeOrderCount: activeOrders.length,
+      totalAmount: activeOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/tables/:id/orders
+ * Masa siparişlerini getir (admin)
+ */
+router.get('/tables/:id/orders', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const { status, limit = 50 } = req.query;
+    const filter = { table: req.params.id };
+    if (status) filter.status = status;
+    
+    const orders = await Order.find(filter)
+      .populate('items.menuItem', 'name price')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .lean();
+    
+    res.json(orders);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/tables
+ * Yeni masa oluştur (admin)
+ */
+router.post('/tables', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const { name, capacity, status } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ message: 'Masa adı gereklidir' });
+    }
+    
+    // Aynı isimde masa var mı kontrol et
+    const existing = await Table.findOne({ name });
+    if (existing) {
+      return res.status(400).json({ message: 'Bu isimde bir masa zaten mevcut' });
+    }
+    
+    const table = new Table({
+      name,
+      capacity: capacity || 4,
+      status: status || 'bos'
+    });
+    
+    await table.save();
+    
+    // Socket.io emit: Yeni masa oluşturuldu
+    const io = req.app.get('io');
+    if (io) {
+      io.to('tables').emit('table:updated', {
+        type: 'created',
+        table: table.toObject(),
+      });
+    }
+    
+    res.status(201).json(table);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * PUT /api/admin/tables/:id
+ * Masa güncelle (admin)
+ */
+router.put('/tables/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const { name, capacity, status } = req.body;
+    const updateData = {};
+    
+    if (name) updateData.name = name;
+    if (capacity !== undefined) updateData.capacity = Number(capacity);
+    if (status) updateData.status = status;
+    
+    // İsim değişiyorsa, aynı isimde başka masa var mı kontrol et
+    if (name) {
+      const existing = await Table.findOne({ name, _id: { $ne: req.params.id } });
+      if (existing) {
+        return res.status(400).json({ message: 'Bu isimde bir masa zaten mevcut' });
+      }
+    }
+    
+    const updated = await Table.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!updated) return res.status(404).json({ message: 'Masa bulunamadı' });
+    
+    // Socket.io emit: Masa güncellendi
+    const io = req.app.get('io');
+    if (io) {
+      io.to('tables').emit('table:updated', {
+        type: 'updated',
+        table: updated.toObject(),
+      });
+      
+      // Durum değiştiyse ayrı event
+      if (status) {
+        io.to('tables').emit('table:status:changed', {
+          tableId: updated._id,
+          status: updated.status,
+          table: updated.toObject(),
+        });
+      }
+    }
+    
+    res.json(updated);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * DELETE /api/admin/tables/:id
+ * Masa sil (admin)
+ */
+router.delete('/tables/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    // Masa üzerinde aktif sipariş var mı kontrol et
+    const activeOrders = await Order.countDocuments({
+      table: req.params.id,
+      status: { $in: ['hazirlaniyor', 'serviste', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] }
+    });
+    
+    if (activeOrders > 0) {
+      return res.status(400).json({ 
+        message: 'Bu masa üzerinde aktif sipariş bulunuyor. Önce siparişleri tamamlayın.' 
+      });
+    }
+    
+    const deleted = await Table.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Masa bulunamadı' });
+    
+    // Socket.io emit: Masa silindi
+    const io = req.app.get('io');
+    if (io) {
+      io.to('tables').emit('table:deleted', {
+        tableId: deleted._id,
+      });
+    }
+    
+    res.json({ message: 'Masa silindi', id: deleted._id });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/qr
+ * QR kodları listele (admin)
+ */
+router.get('/qr', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const QRCode = require('../models/QRCode');
+    const qrCodes = await QRCode.find()
+      .populate('tableId', 'name capacity status')
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    res.json(qrCodes);
+  } catch (error) {
+    console.error('QR kodları listeleme hatası:', error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/admin/qr
+ * QR kod oluştur (admin)
+ * Body: { tableNumber: string }
+ */
+router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const QRCode = require('../models/QRCode');
+    const QRCodeLib = require('qrcode');
+    const { tableNumber } = req.body;
+    
+    if (!tableNumber || !tableNumber.trim()) {
+      return res.status(400).json({ message: 'Masa numarası gerekli' });
+    }
+
+    const tableNum = String(tableNumber).trim();
+
+    // QR kod zaten var mı kontrol et
+    const existingQR = await QRCode.findOne({ tableNumber: tableNum });
+    if (existingQR) {
+      return res.status(400).json({ message: 'Bu masa numarası için QR kod zaten mevcut' });
+    }
+
+    // Masa var mı kontrol et
+    let table = await Table.findOne({ name: tableNum });
+    
+    if (!table) {
+      // Masa yoksa oluştur
+      table = await Table.create({
+        name: tableNum,
+        capacity: 4,
+        status: 'bos'
+      });
+    }
+
+    // Frontend URL'ini oluştur - dinamik olarak request'ten al
+    let frontendOrigin = process.env.FRONTEND_ORIGIN;
+    
+    // Eğer referer header'ı varsa, ondan frontend URL'ini çıkar
+    if (req.headers.referer) {
+      try {
+        const refererUrl = new URL(req.headers.referer);
+        frontendOrigin = `${refererUrl.protocol}//${refererUrl.host}`;
+      } catch (e) {
+        // Referer parse edilemezse devam et
+      }
+    }
+    
+    // Eğer hala yoksa, request hostname'inden oluştur (backend port'undan frontend port'una)
+    if (!frontendOrigin) {
+      const host = req.headers.host || 'localhost:5001';
+      const hostname = host.split(':')[0];
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+      frontendOrigin = isLocalhost 
+        ? 'http://localhost:5173' 
+        : `http://${hostname}:5173`;
+    }
+    
+    const qrUrl = `${frontendOrigin}/order?table=${tableNum}`;
+
+    // QR kod oluştur (base64 data URL)
+    const qrCodeDataURL = await QRCodeLib.toDataURL(qrUrl, {
+      errorCorrectionLevel: 'M',
+      type: 'image/png',
+      quality: 0.92,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      width: 300
+    });
+
+    // QRCode kaydet
+    const qrCodeDoc = await QRCode.create({
+      tableNumber: tableNum,
+      qrUrl,
+      qrCode: qrCodeDataURL,
+      tableId: table._id,
+      createdBy: req.user.id
+    });
+
+    // Populate ile döndür
+    const populated = await QRCode.findById(qrCodeDoc._id)
+      .populate('tableId', 'name capacity status')
+      .populate('createdBy', 'name email')
+      .lean();
+
+    res.status(201).json(populated);
+  } catch (error) {
+    console.error('QR kod oluşturma hatası:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Bu masa numarası için QR kod zaten mevcut' });
+    }
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/admin/qr/:id
+ * QR kod sil (admin)
+ */
+router.delete('/qr/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const QRCode = require('../models/QRCode');
+    const { id } = req.params;
+
+    // QRCode'u bul
+    const qrCode = await QRCode.findById(id);
+    if (!qrCode) {
+      return res.status(404).json({ message: 'QR kod bulunamadı' });
+    }
+
+    // İlgili masayı bul
+    const table = await Table.findById(qrCode.tableId);
+    if (!table) {
+      // Masa yoksa sadece QR kod'u sil
+      await QRCode.findByIdAndDelete(id);
+      return res.json({ message: 'QR kod silindi (masa zaten yoktu)' });
+    }
+
+    // Masada aktif sipariş var mı kontrol et
+    const activeOrders = await Order.find({
+      table: table._id,
+      status: {
+        $in: ['CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY', 'hazirlaniyor', 'serviste']
+      }
+    });
+
+    if (activeOrders.length > 0) {
+      return res.status(400).json({ 
+        message: 'Masada aktif sipariş var, önce siparişleri tamamlayın',
+        activeOrdersCount: activeOrders.length
+      });
+    }
+
+    // QRCode ve Table'ı sil
+    await QRCode.findByIdAndDelete(id);
+    await Table.findByIdAndDelete(table._id);
+
+    res.json({ 
+      message: 'QR kod ve masa başarıyla silindi',
+      deletedQR: id,
+      deletedTable: table._id
+    });
+  } catch (error) {
+    console.error('QR kod silme hatası:', error);
+    next(error);
   }
 });
 

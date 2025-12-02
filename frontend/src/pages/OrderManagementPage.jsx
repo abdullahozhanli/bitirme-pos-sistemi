@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, useMediaQuery, useTheme, Menu } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { useQueryClient } from '@tanstack/react-query';
 import StatusChip from '../components/ui/StatusChip.jsx';
 import OrderDetailModal from '../components/OrderDetailModal.jsx';
+// Dinamik import kullanıyoruz - Vite uyumluluğu için
 
 //
 
@@ -24,6 +25,7 @@ export default function OrderManagementPage(){
   const [paid, setPaid] = useState('');
   const [sortModel, setSortModel] = useState([]);
   const [paginationModel, setPaginationModel] = useState({ pageSize: 10, page: 0 });
+  const [exportMenuAnchor, setExportMenuAnchor] = useState(null);
   const searchRef = useRef(null);
   
   // Mobilde bazı kolonları gizle
@@ -218,6 +220,128 @@ export default function OrderManagementPage(){
     setDetailModalOpen(false);
   };
 
+  // Export fonksiyonları
+  const getExportData = () => {
+    return rows.map(r => ({
+      id: r.id || r._id || '',
+      tableName: r.table?.name || '',
+      total: Number(r.total ?? 0).toFixed(2),
+      status: r.status || '',
+      odendi: r.status === 'tamamlandi' ? 'Evet' : 'Hayır',
+      createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString('tr-TR') : ''
+    }));
+  };
+
+  const getFileName = (extension) => {
+    const date = new Date().toISOString().split('T')[0];
+    return `siparisler_${date}.${extension}`;
+  };
+
+  const exportToCSV = () => {
+    const headersCsv = ['id', 'tableName', 'total', 'status', 'odendi', 'createdAt'];
+    const data = getExportData();
+    const lines = data.map(r => [
+      r.id,
+      r.tableName,
+      r.total,
+      r.status,
+      r.odendi,
+      r.createdAt
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [headersCsv.join(','), ...lines].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = getFileName('csv');
+    a.click();
+    URL.revokeObjectURL(url);
+    setExportMenuAnchor(null);
+  };
+
+  const exportToExcel = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const data = getExportData();
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Siparişler');
+      
+      // Kolon genişliklerini ayarla
+      const colWidths = [
+        { wch: 20 }, // id
+        { wch: 15 }, // tableName
+        { wch: 12 }, // total
+        { wch: 15 }, // status
+        { wch: 12 }, // odendi
+        { wch: 20 }  // createdAt
+      ];
+      worksheet['!cols'] = colWidths;
+      
+      XLSX.writeFile(workbook, getFileName('xlsx'));
+      setExportMenuAnchor(null);
+    } catch (error) {
+      console.error('Excel export hatası:', error);
+      setSnack({open:true, message:'Excel dosyası oluşturulamadı', severity:'error'});
+      setExportMenuAnchor(null);
+    }
+  };
+
+  const exportToPDF = async () => {
+    try {
+      const [{ default: jsPDF }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+      ]);
+      
+      const data = getExportData();
+      const doc = new jsPDF();
+      
+      // Başlık
+      doc.setFontSize(16);
+      doc.text('Sipariş Listesi', 14, 15);
+      
+      // Tarih
+      doc.setFontSize(10);
+      doc.text(`Oluşturulma Tarihi: ${new Date().toLocaleString('tr-TR')}`, 14, 22);
+      
+      // Tablo
+      const tableData = data.map(r => [
+        String(r.id).slice(-6),
+        r.tableName,
+        `${r.total} TL`,
+        r.status,
+        r.odendi,
+        r.createdAt
+      ]);
+      
+      doc.autoTable({
+        head: [['Sipariş ID', 'Masa', 'Toplam', 'Durum', 'Ödendi', 'Tarih']],
+        body: tableData,
+        startY: 28,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [17, 17, 17], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 28 }
+      });
+      
+      doc.save(getFileName('pdf'));
+      setExportMenuAnchor(null);
+    } catch (error) {
+      console.error('PDF export hatası:', error);
+      setSnack({open:true, message:'PDF dosyası oluşturulamadı', severity:'error'});
+      setExportMenuAnchor(null);
+    }
+  };
+
+  const handleExportMenuOpen = (event) => {
+    setExportMenuAnchor(event.currentTarget);
+  };
+
+  const handleExportMenuClose = () => {
+    setExportMenuAnchor(null);
+  };
+
   const cols = [
     { 
       field:'id', 
@@ -359,25 +483,22 @@ export default function OrderManagementPage(){
         </FormControl>
         <Box sx={{ ml: { xs: 0, sm: 'auto' }, display:'flex', alignItems:'center', gap: 1, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'space-between', sm: 'flex-end' } }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: 'clamp(11px, 1.5vw, 14px)' }}>{(search?1:0) + (status?1:0) + (paid?1:0)} filtre</Typography>
-          <Button variant="outlined" onClick={() => {
-            const headersCsv = ['id','tableName','total','status','odendi','createdAt'];
-            const lines = rows.map(r => [
-              r.id || r._id,
-              r.table?.name ?? '',
-              Number(r.total ?? 0).toFixed(2),
-              r.status ?? '',
-              r.status === 'tamamlandi' ? 'Evet' : 'Hayır',
-              r.createdAt ? new Date(r.createdAt).toISOString() : ''
-            ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
-            const csv = [headersCsv.join(','), ...lines].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'orders.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-          }} sx={{ minHeight: '44px', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>İndir (CSV)</Button>
+          <Button 
+            variant="outlined" 
+            onClick={handleExportMenuOpen}
+            sx={{ minHeight: '44px', fontSize: 'clamp(12px, 1.8vw, 14px)' }}
+          >
+            İndir
+          </Button>
+          <Menu
+            anchorEl={exportMenuAnchor}
+            open={Boolean(exportMenuAnchor)}
+            onClose={handleExportMenuClose}
+          >
+            <MenuItem onClick={exportToCSV}>CSV olarak indir</MenuItem>
+            <MenuItem onClick={exportToExcel}>Excel (.xlsx) olarak indir</MenuItem>
+            <MenuItem onClick={exportToPDF}>PDF olarak indir</MenuItem>
+          </Menu>
         </Box>
       </Box>
 

@@ -39,18 +39,19 @@ const corsOptions = isDevelopment
             origin.includes('127.0.0.1') ||
             origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/) || // 192.168.x.x
             origin.match(/^http:\/\/10\.\d+\.\d+\.\d+:\d+$/) || // 10.x.x.x
-            origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/)) { // 172.16-31.x.x
+            origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/) || // 172.16-31.x.x
+            origin.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/)) { // Herhangi bir IP (development için)
           callback(null, true);
         } else {
           callback(null, false);
         }
       },
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       credentials: true,
     }
   : {
       origin: [FRONTEND_ORIGIN],
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     };
 
 app.use(cors(corsOptions));
@@ -82,7 +83,10 @@ try {
     cors: {
       origin: FRONTEND_ORIGIN,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
   });
   console.log('✅ Socket.io yüklendi');
 } catch (err) {
@@ -93,14 +97,39 @@ try {
 // Socket.io connection handler
 if (io) {
   io.on('connection', (socket) => {
-    console.log('✅ Socket.io client bağlandı:', socket.id);
+    // Debug: Tüm gelen event'leri logla (sadece development'ta)
+    if (process.env.NODE_ENV === 'development') {
+      socket.onAny((event, ...args) => {
+        // Callback fonksiyonunu loglamamak için kontrol
+        const filteredArgs = args.filter(arg => typeof arg !== 'function');
+        if (event && event.startsWith && event.startsWith('subscribe:')) {
+          console.log(`🔍 [DEBUG] Client ${socket.id} event gönderdi: ${event}`, filteredArgs);
+        }
+      });
+    }
 
     // Kitchen station subscription
     socket.on('subscribe:kitchen', (data) => {
-      const { branchId, station } = data;
-      const room = `kitchen.${branchId || 'default'}.${station || '*'}`;
-      socket.join(room);
-      console.log(`📡 Socket ${socket.id} kitchen room'a katıldı: ${room}`);
+      const { branchId, station } = data || {};
+      const branch = branchId || 'default';
+      
+      if (station === '*' || !station) {
+        // Tüm istasyonlara subscribe ol
+        const stations = ['hot', 'cold', 'bar', 'dessert'];
+        stations.forEach(st => {
+          const room = `kitchen.${branch}.${st}`;
+          socket.join(room);
+        });
+        // Genel mutfak room'una da katıl
+        const generalRoom = `kitchen.${branch}`;
+        socket.join(generalRoom);
+      } else {
+        // Spesifik istasyona subscribe ol
+        const room = `kitchen.${branch}.${station}`;
+        socket.join(room);
+        // Genel mutfak room'una da katıl
+        socket.join(`kitchen.${branch}`);
+      }
     });
 
     // Waiter subscription
@@ -109,7 +138,6 @@ if (io) {
       if (waiterId) {
         const room = `waiter.${waiterId}`;
         socket.join(room);
-        console.log(`📡 Socket ${socket.id} waiter room'a katıldı: ${room}`);
       }
     });
 
@@ -118,11 +146,15 @@ if (io) {
       const { branchId } = data;
       const room = `admin.metrics.${branchId || 'default'}`;
       socket.join(room);
-      console.log(`📡 Socket ${socket.id} admin room'a katıldı: ${room}`);
+    });
+
+    // Tables subscription (admin ve garson için)
+    socket.on('subscribe:tables', () => {
+      socket.join('tables');
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ Socket.io client ayrıldı:', socket.id);
+      // Sessizce ayrıl
     });
   });
 }
@@ -156,15 +188,24 @@ app.use('/api/qr', qrRoutes); // QR kod oluşturma
 // Eski route'lar (geriye dönük uyumluluk - deprecated)
 // TODO: Bu route'lar kaldırılacak, admin routes kullanılmalı
 app.use('/api/categories', (req, res, next) => {
-  console.warn('[DEPRECATED] /api/categories kullanılıyor. /api/admin/categories kullanın.');
+  // Sadece POST/PUT/DELETE için uyarı göster (GET public endpoint)
+  if (req.method !== 'GET') {
+    console.warn('[DEPRECATED] /api/categories kullanılıyor. /api/admin/categories kullanın.');
+  }
   next();
 }, categoryRoutes);
 app.use('/api/products', (req, res, next) => {
-  console.warn('[DEPRECATED] /api/products kullanılıyor. /api/admin/products kullanın.');
+  // Sadece POST/PUT/DELETE için uyarı göster (GET public endpoint)
+  if (req.method !== 'GET') {
+    console.warn('[DEPRECATED] /api/products kullanılıyor. /api/admin/products kullanın.');
+  }
   next();
 }, productRoutes);
 app.use('/api/orders', (req, res, next) => {
-  console.warn('[DEPRECATED] /api/orders kullanılıyor. /api/admin/orders kullanın.');
+  // PUT/DELETE için uyarı göster (GET ve POST public kalabilir)
+  if (req.method === 'PUT' || req.method === 'DELETE') {
+    console.warn('[DEPRECATED] /api/orders kullanılıyor. /api/admin/orders kullanın.');
+  }
   next();
 }, orderRoutes);
 app.use('/api/analytics', (req, res, next) => {

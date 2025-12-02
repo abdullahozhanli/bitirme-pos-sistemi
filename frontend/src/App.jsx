@@ -20,11 +20,14 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import CategoryManagementPage from './pages/CategoryManagementPage.jsx';
 import ProductManagementPage from './pages/ProductManagementPage.jsx';
 import OrderManagementPage from './pages/OrderManagementPage.jsx';
+import AdminTableManagementPage from './pages/AdminTableManagementPage.jsx';
 import KitchenDisplayPage from './pages/KitchenDisplayPage.jsx';
 import CartPage from './pages/CartPage.jsx';
 import QRScannerPage from './pages/QRScannerPage.jsx';
 import QRCodeManagementPage from './pages/QRCodeManagementPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
+import WaiterTableManagementPage from './pages/WaiterTableManagementPage.jsx';
+import WaiterOrdersPage from './pages/WaiterOrdersPage.jsx';
 import CashierDashboard from './pages/CashierDashboard.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
@@ -76,7 +79,9 @@ function App() {
       {/* 3. GARSON ROTALARI (KORUMALI) - garson, admin, yetkili */}
       <Route path="/waiter" element={<RoleGuard allowedRoles={['garson', 'admin', 'yetkili']}><WaiterLayout /></RoleGuard>}>
         <Route index element={<WaiterDashboard />} />
-        <Route path="tables" element={<WaiterDashboard />} />
+        <Route path="tables" element={<WaiterTableManagementPage />} />
+        <Route path="orders" element={<WaiterOrdersPage />} />
+        <Route path="orders/create" element={<WaiterOrdersPage />} />
       </Route>
 
       {/* 4. MUTFAK ROTALARI (KORUMALI) - mutfak, admin, yetkili */}
@@ -95,6 +100,7 @@ function App() {
         {/* 'RoleGuard' içindeki 'AdminLayout'un <Outlet>'ine yüklenecekler: */}
         <Route index element={<AdminDashboard />} /> 
         <Route path="siparisler" element={<OrderManagementPage />} />
+        <Route path="masalar" element={<AdminTableManagementPage />} />
         <Route path="urunler" element={<ProductManagementPage />} />
         <Route path="kategoriler" element={<CategoryManagementPage />} />
         <Route path="qr-kodlar" element={<QRCodeManagementPage />} />

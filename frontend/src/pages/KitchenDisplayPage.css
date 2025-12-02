@@ -1,0 +1,90 @@
+/* Mutfak Ekranı Grid Layout */
+.kitchen-items-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+/* Sipariş Kartları */
+.kitchen-order-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 200px;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.kitchen-order-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Yeni sipariş kartları için hover durumunda sarı border */
+.kitchen-order-card.new-order:hover {
+  border: 2px solid #FF9800 !important;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+/* 20 dakikadan fazla bekleyen siparişler için kırmızı border ve pulse animasyonu */
+.kitchen-order-card.delayed-order {
+  border: 3px solid #F44336 !important;
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.5);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(244, 67, 54, 0.8);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kitchen-items-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 4px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .kitchen-items-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1440px) {
+  .kitchen-items-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1441px) {
+  .kitchen-items-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+/* Hazır ürünler için çizgi efekti */
+.kitchen-item-ready {
+  text-decoration: line-through !important;
+  text-decoration-line: line-through !important;
+  text-decoration-color: #666 !important;
+  color: #666 !important;
+  opacity: 0.7;
+}
+
+.kitchen-item-ready.MuiTypography-root {
+  text-decoration: line-through !important;
+  text-decoration-line: line-through !important;
+}

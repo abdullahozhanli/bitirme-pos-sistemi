@@ -1,43 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, Button, CircularProgress, Alert, TextField, IconButton } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Button, CircularProgress, Alert, TextField, IconButton, Snackbar } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
 import QrCodeIcon from '@mui/icons-material/QrCode';
 import axios from 'axios';
 import PageHeader from '../components/PageHeader';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 
 export default function QRCodeManagementPage() {
   const [qrCodes, setQrCodes] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tableNumber, setTableNumber] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, qrCode: null });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  // QR kodları veritabanından çek
+  const fetchQRCodes = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+      
+      const response = await axios.get('/api/admin/qr', { headers });
+      setQrCodes(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error('QR kodları yükleme hatası:', err);
+      setError(err.response?.data?.message || 'QR kodları yüklenemedi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchQRCodes();
+  }, []);
 
   // QR kod oluştur
   const generateQR = async (tableNum) => {
     try {
       setGenerating(true);
       setError('');
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
       
-      const response = await axios.get(`/api/qr/generate/${tableNum}/json`);
-      
-      const newQR = {
-        tableNumber: tableNum,
-        qrUrl: response.data.qrUrl,
-        qrCode: response.data.qrCode,
-      };
-      
-      setQrCodes(prev => {
-        const exists = prev.find(qr => qr.tableNumber === tableNum);
-        if (exists) {
-          return prev.map(qr => qr.tableNumber === tableNum ? newQR : qr);
-        }
-        return [...prev, newQR];
-      });
+      await axios.post('/api/admin/qr', { tableNumber: tableNum }, { headers });
       
       setTableNumber('');
+      setSnackbar({ 
+        open: true, 
+        message: `QR kod ve masa başarıyla oluşturuldu (Masa ${tableNum})`, 
+        severity: 'success' 
+      });
+      
+      // QR kodları yeniden çek
+      await fetchQRCodes();
     } catch (err) {
       console.error('QR kod oluşturma hatası:', err);
-      setError(err.response?.data?.message || 'QR kod oluşturulamadı');
+      const errorMsg = err.response?.data?.message || 'QR kod oluşturulamadı';
+      setError(errorMsg);
+      setSnackbar({ open: true, message: errorMsg, severity: 'error' });
     } finally {
       setGenerating(false);
     }
@@ -64,35 +88,31 @@ export default function QRCodeManagementPage() {
     }
   };
 
-  // Tüm masalar için QR kod oluştur (1-20 arası)
-  const generateAllQRs = async () => {
-    setLoading(true);
-    setError('');
+  // QR kod sil
+  const handleDeleteQR = async () => {
+    if (!deleteDialog.qrCode) return;
     
     try {
-      const promises = [];
-      for (let i = 1; i <= 20; i++) {
-        promises.push(
-          axios.get(`/api/qr/generate/${i}/json`)
-            .then(res => ({
-              tableNumber: String(i),
-              qrUrl: res.data.qrUrl,
-              qrCode: res.data.qrCode,
-            }))
-            .catch(err => {
-              console.error(`Masa ${i} QR kodu oluşturulamadı:`, err);
-              return null;
-            })
-        );
-      }
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
       
-      const results = await Promise.all(promises);
-      setQrCodes(results.filter(qr => qr !== null));
+      await axios.delete(`/api/admin/qr/${deleteDialog.qrCode._id}`, { headers });
+      
+      setSnackbar({ 
+        open: true, 
+        message: `QR kod ve masa başarıyla silindi (Masa ${deleteDialog.qrCode.tableNumber})`, 
+        severity: 'success' 
+      });
+      
+      setDeleteDialog({ open: false, qrCode: null });
+      
+      // QR kodları yeniden çek
+      await fetchQRCodes();
     } catch (err) {
-      console.error('Toplu QR kod oluşturma hatası:', err);
-      setError('QR kodlar oluşturulamadı');
-    } finally {
-      setLoading(false);
+      console.error('QR kod silme hatası:', err);
+      const errorMsg = err.response?.data?.message || 'QR kod silinemedi';
+      setSnackbar({ open: true, message: errorMsg, severity: 'error' });
+      setDeleteDialog({ open: false, qrCode: null });
     }
   };
 
@@ -141,24 +161,37 @@ export default function QRCodeManagementPage() {
                 {generating ? 'Oluşturuluyor...' : 'QR Kod Oluştur'}
               </Button>
             </form>
-            <Button
-              variant="outlined"
-              onClick={generateAllQRs}
-              disabled={loading}
-              startIcon={loading ? <CircularProgress size={20} /> : <QrCodeIcon />}
-            >
-              {loading ? 'Oluşturuluyor...' : 'Tüm Masalar (1-20)'}
-            </Button>
           </Box>
         </CardContent>
       </Card>
 
       {/* QR Kod Listesi */}
-      {qrCodes.length > 0 ? (
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <CircularProgress />
+        </Box>
+      ) : qrCodes.length > 0 ? (
         <Grid container spacing={3}>
           {qrCodes.map((qr) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={qr.tableNumber}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={qr._id || qr.tableNumber}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {/* Silme Butonu */}
+                <IconButton
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 1,
+                    bgcolor: 'error.main',
+                    color: 'white',
+                    '&:hover': { bgcolor: 'error.dark' }
+                  }}
+                  size="small"
+                  onClick={() => setDeleteDialog({ open: true, qrCode: qr })}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+                
                 <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Typography variant="h6" gutterBottom>
                     Masa {qr.tableNumber}
@@ -195,15 +228,23 @@ export default function QRCodeManagementPage() {
                     {qr.qrUrl}
                   </Typography>
                   
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    startIcon={<DownloadIcon />}
-                    onClick={() => downloadQR(qr.tableNumber)}
-                    size="small"
-                  >
-                    İndir
-                  </Button>
+                  <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      startIcon={<DownloadIcon />}
+                      onClick={() => downloadQR(qr.tableNumber)}
+                      size="small"
+                    >
+                      İndir
+                    </Button>
+                  </Box>
+                  
+                  {qr.createdAt && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, fontSize: '0.7rem' }}>
+                      {new Date(qr.createdAt).toLocaleDateString('tr-TR')}
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
@@ -218,12 +259,39 @@ export default function QRCodeManagementPage() {
                 Henüz QR kod oluşturulmadı
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Yukarıdaki formu kullanarak masa için QR kod oluşturun
+                Yukarıdaki formu kullanarak masa için QR kod oluşturun. QR kod oluşturulduğunda otomatik olarak masa da oluşturulur.
               </Typography>
             </Box>
           </CardContent>
         </Card>
       )}
+
+      {/* Silme Onay Dialog'u */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title="QR Kod Sil"
+        description={`Masa ${deleteDialog.qrCode?.tableNumber} için QR kod ve masa silinecek. Bu işlem geri alınamaz.\n\nMasada aktif sipariş varsa silme işlemi yapılamaz.`}
+        onClose={() => setDeleteDialog({ open: false, qrCode: null })}
+        onConfirm={handleDeleteQR}
+        confirmText="Sil"
+        cancelText="Vazgeç"
+      />
+
+      {/* Snackbar - Başarı/Hata Mesajları */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -58,7 +58,7 @@ export default function LoginPage() {
         if (userData?.role === 'admin') {
           navigate('/admin');
         } else if (userData?.role === 'garson' || userData?.role === 'yetkili') {
-          navigate('/waiter/tables');
+          navigate('/waiter');
         } else if (userData?.role === 'mutfak') {
           navigate('/kitchen');
         } else {

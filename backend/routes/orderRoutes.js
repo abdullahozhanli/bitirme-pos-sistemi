@@ -80,13 +80,7 @@ router.post('/', async (req, res, next) => {
     const Product = require('../models/Product');
     const itemIds = items.map(i => i.menuItemId || i.productId).filter(Boolean);
     
-    // Debug: Gelen veriyi logla
-    console.log('🔍 Gelen sipariş verisi:', {
-      tableNumber,
-      itemsCount: items.length,
-      itemIds: itemIds,
-      items: items.map(i => ({ menuItemId: i.menuItemId, productId: i.productId, qty: i.qty }))
-    });
+    // Debug log'ları kaldırıldı
 
     if (itemIds.length === 0) {
       return res.status(400).json({ message: 'Geçerli ürün ID bulunamadı' });
@@ -102,13 +96,7 @@ router.post('/', async (req, res, next) => {
     const products = notFoundIds.length > 0 ? await Product.find({ _id: { $in: notFoundIds } }).lean() : [];
     const productsMap = Object.fromEntries(products.map(p => [String(p._id), p]));
     
-    // Debug: Bulunan öğeleri logla
-    console.log('🔍 Bulunan öğeler:', {
-      menuItemsCount: menuItems.length,
-      productsCount: products.length,
-      menuItems: menuItems.map(m => ({ id: m._id, name: m.name, price: m.price })),
-      products: products.map(p => ({ id: p._id, name: p.name, price: p.price }))
-    });
+    // Debug log'ları kaldırıldı
 
     if (menuItems.length === 0 && products.length === 0) {
       return res.status(400).json({ message: 'Menü öğeleri veya ürünler bulunamadı' });
@@ -178,15 +166,7 @@ router.post('/', async (req, res, next) => {
     // Total hesapla
     const total = orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-    // Debug: Oluşturulacak sipariş verilerini logla
-    console.log('🔍 Sipariş oluşturma:', {
-      tableId: table._id,
-      tableIdType: typeof table._id,
-      itemsCount: orderItems.length,
-      total: total,
-      totalType: typeof total,
-      orderItems: orderItems.map(i => ({ name: i.name, qty: i.qty, price: i.price }))
-    });
+    // Debug log'ları kaldırıldı
 
     // Validation: table._id ve total kontrolü
     if (!table._id) {
@@ -209,12 +189,97 @@ router.post('/', async (req, res, next) => {
     });
 
     // Table status'unu güncelle
-    await Table.findByIdAndUpdate(table._id, { status: 'dolu' });
+    const updatedTable = await Table.findByIdAndUpdate(table._id, { status: 'dolu' }, { new: true });
 
     // Populate ile döndür
     const populated = await Order.findById(order._id)
       .populate('table', 'name capacity')
       .populate('items.menuItem', 'name price category');
+
+    // Socket.io emit: Yeni sipariş oluşturuldu ve masa durumu değişti
+    try {
+      const io = req.app.get('io');
+      // Debug log'ları kaldırıldı
+      if (io) {
+        // Masa durumu değişti
+        io.to('tables').emit('table:status:changed', {
+          tableId: table._id,
+          from: 'bos',
+          to: 'dolu',
+          table: updatedTable.toObject()
+        });
+        
+        // Yeni sipariş oluşturuldu (QR siparişi)
+        io.to('tables').emit('table:order:created', {
+          tableId: table._id,
+          order: populated.toObject(),
+          table: updatedTable.toObject()
+        });
+        
+        // Mutfağa bildir (QR siparişi için)
+        const branchId = 'default';
+        // QR siparişleri eski model kullanıyor (items array'i)
+        const itemsToNotify = order.items || orderItems || [];
+        
+        // Debug log'ları kaldırıldı
+        
+        // table:order:created event'ini mutfak room'una gönder (sadece bir kez)
+        const kitchenRoom = `kitchen.${branchId}`;
+        const roomSize = io.sockets.adapter.rooms.get(kitchenRoom)?.size || 0;
+        io.to(kitchenRoom).emit('table:order:created', {
+          tableId: table._id,
+          order: populated.toObject(),
+          table: updatedTable.toObject()
+        });
+        console.log(`📡 [BACKEND] table:order:created event'i gönderildi: ${kitchenRoom} (${roomSize} client dinliyor)`);
+        
+        // Her item için item:queued event'i gönder
+        for (let idx = 0; idx < itemsToNotify.length; idx++) {
+          const item = itemsToNotify[idx];
+          // Eski model için station yok, default 'hot' kullan
+          const station = item.station || 'hot';
+          // itemId oluştur (eski model için orderId-index formatı)
+          const itemId = item._id ? String(item._id) : `${String(order._id)}-${idx}`;
+          const itemData = {
+            itemId: itemId,
+            orderId: String(order._id),
+            orderNumber: String(order._id).substring(0, 8),
+            station: station,
+            productName: item.name || item.product?.name || 'Ürün Adı Yok',
+            qty: Number(item.qty) || 1,
+            note: String(item.note || ''),
+            status: 'QUEUED',
+            order: populated.toObject(),
+            table: populated.table || updatedTable.toObject(),
+            tableId: table._id,
+            tableNumber: tableNumber,
+            orderSource: 'qr',
+            createdAt: order.createdAt || new Date(),
+            orderCreatedAt: order.createdAt || new Date(),
+          };
+          // Spesifik istasyona gönder
+          const stationRoom = `kitchen.${branchId}.${station}`;
+          const generalRoom = `kitchen.${branchId}`;
+          const stationRoomSize = io.sockets.adapter.rooms.get(stationRoom)?.size || 0;
+          const generalRoomSize = io.sockets.adapter.rooms.get(generalRoom)?.size || 0;
+          
+          io.to(stationRoom).emit('item:queued', itemData);
+          io.to(generalRoom).emit('item:queued', itemData);
+          console.log(`📡 [BACKEND] item:queued gönderildi: ${itemId} (${station}) -> ${stationRoom} (${stationRoomSize} client) ve ${generalRoom} (${generalRoomSize} client)`);
+        }
+        console.log(`📡 [BACKEND] ${itemsToNotify.length} adet item:queued event'i gönderildi: kitchen.${branchId}`);
+        
+        // Masa güncellendi
+        io.to('tables').emit('table:updated', {
+          type: 'order_created',
+          table: updatedTable.toObject()
+        });
+      } else {
+        console.warn('⚠️ [BACKEND] Socket.io mevcut değil, QR siparişi event\'leri gönderilemedi');
+      }
+    } catch (err) {
+      console.error('❌ [BACKEND] Socket.io emit hatası:', err);
+    }
 
     res.status(201).json(populated);
   } catch (e) {
