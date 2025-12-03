@@ -13,7 +13,10 @@ router.get('/pending', async (req, res) => {
 
 router.post('/checkout/:tableId', async (req, res) => {
   const { tableId } = req.params;
-  const orders = await Order.find({ table: tableId, status: { $in: ['serviste', 'hazirlaniyor'] } });
+  const orders = await Order.find({ 
+    $or: [{ tableId: tableId }, { table: tableId }], 
+    status: { $in: ['serviste', 'hazirlaniyor'] } 
+  });
   for (const o of orders) {
     o.status = 'tamamlandi';
     await o.save();

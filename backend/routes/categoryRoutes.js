@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router(); 
 const Category = require('../models/Category');
+const Product = require('../models/Product');
 const authMiddleware = require('../middleware/authMiddleware'); // YENİ: Güvenlik görevlisini import et
 
 // --- API Rotalarımız ---
@@ -45,16 +46,32 @@ router.get('/', async (req, res, next) => {
 
 /**
  * @route   DELETE /api/categories/:id
- * @desc    Bir kategoriyi ID'sine göre siler
+ * @desc    Bir kategoriyi ID'sine göre siler (Cascade delete - ürün kontrolü ile)
  * @access  Private (Artık Korumalı)
  */
 // YENİ: Araya 'authMiddleware' eklendi.
 router.delete('/:id', authMiddleware, async (req, res, next) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const categoryId = req.params.id;
+    
+    // Kategori var mı kontrol et
+    const category = await Category.findById(categoryId);
     if (!category) {
       return res.status(404).json({ message: 'Kategori bulunamadı' });
     }
+    
+    // Bu kategoriye ait ürün var mı kontrol et
+    const productsCount = await Product.countDocuments({ category: categoryId });
+    if (productsCount > 0) {
+      return res.status(400).json({ 
+        message: `Bu kategoriye ait ${productsCount} ürün bulunmaktadır. Kategoriyi silmek için önce ürünleri silin veya başka bir kategoriye taşıyın.`,
+        productsCount,
+        categoryName: category.name
+      });
+    }
+    
+    // Ürün yoksa kategoriyi sil
+    await Category.findByIdAndDelete(categoryId);
     res.json({ message: 'Kategori başarıyla silindi' });
   } catch (error) {
     console.error(error.message);

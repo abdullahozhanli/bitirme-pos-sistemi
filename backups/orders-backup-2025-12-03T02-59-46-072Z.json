@@ -1,0 +1,5758 @@
+[
+  {
+    "_id": "690265fb85b720cd97978634",
+    "orderItems": [
+      {
+        "name": "kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "690265fb85b720cd97978635"
+      },
+      {
+        "name": "hamburger",
+        "qty": 1,
+        "price": 180,
+        "product": "69014609eff2068e2b1e15f9",
+        "_id": "690265fb85b720cd97978636"
+      }
+    ],
+    "totalPrice": 225,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-10-29T19:07:39.641Z",
+    "updatedAt": "2025-10-29T19:07:39.641Z",
+    "__v": 0
+  },
+  {
+    "_id": "69037f4f9952b42cda2c6f75",
+    "orderItems": [
+      {
+        "name": "musakka",
+        "qty": 1,
+        "price": 55,
+        "product": "690261b485b720cd97978618",
+        "_id": "69037f4f9952b42cda2c6f76"
+      },
+      {
+        "name": "kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "69037f4f9952b42cda2c6f77"
+      },
+      {
+        "name": "hamburger",
+        "qty": 1,
+        "price": 180,
+        "product": "69014609eff2068e2b1e15f9",
+        "_id": "69037f4f9952b42cda2c6f78"
+      },
+      {
+        "name": "içli köfte ",
+        "qty": 1,
+        "price": 100,
+        "product": "69013809545f6d15d6477d1c",
+        "_id": "69037f4f9952b42cda2c6f79"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 380,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-10-30T15:07:59.790Z",
+    "updatedAt": "2025-10-30T22:48:02.244Z",
+    "__v": 0
+  },
+  {
+    "_id": "690380e89952b42cda2c6f83",
+    "orderItems": [
+      {
+        "name": "musakka",
+        "qty": 1,
+        "price": 55,
+        "product": "690261b485b720cd97978618",
+        "_id": "690380e89952b42cda2c6f84"
+      },
+      {
+        "name": "kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "690380e89952b42cda2c6f85"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 100,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-10-30T15:14:48.835Z",
+    "updatedAt": "2025-10-30T22:48:00.100Z",
+    "__v": 0
+  },
+  {
+    "_id": "6903958871e1bb5bd12b4738",
+    "orderItems": [
+      {
+        "name": "kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "6903958871e1bb5bd12b4739"
+      },
+      {
+        "name": "hamburger",
+        "qty": 2,
+        "price": 180,
+        "product": "69014609eff2068e2b1e15f9",
+        "_id": "6903958871e1bb5bd12b473a"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 405,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-10-30T16:42:48.984Z",
+    "updatedAt": "2025-10-30T20:42:53.064Z",
+    "__v": 0
+  },
+  {
+    "_id": "6903d4dbbefa2b7504ea19d3",
+    "orderItems": [
+      {
+        "name": "musakka",
+        "qty": 1,
+        "price": 55,
+        "product": "690261b485b720cd97978618",
+        "_id": "6903d4dbbefa2b7504ea19d4"
+      },
+      {
+        "name": "kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "6903d4dbbefa2b7504ea19d5"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 100,
+    "status": "İptal Edildi",
+    "isPaid": false,
+    "createdAt": "2025-10-30T21:12:59.768Z",
+    "updatedAt": "2025-10-30T22:47:58.242Z",
+    "__v": 0
+  },
+  {
+    "_id": "6903d50abefa2b7504ea19fc",
+    "orderItems": [
+      {
+        "name": "musakka",
+        "qty": 1,
+        "price": 55,
+        "product": "690261b485b720cd97978618",
+        "_id": "6903d50abefa2b7504ea19fd"
+      },
+      {
+        "name": "hamburger",
+        "qty": 1,
+        "price": 180,
+        "product": "69014609eff2068e2b1e15f9",
+        "_id": "6903d50abefa2b7504ea19fe"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 235,
+    "status": "İptal Edildi",
+    "isPaid": false,
+    "createdAt": "2025-10-30T21:13:46.915Z",
+    "updatedAt": "2025-10-30T22:47:55.737Z",
+    "__v": 0
+  },
+  {
+    "_id": "6903d8eebefa2b7504ea1a58",
+    "orderItems": [
+      {
+        "name": "kola",
+        "qty": 2,
+        "price": 45,
+        "product": "6901461ceff2068e2b1e15fc",
+        "_id": "6903d8eebefa2b7504ea1a59"
+      },
+      {
+        "name": "hamburger",
+        "qty": 2,
+        "price": 180,
+        "product": "69014609eff2068e2b1e15f9",
+        "_id": "6903d8eebefa2b7504ea1a5a"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 450,
+    "status": "İptal Edildi",
+    "isPaid": false,
+    "createdAt": "2025-10-30T21:30:22.127Z",
+    "updatedAt": "2025-10-30T22:47:52.800Z",
+    "__v": 0
+  },
+  {
+    "_id": "690638610b6bce6b8b3b38dd",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 200,
+        "product": "690637030b6bce6b8b3b3837",
+        "_id": "690638610b6bce6b8b3b38de"
+      },
+      {
+        "name": "Makarna ",
+        "qty": 1,
+        "price": 150,
+        "product": "6905dc9eae117bb04944eb56",
+        "_id": "690638610b6bce6b8b3b38df"
+      }
+    ],
+    "tableNumber": "5",
+    "totalPrice": 550,
+    "status": "Servis Edildi",
+    "isPaid": false,
+    "createdAt": "2025-11-01T16:42:09.914Z",
+    "updatedAt": "2025-11-01T17:03:31.995Z",
+    "__v": 0
+  },
+  {
+    "_id": "69063db5b96c939567f58cf5",
+    "orderItems": [
+      {
+        "name": "Makarna ",
+        "qty": 2,
+        "price": 150,
+        "product": "6905dc9eae117bb04944eb56",
+        "_id": "69063db5b96c939567f58cf6"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "sosuz olsun",
+    "totalPrice": 300,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-01T17:04:53.459Z",
+    "updatedAt": "2025-11-01T17:04:53.459Z",
+    "__v": 0
+  },
+  {
+    "_id": "6907611d88ec91ffe23a889d",
+    "orderItems": [
+      {
+        "name": "Makarna ",
+        "qty": 1,
+        "price": 150,
+        "product": "6905dc9eae117bb04944eb56",
+        "_id": "6907611d88ec91ffe23a889e"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "sosuz ",
+    "totalPrice": 150,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-02T13:48:13.177Z",
+    "updatedAt": "2025-11-02T13:48:13.177Z",
+    "__v": 0
+  },
+  {
+    "_id": "69077d2bb5a47bcabe8b43ff",
+    "orderItems": [
+      {
+        "name": "Makarna ",
+        "qty": 1,
+        "price": 150,
+        "product": "6905dc9eae117bb04944eb56"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 150,
+    "status": "Servis Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-02T15:47:55.136Z",
+    "updatedAt": "2025-11-02T21:15:25.494Z",
+    "__v": 0,
+    "paidAt": "2025-11-02T21:15:25.494Z"
+  },
+  {
+    "_id": "690787c86cc7f99189facb8a",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 200,
+        "product": "690637030b6bce6b8b3b3837"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "bol soğanlı",
+    "totalPrice": 400,
+    "status": "Servis Edildi",
+    "isPaid": false,
+    "createdAt": "2025-11-02T16:33:12.592Z",
+    "updatedAt": "2025-11-02T16:33:27.296Z",
+    "__v": 0
+  },
+  {
+    "_id": "690789d16cc7f99189facc59",
+    "orderItems": [
+      {
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "product": "690788846cc7f99189facc28"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "dyjghj",
+    "totalPrice": 100,
+    "status": "İptal Edildi",
+    "isPaid": false,
+    "createdAt": "2025-11-02T16:41:53.389Z",
+    "updatedAt": "2025-11-02T20:53:55.146Z",
+    "__v": 0
+  },
+  {
+    "_id": "6907ca865be6cd19fa82a3d9",
+    "orderItems": [
+      {
+        "name": "Pilav",
+        "qty": 1,
+        "price": 125.5,
+        "product": "6907ca1d5be6cd19fa82a3c4"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "ketçap mayonez olsun",
+    "totalPrice": 125.5,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-02T21:17:58.054Z",
+    "updatedAt": "2025-11-02T21:17:58.054Z",
+    "__v": 0
+  },
+  {
+    "_id": "6907cc2a5be6cd19fa82a436",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "product": "690637030b6bce6b8b3b3837"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 200,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-02T21:24:58.803Z",
+    "updatedAt": "2025-11-02T21:24:58.803Z",
+    "__v": 0
+  },
+  {
+    "_id": "6908dc6eb7db734a6638795d",
+    "orderItems": [
+      {
+        "name": "Çay",
+        "qty": 1,
+        "price": 15,
+        "product": "6908bf767f2e5636779188dc"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 15,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-03T16:46:38.962Z",
+    "updatedAt": "2025-11-03T16:46:38.962Z",
+    "__v": 0
+  },
+  {
+    "_id": "6908e09ab7db734a663879f6",
+    "orderItems": [
+      {
+        "name": "Çay",
+        "qty": 1,
+        "price": 15,
+        "product": "6908bf767f2e5636779188dc"
+      },
+      {
+        "name": "Çay",
+        "qty": 1,
+        "price": 15,
+        "product": "6908bf767f2e5636779188dc"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 30,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-03T17:04:26.226Z",
+    "updatedAt": "2025-11-03T17:04:26.226Z",
+    "__v": 0
+  },
+  {
+    "_id": "6908e34fb7db734a66387a1c",
+    "orderItems": [
+      {
+        "name": "Çay",
+        "qty": 1,
+        "price": 15,
+        "product": "6908bf767f2e5636779188dc"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 15,
+    "status": "Servis Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-03T17:15:59.316Z",
+    "updatedAt": "2025-11-04T12:32:18.676Z",
+    "__v": 0,
+    "paidAt": "2025-11-04T12:32:18.556Z"
+  },
+  {
+    "_id": "69090193a911f8edfa66e362",
+    "orderItems": [
+      {
+        "name": "Kazan Dibi",
+        "qty": 1,
+        "price": 25,
+        "product": "6908bf377f2e5636779188b5"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 25,
+    "status": "Hazır",
+    "isPaid": false,
+    "createdAt": "2025-11-03T19:25:07.419Z",
+    "updatedAt": "2025-11-04T12:28:32.209Z",
+    "__v": 0
+  },
+  {
+    "_id": "690901b0a911f8edfa66e390",
+    "orderItems": [
+      {
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6908bf5e7f2e5636779188d5"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 45,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-03T19:25:36.999Z",
+    "updatedAt": "2025-11-03T19:25:36.999Z",
+    "__v": 0
+  },
+  {
+    "_id": "690926a4a3e89a9cdd16c56f",
+    "orderItems": [
+      {
+        "kitchenStatus": "ready",
+        "name": "İçli Köfte",
+        "qty": 2,
+        "price": 40,
+        "product": "69090234a911f8edfa66e3d9"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "fmkizffjnfjzjlvvfv",
+    "totalPrice": 80,
+    "status": "Hazır",
+    "isPaid": false,
+    "createdAt": "2025-11-03T22:03:16.713Z",
+    "updatedAt": "2025-11-06T20:18:26.560Z",
+    "__v": 1
+  },
+  {
+    "_id": "6909285bc751c884a8c0b3d0",
+    "orderItems": [
+      {
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 40,
+        "product": "69090234a911f8edfa66e3d9"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 40,
+    "status": "Hazır",
+    "isPaid": true,
+    "createdAt": "2025-11-03T22:10:35.796Z",
+    "updatedAt": "2025-11-03T23:06:27.782Z",
+    "__v": 0,
+    "paidAt": "2025-11-03T23:06:27.782Z"
+  },
+  {
+    "_id": "69092e6dc751c884a8c0b58b",
+    "orderItems": [
+      {
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 40,
+        "product": "69090234a911f8edfa66e3d9"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "kdmkd",
+    "totalPrice": 40,
+    "status": "Servis Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-03T22:36:29.306Z",
+    "updatedAt": "2025-11-03T22:47:31.059Z",
+    "__v": 0,
+    "paidAt": "2025-11-03T22:47:31.059Z"
+  },
+  {
+    "_id": "6909311dc751c884a8c0b61a",
+    "orderItems": [
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3"
+      },
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 130,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-03T22:47:57.246Z",
+    "updatedAt": "2025-11-04T12:28:19.094Z",
+    "__v": 0,
+    "paidAt": "2025-11-03T22:48:53.396Z"
+  },
+  {
+    "_id": "69093debc751c884a8c0b7b0",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 100.02,
+        "product": "69093d8fc751c884a8c0b77b"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "aksaknkaiWEFAFJAŞFNARJRFNGNG",
+    "totalPrice": 200.04,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-03T23:42:35.589Z",
+    "updatedAt": "2025-11-03T23:43:04.219Z",
+    "__v": 0,
+    "paidAt": "2025-11-03T23:42:56.843Z"
+  },
+  {
+    "_id": "6909f19447c5963e713b08db",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100.02,
+        "product": "69093d8fc751c884a8c0b77b"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "turşu koymayın",
+    "totalPrice": 100.02,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-04T12:29:08.083Z",
+    "updatedAt": "2025-11-04T12:29:33.841Z",
+    "__v": 0,
+    "paidAt": "2025-11-04T12:29:25.129Z"
+  },
+  {
+    "_id": "6909f1c147c5963e713b091f",
+    "orderItems": [
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3"
+      },
+      {
+        "name": "Makarna.",
+        "qty": 1,
+        "price": 164,
+        "product": "69093722c751c884a8c0b72d"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 229,
+    "status": "İptal Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-04T12:29:53.462Z",
+    "updatedAt": "2025-11-06T21:52:48.615Z",
+    "__v": 0,
+    "paidAt": "2025-11-04T12:30:00.868Z"
+  },
+  {
+    "_id": "6909f5af47c5963e713b0992",
+    "orderItems": [
+      {
+        "name": "Klasik Latte",
+        "qty": 2,
+        "price": 100,
+        "product": "690788846cc7f99189facc28"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 200,
+    "status": "Servis Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-04T12:46:39.708Z",
+    "updatedAt": "2025-11-04T12:46:50.864Z",
+    "__v": 0,
+    "paidAt": "2025-11-04T12:46:50.546Z"
+  },
+  {
+    "_id": "690a47347aebd0ed6d2a171e",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100.02,
+        "product": "69093d8fc751c884a8c0b77b",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 100.02,
+    "status": "Hazır",
+    "isPaid": false,
+    "createdAt": "2025-11-04T18:34:28.114Z",
+    "updatedAt": "2025-11-04T18:35:36.288Z",
+    "__v": 0
+  },
+  {
+    "_id": "690a53537aebd0ed6d2a17fc",
+    "orderItems": [
+      {
+        "name": "Kola",
+        "qty": 9,
+        "price": 45,
+        "product": "6908bf5e7f2e5636779188d5",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "orta kapığğ\n",
+    "totalPrice": 405,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-04T19:26:11.009Z",
+    "updatedAt": "2025-11-04T19:26:11.009Z",
+    "__v": 0
+  },
+  {
+    "_id": "690a53e17aebd0ed6d2a1808",
+    "orderItems": [
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 65,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-04T19:28:33.013Z",
+    "updatedAt": "2025-11-04T19:28:33.013Z",
+    "__v": 0
+  },
+  {
+    "_id": "690a6b8a7aebd0ed6d2a1848",
+    "orderItems": [
+      {
+        "name": "Makarna.",
+        "qty": 2,
+        "price": 164,
+        "product": "69093722c751c884a8c0b72d",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6908bf5e7f2e5636779188d5",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "",
+    "totalPrice": 438,
+    "status": "Servis Edildi",
+    "isPaid": true,
+    "createdAt": "2025-11-04T21:09:30.399Z",
+    "updatedAt": "2025-11-04T21:09:49.546Z",
+    "__v": 0,
+    "paidAt": "2025-11-04T21:09:49.355Z"
+  },
+  {
+    "_id": "690a7ab37aebd0ed6d2a192f",
+    "orderItems": [
+      {
+        "name": "Patates Kızartması",
+        "qty": 2,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "bol asdnama",
+    "totalPrice": 130,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-04T22:14:11.370Z",
+    "updatedAt": "2025-11-04T22:14:11.370Z",
+    "__v": 0
+  },
+  {
+    "_id": "690a85f57aebd0ed6d2a1a42",
+    "orderItems": [
+      {
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 100.02,
+        "product": "69093d8fc751c884a8c0b77b",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "bol soğanlı olsun ",
+    "totalPrice": 200.04,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-04T23:02:13.946Z",
+    "updatedAt": "2025-11-04T23:02:13.946Z",
+    "__v": 0
+  },
+  {
+    "_id": "690bc4dc1b7c5813092e1a57",
+    "orderItems": [
+      {
+        "name": "Karışık Tost",
+        "qty": 2,
+        "price": 70,
+        "product": "690b61c8bf7b07583d3e55b4",
+        "kitchenStatus": "pending"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "sdfisd",
+    "totalPrice": 140,
+    "status": "Hazırlanıyor",
+    "isPaid": false,
+    "createdAt": "2025-11-05T21:42:52.318Z",
+    "updatedAt": "2025-11-05T21:42:52.318Z",
+    "__v": 0
+  },
+  {
+    "_id": "690cac7fdbb31b616adf7e58",
+    "orderItems": [
+      {
+        "name": "Karışık Tost",
+        "qty": 2,
+        "price": 70,
+        "product": "690b61c8bf7b07583d3e55b4",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100.02,
+        "product": "69093d8fc751c884a8c0b77b",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "product": "69093722c751c884a8c0b72d",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "product": "69092ec2c751c884a8c0b5c3",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "product": "69090234a911f8edfa66e3d9",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "product": "6908bf767f2e5636779188dc",
+        "kitchenStatus": "in_progress"
+      },
+      {
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "product": "6908bf5e7f2e5636779188d5",
+        "kitchenStatus": "served"
+      },
+      {
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "product": "69078a186cc7f99189facc9c",
+        "kitchenStatus": "pending"
+      },
+      {
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "product": "690788846cc7f99189facc28",
+        "kitchenStatus": "served"
+      }
+    ],
+    "tableNumber": "5",
+    "notes": "pfşşsfj<sdfnlzıjf<sfjdkdksifjsıhnkcndjnrufidos<ifığaepdşn<aaıhdIDncu<sdhfaıdjgjgvzifğaeifjvfdvjpafhapgjvfdjkjşajg",
+    "totalPrice": 1050.02,
+    "status": "Hazırlanıyor",
+    "isPaid": true,
+    "createdAt": "2025-11-06T14:11:11.120Z",
+    "updatedAt": "2025-11-06T20:18:21.359Z",
+    "__v": 7,
+    "paidAt": "2025-11-06T14:11:31.383Z"
+  },
+  {
+    "_id": "69122e06ee7af94802a543f6",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 2,
+        "price": 71,
+        "note": "",
+        "_id": "69122e06ee7af94802a543f7"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "69122e06ee7af94802a543f8"
+      }
+    ],
+    "total": 282,
+    "status": "tamamlandi",
+    "createdAt": "2025-11-10T18:25:10.714Z",
+    "updatedAt": "2025-11-10T18:25:28.286Z",
+    "__v": 0
+  },
+  {
+    "_id": "69124c94ee7af94802a5482f",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 3,
+        "price": 71,
+        "note": "",
+        "_id": "69124c94ee7af94802a54830"
+      }
+    ],
+    "total": 213,
+    "status": "iptal",
+    "createdAt": "2025-11-10T20:35:32.534Z",
+    "updatedAt": "2025-11-10T20:35:44.167Z",
+    "__v": 0
+  },
+  {
+    "_id": "691258ec875f51a6c2ec0324",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "_id": "691258ec875f51a6c2ec0325"
+      }
+    ],
+    "total": 90,
+    "status": "tamamlandi",
+    "createdAt": "2025-11-10T21:28:12.437Z",
+    "updatedAt": "2025-11-10T21:28:51.967Z",
+    "__v": 0
+  },
+  {
+    "_id": "6912eac485cfe83496b76d14",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 2,
+        "price": 180,
+        "note": "",
+        "_id": "6912eac485cfe83496b76d15"
+      }
+    ],
+    "total": 360,
+    "status": "PAID",
+    "createdAt": "2025-11-11T07:50:28.796Z",
+    "updatedAt": "2025-11-22T18:12:38.854Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:12:38.853Z"
+  },
+  {
+    "_id": "6912eb1e7f12e9dcab81d53b",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6912eb1e7f12e9dcab81d53c"
+      }
+    ],
+    "total": 180,
+    "status": "PAID",
+    "createdAt": "2025-11-11T07:51:58.607Z",
+    "updatedAt": "2025-11-22T18:12:35.296Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:12:35.295Z"
+  },
+  {
+    "_id": "6912eb987f12e9dcab81d5a0",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6912eb987f12e9dcab81d5a1"
+      }
+    ],
+    "total": 140,
+    "status": "PAID",
+    "createdAt": "2025-11-11T07:54:00.058Z",
+    "updatedAt": "2025-11-22T18:12:30.342Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:12:30.342Z"
+  },
+  {
+    "_id": "6912ec0d7f12e9dcab81d60a",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6912ec0d7f12e9dcab81d60b"
+      }
+    ],
+    "total": 71,
+    "status": "PAID",
+    "createdAt": "2025-11-11T07:55:57.528Z",
+    "updatedAt": "2025-11-22T18:12:25.804Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:12:25.804Z"
+  },
+  {
+    "_id": "6912ec45937e7aef89e88afe",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6912ec45937e7aef89e88aff"
+      }
+    ],
+    "total": 125,
+    "notes": "eoıdf",
+    "status": "PAID",
+    "createdAt": "2025-11-11T07:56:53.293Z",
+    "updatedAt": "2025-11-22T18:12:22.366Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:12:22.366Z"
+  },
+  {
+    "_id": "6912ed49eac41ba5045b4f36",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6912ed49eac41ba5045b4f37"
+      }
+    ],
+    "total": 140,
+    "notes": "sth",
+    "status": "PAID",
+    "createdAt": "2025-11-11T08:01:13.077Z",
+    "updatedAt": "2025-11-15T22:52:33.925Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T22:52:33.925Z"
+  },
+  {
+    "_id": "6912f10acb6f20a8c867f97f",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "6912f10acb6f20a8c867f980"
+      }
+    ],
+    "total": 45,
+    "notes": "çok pimiş olsun",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-11T08:17:14.145Z",
+    "updatedAt": "2025-11-11T08:17:44.186Z",
+    "__v": 0
+  },
+  {
+    "_id": "6912f2fbcb6f20a8c867fc18",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 3,
+        "price": 65,
+        "note": "",
+        "_id": "6912f2fbcb6f20a8c867fc19"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6912f2fbcb6f20a8c867fc1a"
+      }
+    ],
+    "total": 335,
+    "notes": "sıcak gelsin",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-11T08:25:31.617Z",
+    "updatedAt": "2025-11-11T08:27:21.700Z",
+    "__v": 0
+  },
+  {
+    "_id": "6913351f9e6c8d94c49919d7",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 2,
+        "price": 100,
+        "note": "",
+        "_id": "6913351f9e6c8d94c49919d8"
+      }
+    ],
+    "total": 200,
+    "notes": "jjpıişjgşt",
+    "status": "iptal",
+    "createdAt": "2025-11-11T13:07:43.009Z",
+    "updatedAt": "2025-11-11T13:07:56.297Z",
+    "__v": 0
+  },
+  {
+    "_id": "69188761f965ebfac7e18fd9",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "69188761f965ebfac7e18fda"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "69188761f965ebfac7e18fdb"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "69188761f965ebfac7e18fdc"
+      }
+    ],
+    "total": 391,
+    "notes": "bol soğanlı olsun ",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T14:00:01.059Z",
+    "updatedAt": "2025-11-15T14:30:40.309Z",
+    "__v": 0
+  },
+  {
+    "_id": "6918913ed6a6bde4ec36483c",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6918913ed6a6bde4ec36483d"
+      }
+    ],
+    "total": 71,
+    "notes": "bol ketçaplı\n",
+    "status": "iptal",
+    "createdAt": "2025-11-15T14:42:06.646Z",
+    "updatedAt": "2025-11-15T22:52:22.092Z",
+    "__v": 0
+  },
+  {
+    "_id": "6918923dd6a6bde4ec364ac4",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 2,
+        "price": 180,
+        "note": "",
+        "_id": "6918923dd6a6bde4ec364ac5"
+      }
+    ],
+    "total": 360,
+    "notes": "",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T14:46:21.026Z",
+    "updatedAt": "2025-11-15T14:46:36.985Z",
+    "__v": 0
+  },
+  {
+    "_id": "6918c14dd6a6bde4ec365562",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 2,
+        "price": 180,
+        "note": "",
+        "_id": "6918c14dd6a6bde4ec365563"
+      }
+    ],
+    "total": 360,
+    "notes": "bol soğanlı olsun",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T18:07:09.718Z",
+    "updatedAt": "2025-11-15T22:50:41.461Z",
+    "__v": 0
+  },
+  {
+    "_id": "6918f694f86ba5502a59a2fb",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "_id": "6918f694f86ba5502a59a2fc"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 2,
+        "price": 140,
+        "note": "",
+        "_id": "6918f694f86ba5502a59a2fd"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6918f694f86ba5502a59a2fe"
+      }
+    ],
+    "total": 495,
+    "notes": "içli köfte sıcak olsun ",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T21:54:28.654Z",
+    "updatedAt": "2025-11-15T22:46:26.817Z",
+    "__v": 0
+  },
+  {
+    "_id": "6919020ef86ba5502a59a952",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6919020ef86ba5502a59a953"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6919020ef86ba5502a59a954"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6919020ef86ba5502a59a955"
+      }
+    ],
+    "total": 391,
+    "notes": "köfte bol soğanlı olsun ",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T22:43:26.396Z",
+    "updatedAt": "2025-11-15T22:43:38.229Z",
+    "__v": 0
+  },
+  {
+    "_id": "691903a5f86ba5502a59abfd",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691903a5f86ba5502a59abfe"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691903a5f86ba5502a59abff"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691903a5f86ba5502a59ac00"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "691903a5f86ba5502a59ac01"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "createdAt": "2025-11-15T22:50:13.261Z",
+    "updatedAt": "2025-11-15T22:50:29.354Z",
+    "__v": 0
+  },
+  {
+    "_id": "6919044b98d1518fa089aea4",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6919044b98d1518fa089aea5"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6919044b98d1518fa089aea6"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T22:52:59.983Z",
+    "updatedAt": "2025-11-15T22:53:09.340Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T22:53:09.339Z"
+  },
+  {
+    "_id": "691905db98d1518fa089b0a5",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "691905db98d1518fa089b0a6"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "691905db98d1518fa089b0a7"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "691905db98d1518fa089b0a8"
+      }
+    ],
+    "total": 215,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T22:59:39.753Z",
+    "updatedAt": "2025-11-15T22:59:49.937Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T22:59:49.937Z"
+  },
+  {
+    "_id": "691907b2f5b0d5463a89d924",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691907b2f5b0d5463a89d925"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691907b2f5b0d5463a89d926"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691907b2f5b0d5463a89d927"
+      }
+    ],
+    "total": 391,
+    "notes": "",
+    "status": "iptal",
+    "createdAt": "2025-11-15T23:07:30.823Z",
+    "updatedAt": "2025-11-15T23:07:47.883Z",
+    "__v": 0
+  },
+  {
+    "_id": "691907dff5b0d5463a89dbbc",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691907dff5b0d5463a89dbbd"
+      }
+    ],
+    "total": 71,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T23:08:15.376Z",
+    "updatedAt": "2025-11-15T23:08:30.332Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T23:08:30.332Z"
+  },
+  {
+    "_id": "6919088f935539c97394d32a",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6919088f935539c97394d32b"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6919088f935539c97394d32c"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "iptal",
+    "createdAt": "2025-11-15T23:11:11.777Z",
+    "updatedAt": "2025-11-15T23:12:22.666Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T23:11:20.969Z"
+  },
+  {
+    "_id": "6919091e56c2e2fb15c2e401",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6919091e56c2e2fb15c2e402"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T23:13:34.557Z",
+    "updatedAt": "2025-11-15T23:15:11.114Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T23:15:11.113Z"
+  },
+  {
+    "_id": "691909be56c2e2fb15c2e640",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691909be56c2e2fb15c2e641"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691909be56c2e2fb15c2e642"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T23:16:14.956Z",
+    "updatedAt": "2025-11-15T23:17:15.050Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T23:17:15.050Z"
+  },
+  {
+    "_id": "69190b6de1351eb01fbe6593",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "69190b6de1351eb01fbe6594"
+      }
+    ],
+    "total": 125,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-15T23:23:25.512Z",
+    "updatedAt": "2025-11-15T23:24:10.101Z",
+    "__v": 0,
+    "paidAt": "2025-11-15T23:24:10.100Z"
+  },
+  {
+    "_id": "691915cccc9a28977cb1bfe4",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691915cccc9a28977cb1bfe5"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-16T00:07:40.023Z",
+    "updatedAt": "2025-11-16T00:07:49.914Z",
+    "__v": 0,
+    "paidAt": "2025-11-16T00:07:49.914Z"
+  },
+  {
+    "_id": "691915f6cc9a28977cb1c53b",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691915f6cc9a28977cb1c53c"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691915f6cc9a28977cb1c53d"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-16T00:08:22.221Z",
+    "updatedAt": "2025-11-16T00:08:36.374Z",
+    "__v": 0,
+    "paidAt": "2025-11-16T00:08:36.373Z"
+  },
+  {
+    "_id": "691a0e8eb907d34faf47ef24",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 100,
+        "note": "",
+        "_id": "691a0e8eb907d34faf47ef25"
+      }
+    ],
+    "total": 200,
+    "notes": "dyxh",
+    "status": "iptal",
+    "createdAt": "2025-11-16T17:49:02.120Z",
+    "updatedAt": "2025-11-16T17:52:00.156Z",
+    "__v": 0,
+    "paidAt": "2025-11-16T17:49:16.347Z"
+  },
+  {
+    "_id": "691b54af7cdeef178c85b4a0",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 2,
+        "price": 180,
+        "note": "",
+        "_id": "691b54af7cdeef178c85b4a1"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b54af7cdeef178c85b4a2"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691b54af7cdeef178c85b4a3"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "691b54af7cdeef178c85b4a4"
+      }
+    ],
+    "total": 696,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-17T17:00:31.052Z",
+    "updatedAt": "2025-11-17T17:00:47.215Z",
+    "__v": 0,
+    "paidAt": "2025-11-17T17:00:47.215Z"
+  },
+  {
+    "_id": "691b5bce83e7bdf0e67209f2",
+    "table": "69122e04ee7af94802a543ec",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691b5bce83e7bdf0e67209f3"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b5bce83e7bdf0e67209f4"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-17T17:30:54.065Z",
+    "updatedAt": "2025-11-17T17:31:12.346Z",
+    "__v": 0,
+    "paidAt": "2025-11-17T17:31:12.344Z"
+  },
+  {
+    "_id": "691b5db583e7bdf0e6720bfe",
+    "table": "691b5db483e7bdf0e6720bf8",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691b5db583e7bdf0e6720bff"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b5db583e7bdf0e6720c00"
+      }
+    ],
+    "total": 211,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-17T17:39:01.391Z",
+    "updatedAt": "2025-11-17T17:39:15.391Z",
+    "__v": 0,
+    "paidAt": "2025-11-17T17:39:15.390Z"
+  },
+  {
+    "_id": "691b675df4c05b14d08d2f51",
+    "table": "691b5db483e7bdf0e6720bf8",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b675df4c05b14d08d2f52"
+      },
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691b675df4c05b14d08d2f53"
+      }
+    ],
+    "total": 320,
+    "notes": "Mük",
+    "status": "PAID",
+    "createdAt": "2025-11-17T18:20:13.040Z",
+    "updatedAt": "2025-11-17T18:21:05.171Z",
+    "__v": 0,
+    "paidAt": "2025-11-17T18:21:05.171Z"
+  },
+  {
+    "_id": "691b97913fb465dae0c8a4ab",
+    "table": "691b97903fb465dae0c8a4a3",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691b97913fb465dae0c8a4ac"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b97913fb465dae0c8a4ad"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691b97913fb465dae0c8a4ae"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "691b97913fb465dae0c8a4af"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "iptal",
+    "createdAt": "2025-11-17T21:45:53.483Z",
+    "updatedAt": "2025-11-22T18:10:06.775Z",
+    "__v": 0
+  },
+  {
+    "_id": "691b97ec3fb465dae0c8a4e4",
+    "table": "691b97eb3fb465dae0c8a4da",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691b97ec3fb465dae0c8a4e5"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "691b97ec3fb465dae0c8a4e6"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "691b97ec3fb465dae0c8a4e7"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "691b97ec3fb465dae0c8a4e8"
+      }
+    ],
+    "total": 489,
+    "notes": "",
+    "status": "iptal",
+    "createdAt": "2025-11-17T21:47:24.183Z",
+    "updatedAt": "2025-11-22T18:10:03.583Z",
+    "__v": 0
+  },
+  {
+    "_id": "691b98053fb465dae0c8a58e",
+    "table": "691b97eb3fb465dae0c8a4da",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691b98053fb465dae0c8a58f"
+      }
+    ],
+    "total": 140,
+    "notes": "Yuvası",
+    "status": "PAID",
+    "createdAt": "2025-11-17T21:47:49.489Z",
+    "updatedAt": "2025-11-22T18:10:00.430Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:10:00.430Z"
+  },
+  {
+    "_id": "691b99486b093b1288240fae",
+    "table": "691b99476b093b1288240fa5",
+    "items": [
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 2,
+        "price": 16,
+        "note": "",
+        "_id": "691b99486b093b1288240faf"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "691b99486b093b1288240fb0"
+      },
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "691b99486b093b1288240fb1"
+      }
+    ],
+    "total": 177,
+    "notes": "Ndjdnsm",
+    "status": "PAID",
+    "createdAt": "2025-11-17T21:53:12.739Z",
+    "updatedAt": "2025-11-22T18:09:55.634Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:09:55.634Z"
+  },
+  {
+    "_id": "691ca03648d36f938ae00e06",
+    "table": "691b97903fb465dae0c8a4a3",
+    "items": [
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "691ca03648d36f938ae00e07"
+      }
+    ],
+    "total": 100,
+    "notes": "Çok pahalı amcamın oğlu",
+    "status": "PAID",
+    "createdAt": "2025-11-18T16:35:02.574Z",
+    "updatedAt": "2025-11-18T16:35:43.942Z",
+    "__v": 0,
+    "paidAt": "2025-11-18T16:35:43.942Z"
+  },
+  {
+    "_id": "691e1e50041e80a2a460a63c",
+    "table": "691b5db483e7bdf0e6720bf8",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691e1e50041e80a2a460a63d"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691e1e50041e80a2a460a63e"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "691e1e50041e80a2a460a63f"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "691e1e50041e80a2a460a640"
+      }
+    ],
+    "total": 516,
+    "notes": "nmcgv",
+    "status": "PAID",
+    "createdAt": "2025-11-19T19:45:20.216Z",
+    "updatedAt": "2025-11-19T19:47:42.550Z",
+    "__v": 0,
+    "paidAt": "2025-11-19T19:47:42.549Z"
+  },
+  {
+    "_id": "691e2101e5e659c694448bbe",
+    "table": "691e2100e5e659c694448bb8",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "691e2101e5e659c694448bbf"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "691e2101e5e659c694448bc0"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-19T19:56:49.433Z",
+    "updatedAt": "2025-11-22T18:09:18.996Z",
+    "__v": 0,
+    "paidAt": "2025-11-22T18:09:18.995Z"
+  },
+  {
+    "_id": "6920c47c768b256a950189f5",
+    "table": "691b5db483e7bdf0e6720bf8",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6920c47c768b256a950189f6"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6920c47c768b256a950189f7"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6920c47c768b256a950189f8"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6920c47c768b256a950189f9"
+      }
+    ],
+    "total": 516,
+    "notes": "karışık tosta ketçap sıkılsın ",
+    "status": "PAID",
+    "createdAt": "2025-11-21T19:58:52.642Z",
+    "updatedAt": "2025-11-21T19:59:08.557Z",
+    "__v": 0,
+    "paidAt": "2025-11-21T19:59:08.556Z"
+  },
+  {
+    "_id": "6921fe6844b12927c05fa2f7",
+    "table": "6921fd4544b12927c05f9f5d",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6921fe6844b12927c05fa2f8"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6921fe6844b12927c05fa2f9"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6921fe6844b12927c05fa2fa"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "6921fe6844b12927c05fa2fb"
+      }
+    ],
+    "total": 555,
+    "notes": "Mük",
+    "status": "PAID",
+    "createdAt": "2025-11-22T18:18:16.343Z",
+    "updatedAt": "2025-11-27T21:46:46.304Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:46.304Z"
+  },
+  {
+    "_id": "6922dc09de4c3efc7a4decb2",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "6922dc09de4c3efc7a4decb3"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "6922dc09de4c3efc7a4decb4"
+      }
+    ],
+    "total": 61,
+    "notes": "",
+    "status": "PAID",
+    "createdAt": "2025-11-23T10:03:53.341Z",
+    "updatedAt": "2025-11-27T21:46:42.731Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:42.730Z"
+  },
+  {
+    "_id": "692892eadf0aed84a2f88cc8",
+    "table": "6921fd3844b12927c05f9f33",
+    "items": [
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692892eadf0aed84a2f88cc9"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "692892eadf0aed84a2f88cca"
+      }
+    ],
+    "total": 264,
+    "notes": "fddfkşfnnddg",
+    "status": "PAID",
+    "createdAt": "2025-11-27T18:05:30.479Z",
+    "updatedAt": "2025-11-27T21:46:38.000Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:37.999Z"
+  },
+  {
+    "_id": "69289366df0aed84a2f88ed7",
+    "table": "69289333df0aed84a2f88eb9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "69289366df0aed84a2f88ed8"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "69289366df0aed84a2f88ed9"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "69289366df0aed84a2f88eda"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "69289366df0aed84a2f88edb"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "69289366df0aed84a2f88edc"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "69289366df0aed84a2f88edd"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "69289366df0aed84a2f88ede"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "69289366df0aed84a2f88edf"
+      }
+    ],
+    "total": 890,
+    "notes": "Çok iyi ",
+    "status": "PAID",
+    "createdAt": "2025-11-27T18:07:34.078Z",
+    "updatedAt": "2025-11-27T18:07:49.149Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T18:07:49.148Z"
+  },
+  {
+    "_id": "6928987696c10daf0fd2c306",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "6928987696c10daf0fd2c307"
+      },
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "6928987696c10daf0fd2c308"
+      }
+    ],
+    "total": 350,
+    "notes": "Nsjsjs",
+    "status": "PAID",
+    "createdAt": "2025-11-27T18:29:10.743Z",
+    "updatedAt": "2025-11-27T21:46:26.673Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:26.673Z"
+  },
+  {
+    "_id": "6928ae958575c30fdcf04e08",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928ae958575c30fdcf04e09"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6928ae958575c30fdcf04e0a"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "6928ae958575c30fdcf04e0b"
+      }
+    ],
+    "total": 365,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T20:03:33.694Z",
+    "updatedAt": "2025-11-27T21:46:23.323Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:23.322Z"
+  },
+  {
+    "_id": "6928b0814b85b1d6f0e8c1d3",
+    "table": "6921fd2944b12927c05f9f09",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928b0814b85b1d6f0e8c1d4"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6928b0814b85b1d6f0e8c1d5"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6928b0814b85b1d6f0e8c1d6"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6928b0814b85b1d6f0e8c1d7"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T20:11:45.882Z",
+    "updatedAt": "2025-11-27T21:46:20.330Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:20.330Z"
+  },
+  {
+    "_id": "6928b1f600d79fc95746a5ee",
+    "table": "6921fd3844b12927c05f9f33",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6928b1f600d79fc95746a5ef"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "6928b1f600d79fc95746a5f0"
+      }
+    ],
+    "total": 304,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T20:17:58.836Z",
+    "updatedAt": "2025-11-27T21:46:16.222Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:16.222Z"
+  },
+  {
+    "_id": "6928c2b98a38a4dfbc4bd098",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928c2b98a38a4dfbc4bd099"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T21:29:29.497Z",
+    "updatedAt": "2025-11-27T21:46:13.097Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T21:46:13.097Z"
+  },
+  {
+    "_id": "6928c714152d976e8da0c196",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928c714152d976e8da0c197"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6928c714152d976e8da0c198"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6928c714152d976e8da0c199"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6928c714152d976e8da0c19a"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "iptal",
+    "orderItems": [],
+    "createdAt": "2025-11-27T21:48:04.290Z",
+    "updatedAt": "2025-11-27T23:16:04.674Z",
+    "__v": 0
+  },
+  {
+    "_id": "6928caab03293d4d34980b9f",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928caab03293d4d34980ba0"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6928caab03293d4d34980ba1"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T22:03:23.439Z",
+    "updatedAt": "2025-11-27T23:16:01.152Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T23:16:01.152Z"
+  },
+  {
+    "_id": "6928cc725c2b5c90919e77b0",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6928cc725c2b5c90919e77b1"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T22:10:58.511Z",
+    "updatedAt": "2025-11-27T23:15:58.026Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T23:15:58.025Z"
+  },
+  {
+    "_id": "6928d07587185153b2ece655",
+    "table": "6921fd2944b12927c05f9f09",
+    "items": [
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "6928d07587185153b2ece656"
+      },
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "6928d07587185153b2ece657"
+      }
+    ],
+    "total": 350,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T22:28:05.914Z",
+    "updatedAt": "2025-11-27T23:15:54.629Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T23:15:54.629Z"
+  },
+  {
+    "_id": "6928d3adb54755bec256c9c9",
+    "table": "6921fd4244b12927c05f9f4f",
+    "items": [
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 2,
+        "price": 65,
+        "note": "",
+        "_id": "6928d3adb54755bec256c9ca"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "6928d3adb54755bec256c9cb"
+      }
+    ],
+    "total": 175,
+    "notes": "Jsjssn",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T22:41:49.214Z",
+    "updatedAt": "2025-11-27T23:15:50.581Z",
+    "__v": 0,
+    "paidAt": "2025-11-27T23:15:50.580Z"
+  },
+  {
+    "_id": "6928dc067762adec10f27b38",
+    "table": "6921fd3044b12927c05f9f17",
+    "items": [
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "6928dc067762adec10f27b39"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "6928dc067762adec10f27b3a"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "6928dc067762adec10f27b3b"
+      },
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "6928dc067762adec10f27b3c"
+      }
+    ],
+    "total": 460,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-27T23:17:26.017Z",
+    "updatedAt": "2025-11-28T09:00:33.547Z",
+    "__v": 0,
+    "paidAt": "2025-11-28T09:00:33.546Z"
+  },
+  {
+    "_id": "6929651f1d92e24cf6d05e3b",
+    "table": "6921fd4244b12927c05f9f4f",
+    "items": [
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "6929651f1d92e24cf6d05e3c"
+      }
+    ],
+    "total": 100,
+    "notes": "Jbbjnk",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-28T09:02:23.965Z",
+    "updatedAt": "2025-11-29T19:28:37.125Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T19:28:37.124Z"
+  },
+  {
+    "_id": "6929a86738de2e5c46796f75",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "6929a86738de2e5c46796f76"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "6929a86738de2e5c46796f77"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "6929a86738de2e5c46796f78"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "6929a86738de2e5c46796f79"
+      }
+    ],
+    "total": 516,
+    "notes": "soğansız olsun \n",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-28T13:49:27.215Z",
+    "updatedAt": "2025-11-29T19:28:33.507Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T19:28:33.506Z"
+  },
+  {
+    "_id": "692ae88c926541ea242300d1",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692ae88c926541ea242300d2"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-29T12:35:24.668Z",
+    "updatedAt": "2025-11-29T19:28:30.879Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T19:28:30.878Z"
+  },
+  {
+    "_id": "692ae89c926541ea242300e5",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 2,
+        "price": 180,
+        "note": "",
+        "_id": "692ae89c926541ea242300e6"
+      }
+    ],
+    "total": 360,
+    "notes": "Birader npt yz",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-29T12:35:40.792Z",
+    "updatedAt": "2025-11-29T19:28:27.793Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T19:28:27.793Z"
+  },
+  {
+    "_id": "692b37b699e88889003ce6c3",
+    "table": "69220f18e218424e0ef29baa",
+    "items": [
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692b37b699e88889003ce6c4"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692b37b699e88889003ce6c5"
+      }
+    ],
+    "total": 110,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-29T18:13:10.489Z",
+    "updatedAt": "2025-11-29T19:28:24.320Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T19:28:24.319Z"
+  },
+  {
+    "_id": "692b4a7a99e88889003cf278",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692b4a7a99e88889003cf279"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692b4a7a99e88889003cf27a"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692b4a7a99e88889003cf27b"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692b4a7a99e88889003cf27c"
+      }
+    ],
+    "total": 516,
+    "notes": "Mükemmel ",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-11-29T19:33:14.104Z",
+    "updatedAt": "2025-11-29T20:16:24.070Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T20:16:24.070Z"
+  },
+  {
+    "_id": "692b525c039726b5b4f94761",
+    "table": "6921fd2944b12927c05f9f09",
+    "tableId": "6921fd2944b12927c05f9f09",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "690788846cc7f99189facc28",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b525c039726b5b4f94762"
+      },
+      {
+        "product": "69078a186cc7f99189facc9c",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b525c039726b5b4f94763"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b525c039726b5b4f94764"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b525c039726b5b4f94765"
+      }
+    ],
+    "total": 405,
+    "totalPrice": 405,
+    "notes": "umarım çalışır ",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T20:06:52.077Z",
+    "updatedAt": "2025-11-29T20:32:39.053Z",
+    "__v": 8
+  },
+  {
+    "_id": "692b54ca039726b5b4f94d5e",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "692b54ca039726b5b4f94d5f"
+      },
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692b54ca039726b5b4f94d60"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692b54ca039726b5b4f94d61"
+      }
+    ],
+    "total": 331,
+    "notes": "Patates kızartması bol ketçaplı olsun ",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-29T20:17:14.264Z",
+    "updatedAt": "2025-11-29T20:32:56.438Z",
+    "__v": 0
+  },
+  {
+    "_id": "692b5c0cfb0770e828ecf0af",
+    "table": "69220f18e218424e0ef29baa",
+    "tableId": "69220f18e218424e0ef29baa",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c0cfb0770e828ecf0b0"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c0cfb0770e828ecf0b1"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c0cfb0770e828ecf0b2"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c0cfb0770e828ecf0b3"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c0cfb0770e828ecf0b4"
+      }
+    ],
+    "total": 541,
+    "totalPrice": 541,
+    "notes": "hadi baklm \n",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T20:48:12.882Z",
+    "updatedAt": "2025-11-29T20:49:38.882Z",
+    "__v": 10
+  },
+  {
+    "_id": "692b5c3dfb0770e828ecf2d2",
+    "table": "6921fd4544b12927c05f9f5d",
+    "tableId": "6921fd4544b12927c05f9f5d",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c3dfb0770e828ecf2d3"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b5c3dfb0770e828ecf2d4"
+      }
+    ],
+    "total": 320,
+    "totalPrice": 320,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T20:49:01.200Z",
+    "updatedAt": "2025-11-29T22:20:05.731Z",
+    "__v": 4
+  },
+  {
+    "_id": "692b7165d9dcfee6f65c3f8e",
+    "table": "692895793fd6c7fb4b197bc9",
+    "tableId": "692895793fd6c7fb4b197bc9",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7165d9dcfee6f65c3f8f"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7165d9dcfee6f65c3f90"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7165d9dcfee6f65c3f91"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7165d9dcfee6f65c3f92"
+      }
+    ],
+    "total": 516,
+    "totalPrice": 516,
+    "notes": "yudtydtyjd",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T22:19:17.226Z",
+    "updatedAt": "2025-11-29T22:19:59.452Z",
+    "__v": 8
+  },
+  {
+    "_id": "692b7388d9dcfee6f65c473c",
+    "table": "6921fd3044b12927c05f9f17",
+    "tableId": "6921fd3044b12927c05f9f17",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c473d"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 4,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c473e"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 3,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c473f"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4740"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4741"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 3,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4742"
+      },
+      {
+        "product": "69078a186cc7f99189facc9c",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4743"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4744"
+      },
+      {
+        "product": "690788846cc7f99189facc28",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692b7388d9dcfee6f65c4745"
+      }
+    ],
+    "total": 1579,
+    "totalPrice": 1579,
+    "notes": "",
+    "status": "PAID",
+    "items": [],
+    "createdAt": "2025-11-29T22:28:24.248Z",
+    "updatedAt": "2025-11-29T23:05:02.816Z",
+    "__v": 0,
+    "paidAt": "2025-11-29T23:05:02.815Z"
+  },
+  {
+    "_id": "692b7393d9dcfee6f65c48df",
+    "table": "6921fd3844b12927c05f9f33",
+    "tableId": "6921fd3844b12927c05f9f33",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7393d9dcfee6f65c48e0"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7393d9dcfee6f65c48e1"
+      }
+    ],
+    "total": 320,
+    "totalPrice": 320,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T22:28:35.014Z",
+    "updatedAt": "2025-11-29T22:38:40.582Z",
+    "__v": 4
+  },
+  {
+    "_id": "692b7c6fd9dcfee6f65c568b",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692b7c6fd9dcfee6f65c568c"
+      }
+    ],
+    "total": 180,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-29T23:06:23.034Z",
+    "updatedAt": "2025-11-29T23:12:52.777Z",
+    "__v": 0
+  },
+  {
+    "_id": "692b7efcd9dcfee6f65c5990",
+    "table": "6921fd3044b12927c05f9f17",
+    "tableId": "6921fd3044b12927c05f9f17",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7efcd9dcfee6f65c5991"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7efcd9dcfee6f65c5992"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692b7efcd9dcfee6f65c5993"
+      }
+    ],
+    "total": 391,
+    "totalPrice": 391,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-29T23:17:16.723Z",
+    "updatedAt": "2025-11-29T23:17:47.484Z",
+    "__v": 6
+  },
+  {
+    "_id": "692c5ba063a2719190158f02",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c5ba063a2719190158f03"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c5ba063a2719190158f04"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c5ba063a2719190158f05"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692c5ba063a2719190158f06"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T14:58:40.523Z",
+    "updatedAt": "2025-11-30T15:04:44.714Z",
+    "__v": 0
+  },
+  {
+    "_id": "692c5be263a2719190159015",
+    "table": "6921fd4044b12927c05f9f41",
+    "tableId": "6921fd4044b12927c05f9f41",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "690788846cc7f99189facc28",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c5be263a2719190159016"
+      },
+      {
+        "product": "69078a186cc7f99189facc9c",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c5be263a2719190159017"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c5be263a2719190159018"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c5be263a2719190159019"
+      }
+    ],
+    "total": 405,
+    "totalPrice": 405,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-30T14:59:46.540Z",
+    "updatedAt": "2025-11-30T15:12:12.740Z",
+    "__v": 8
+  },
+  {
+    "_id": "692c5df163a27191901592f9",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692c5df163a27191901592fa"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692c5df163a27191901592fb"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692c5df163a27191901592fc"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692c5df163a27191901592fd"
+      }
+    ],
+    "total": 171,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:08:33.453Z",
+    "updatedAt": "2025-11-30T15:17:29.710Z",
+    "__v": 0
+  },
+  {
+    "_id": "692c604c5afb6e04748a414f",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c604c5afb6e04748a4150"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c604c5afb6e04748a4151"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c604c5afb6e04748a4152"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692c604c5afb6e04748a4153"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692c604c5afb6e04748a4154"
+      }
+    ],
+    "total": 616,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:18:36.210Z",
+    "updatedAt": "2025-11-30T15:32:22.693Z",
+    "__v": 2
+  },
+  {
+    "_id": "692c605c5afb6e04748a416e",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c605c5afb6e04748a416f"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c605c5afb6e04748a4170"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c605c5afb6e04748a4171"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692c605c5afb6e04748a4172"
+      }
+    ],
+    "total": 516,
+    "notes": "Çok iyi",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:18:52.782Z",
+    "updatedAt": "2025-11-30T15:32:57.871Z",
+    "__v": 2
+  },
+  {
+    "_id": "692c60e75afb6e04748a43fe",
+    "table": "6921fd4244b12927c05f9f4f",
+    "tableId": "6921fd4244b12927c05f9f4f",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c60e75afb6e04748a43ff"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c60e75afb6e04748a4400"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c60e75afb6e04748a4401"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c60e75afb6e04748a4402"
+      }
+    ],
+    "total": 516,
+    "totalPrice": 516,
+    "notes": "köfte bol soğanlı olsun ",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-30T15:21:11.910Z",
+    "updatedAt": "2025-11-30T15:36:24.777Z",
+    "__v": 8
+  },
+  {
+    "_id": "692c640782044f6ef8ca4239",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c640782044f6ef8ca423a"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c640782044f6ef8ca423b"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:34:31.947Z",
+    "updatedAt": "2025-11-30T15:34:43.088Z",
+    "__v": 2
+  },
+  {
+    "_id": "692c648082044f6ef8ca42c3",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c648082044f6ef8ca42c4"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c648082044f6ef8ca42c5"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:36:32.216Z",
+    "updatedAt": "2025-11-30T15:36:39.556Z",
+    "__v": 2
+  },
+  {
+    "_id": "692c65dc82044f6ef8ca4530",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c65dc82044f6ef8ca4531"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692c65dc82044f6ef8ca4532"
+      },
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "692c65dc82044f6ef8ca4533"
+      },
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692c65dc82044f6ef8ca4534"
+      }
+    ],
+    "total": 491,
+    "notes": "Sezar salatanın yağı fazla olsun",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T15:42:20.360Z",
+    "updatedAt": "2025-11-30T15:43:18.941Z",
+    "__v": 2
+  },
+  {
+    "_id": "692c961d437c051463bf9205",
+    "table": "6921fcd544b12927c05f9d3c",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c961d437c051463bf9206"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c961d437c051463bf9207"
+      }
+    ],
+    "total": 211,
+    "notes": "Hizli gelsin lutfen ",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T19:08:13.115Z",
+    "updatedAt": "2025-11-30T19:09:55.557Z",
+    "__v": 0
+  },
+  {
+    "_id": "692c97ba437c051463bf9659",
+    "table": "692c9643437c051463bf938f",
+    "tableId": "692c9643437c051463bf938f",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c97ba437c051463bf965a"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c97ba437c051463bf965b"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c97ba437c051463bf965c"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c97ba437c051463bf965d"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692c97ba437c051463bf965e"
+      }
+    ],
+    "total": 716,
+    "totalPrice": 716,
+    "notes": "salçalı olsun\n",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-30T19:15:06.910Z",
+    "updatedAt": "2025-11-30T21:07:27.664Z",
+    "__v": 10
+  },
+  {
+    "_id": "692c982f437c051463bf993a",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c982f437c051463bf993b"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692c982f437c051463bf993c"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c982f437c051463bf993d"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692c982f437c051463bf993e"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T19:17:03.251Z",
+    "updatedAt": "2025-11-30T21:08:49.889Z",
+    "__v": 10
+  },
+  {
+    "_id": "692c9b7cc819f22a81c15e8b",
+    "table": "692895793fd6c7fb4b197bc9",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692c9b7cc819f22a81c15e8c"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692c9b7cc819f22a81c15e8d"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692c9b7cc819f22a81c15e8e"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "692c9b7cc819f22a81c15e8f"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692c9b7cc819f22a81c15e90"
+      }
+    ],
+    "total": 640,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T19:31:08.618Z",
+    "updatedAt": "2025-11-30T21:08:37.856Z",
+    "__v": 12
+  },
+  {
+    "_id": "692cb2b6435d1d853ea41a18",
+    "table": "692c9643437c051463bf938f",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a19"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a1a"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a1b"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a1c"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a1d"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692cb2b6435d1d853ea41a1e"
+      }
+    ],
+    "total": 570,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-11-30T21:10:14.723Z",
+    "updatedAt": "2025-11-30T21:52:01.917Z",
+    "__v": 48
+  },
+  {
+    "_id": "692cb37a435d1d853ea41d25",
+    "table": "692895793fd6c7fb4b197bc9",
+    "tableId": "692895793fd6c7fb4b197bc9",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692cb37a435d1d853ea41d26"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692cb37a435d1d853ea41d27"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692cb37a435d1d853ea41d28"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692cb37a435d1d853ea41d29"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692cb37a435d1d853ea41d2a"
+      }
+    ],
+    "total": 716,
+    "totalPrice": 716,
+    "notes": "ok",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-11-30T21:13:30.279Z",
+    "updatedAt": "2025-11-30T21:52:22.545Z",
+    "__v": 10
+  },
+  {
+    "_id": "692db28c9699ac4e848143ee",
+    "table": "69220f18e218424e0ef29baa",
+    "items": [
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692db28c9699ac4e848143ef"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692db28c9699ac4e848143f0"
+      },
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692db28c9699ac4e848143f1"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692db28c9699ac4e848143f2"
+      }
+    ],
+    "total": 381,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T15:21:48.715Z",
+    "updatedAt": "2025-12-01T15:27:26.307Z",
+    "__v": 8
+  },
+  {
+    "_id": "692db2e99699ac4e84814594",
+    "table": "6921fd4044b12927c05f9f41",
+    "tableId": "6921fd4044b12927c05f9f41",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692db2e99699ac4e84814595"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692db2e99699ac4e84814596"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692db2e99699ac4e84814597"
+      }
+    ],
+    "total": 336,
+    "totalPrice": 336,
+    "notes": "ketçaplı olsun \n",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T15:23:21.217Z",
+    "updatedAt": "2025-12-01T15:27:23.844Z",
+    "__v": 6
+  },
+  {
+    "_id": "692df48200a11d94fccdcb51",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692df48200a11d94fccdcb52"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692df48200a11d94fccdcb53"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692df48200a11d94fccdcb54"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692df48200a11d94fccdcb55"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T20:03:14.791Z",
+    "updatedAt": "2025-12-01T20:08:37.093Z",
+    "__v": 0
+  },
+  {
+    "_id": "692df83823e0de095547925a",
+    "table": "692db0c19699ac4e848143cc",
+    "items": [
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692df83823e0de095547925b"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "_id": "692df83823e0de095547925c"
+      },
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "692df83823e0de095547925d"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692df83823e0de095547925e"
+      }
+    ],
+    "total": 505,
+    "notes": "Hamburger eti çok pişmiş olsun.",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T20:19:04.776Z",
+    "updatedAt": "2025-12-01T20:21:42.857Z",
+    "__v": 8
+  },
+  {
+    "_id": "692df8e923e0de0955479a2b",
+    "table": "692db0c19699ac4e848143cc",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692df8e923e0de0955479a2c"
+      },
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692df8e923e0de0955479a2d"
+      }
+    ],
+    "total": 87,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T20:22:01.975Z",
+    "updatedAt": "2025-12-01T20:22:10.427Z",
+    "__v": 0
+  },
+  {
+    "_id": "692df9a123e0de0955479df1",
+    "table": "692c9643437c051463bf938f",
+    "tableId": "692c9643437c051463bf938f",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9a123e0de0955479df2"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9a123e0de0955479df3"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9a123e0de0955479df4"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9a123e0de0955479df5"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9a123e0de0955479df6"
+      }
+    ],
+    "total": 716,
+    "totalPrice": 716,
+    "notes": "çok güzel ",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:25:05.843Z",
+    "updatedAt": "2025-12-01T20:28:33.980Z",
+    "__v": 10
+  },
+  {
+    "_id": "692df9d623e0de095547a11e",
+    "table": "6921fd2944b12927c05f9f09",
+    "tableId": "6921fd2944b12927c05f9f09",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9d623e0de095547a11f"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692df9d623e0de095547a120"
+      }
+    ],
+    "total": 320,
+    "totalPrice": 320,
+    "notes": "köfte bol soğanlı olsun \n",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:25:58.502Z",
+    "updatedAt": "2025-12-01T20:28:47.497Z",
+    "__v": 4
+  },
+  {
+    "_id": "692dfee723e0de095547abed",
+    "table": "6921fcd544b12927c05f9d3c",
+    "tableId": "6921fcd544b12927c05f9d3c",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dfee723e0de095547abee"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dfee723e0de095547abef"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dfee723e0de095547abf0"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dfee723e0de095547abf1"
+      }
+    ],
+    "total": 516,
+    "totalPrice": 516,
+    "notes": "tost bol yağlı olsun ",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:47:35.545Z",
+    "updatedAt": "2025-12-01T21:46:41.090Z",
+    "__v": 8
+  },
+  {
+    "_id": "692dff3023e0de095547b1aa",
+    "table": "6921fd2944b12927c05f9f09",
+    "tableId": "6921fd2944b12927c05f9f09",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1ab"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1ac"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1ad"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 2,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1ae"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1af"
+      },
+      {
+        "product": "69093722c751c884a8c0b72d",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1b0"
+      },
+      {
+        "product": "69092ec2c751c884a8c0b5c3",
+        "name": "Patates Kızartması",
+        "qty": 2,
+        "price": 65,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1b1"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1b2"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692dff3023e0de095547b1b3"
+      }
+    ],
+    "total": 1190,
+    "totalPrice": 1190,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:48:48.240Z",
+    "updatedAt": "2025-12-01T20:54:57.441Z",
+    "__v": 18
+  },
+  {
+    "_id": "692e000423e0de095547b96f",
+    "table": "6921fd3044b12927c05f9f17",
+    "tableId": "6921fd3044b12927c05f9f17",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 3,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b970"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 2,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b971"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 2,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b972"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b973"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b974"
+      },
+      {
+        "product": "69093722c751c884a8c0b72d",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b975"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b976"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e000423e0de095547b977"
+      }
+    ],
+    "total": 1706,
+    "totalPrice": 1706,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:52:20.299Z",
+    "updatedAt": "2025-12-01T21:40:32.035Z",
+    "__v": 16
+  },
+  {
+    "_id": "692e018823e0de095547c021",
+    "table": "6921fd2944b12927c05f9f09",
+    "tableId": "6921fd2944b12927c05f9f09",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e018823e0de095547c022"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e018823e0de095547c023"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e018823e0de095547c024"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e018823e0de095547c025"
+      }
+    ],
+    "total": 516,
+    "totalPrice": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T20:58:48.883Z",
+    "updatedAt": "2025-12-01T21:40:59.156Z",
+    "__v": 8
+  },
+  {
+    "_id": "692e0c52f8e787a375c059a4",
+    "table": "692db0c19699ac4e848143cc",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692e0c52f8e787a375c059a5"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692e0c52f8e787a375c059a6"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692e0c52f8e787a375c059a7"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692e0c52f8e787a375c059a8"
+      }
+    ],
+    "total": 516,
+    "notes": "Magnolyanın yanında 2 kaşık olsun ",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T21:44:50.394Z",
+    "updatedAt": "2025-12-01T22:14:32.287Z",
+    "__v": 38
+  },
+  {
+    "_id": "692e0d4d142a9d9bd5b93bed",
+    "table": "692c9643437c051463bf938f",
+    "items": [
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bee"
+      },
+      {
+        "menuItem": "6913351e9e6c8d94c49919d5",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bef"
+      },
+      {
+        "menuItem": "691b99486b093b1288240fac",
+        "name": "Çay",
+        "qty": 1,
+        "price": 16,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bf0"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bf1"
+      },
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bf2"
+      },
+      {
+        "menuItem": "691258ec875f51a6c2ec0322",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "_id": "692e0d4d142a9d9bd5b93bf3"
+      }
+    ],
+    "total": 521,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T21:49:01.998Z",
+    "updatedAt": "2025-12-01T22:14:43.110Z",
+    "__v": 47
+  },
+  {
+    "_id": "692e15b4f36fcc2b7e133ed7",
+    "table": "6921fcd544b12927c05f9d3c",
+    "tableId": "6921fcd544b12927c05f9d3c",
+    "tableNumber": null,
+    "waiterId": "68fcca7baf361e850e4e5af5",
+    "orderItems": [
+      {
+        "product": "690788846cc7f99189facc28",
+        "name": "Klasik Latte",
+        "qty": 2,
+        "price": 100,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133ed8"
+      },
+      {
+        "product": "69092ec2c751c884a8c0b5c3",
+        "name": "Patates Kızartması",
+        "qty": 2,
+        "price": 65,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133ed9"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133eda"
+      },
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133edb"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133edc"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133edd"
+      },
+      {
+        "product": "69078a186cc7f99189facc9c",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e15b4f36fcc2b7e133ede"
+      }
+    ],
+    "total": 1115,
+    "totalPrice": 1115,
+    "notes": "adfkjffjş<f<",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T22:24:52.495Z",
+    "updatedAt": "2025-12-01T22:29:15.047Z",
+    "__v": 14
+  },
+  {
+    "_id": "692e15c9f36fcc2b7e1343bb",
+    "table": "6921fd3644b12927c05f9f25",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692e15c9f36fcc2b7e1343bc",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692e15c9f36fcc2b7e1343bd",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692e15c9f36fcc2b7e1343be",
+        "status": "READY"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692e15c9f36fcc2b7e1343bf",
+        "status": "READY"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T22:25:13.055Z",
+    "updatedAt": "2025-12-01T22:29:04.691Z",
+    "__v": 4
+  },
+  {
+    "_id": "692e1632f36fcc2b7e1349c9",
+    "table": "692db0c19699ac4e848143cc",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692e1632f36fcc2b7e1349ca",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692e1632f36fcc2b7e1349cb",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692e1632f36fcc2b7e1349cc",
+        "status": "READY"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692e1632f36fcc2b7e1349cd"
+      },
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "_id": "692e1632f36fcc2b7e1349ce",
+        "status": "READY"
+      }
+    ],
+    "total": 606,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T22:26:58.423Z",
+    "updatedAt": "2025-12-01T22:28:58.015Z",
+    "__v": 4
+  },
+  {
+    "_id": "692e1e8aa626f15e6c1781bc",
+    "table": "69220f18e218424e0ef29baa",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692e1e8aa626f15e6c1781bd",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692e1e8aa626f15e6c1781be",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692e1e8aa626f15e6c1781bf",
+        "status": "READY"
+      }
+    ],
+    "total": 391,
+    "notes": "Bol soğanlı ",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-01T23:02:34.527Z",
+    "updatedAt": "2025-12-01T23:05:52.878Z",
+    "__v": 3
+  },
+  {
+    "_id": "692e1f0fa626f15e6c178901",
+    "table": "6921fd4544b12927c05f9f5d",
+    "tableId": "6921fd4544b12927c05f9f5d",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e1f0fa626f15e6c178902"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e1f0fa626f15e6c178903"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e1f0fa626f15e6c178904"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692e1f0fa626f15e6c178905"
+      }
+    ],
+    "total": 516,
+    "totalPrice": 516,
+    "notes": "köfte\n",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-01T23:04:47.586Z",
+    "updatedAt": "2025-12-01T23:05:57.060Z",
+    "__v": 8
+  },
+  {
+    "_id": "692eca0ad34445ac859e2954",
+    "table": "69220f18e218424e0ef29baa",
+    "items": [
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692eca0ad34445ac859e2955",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692eca0ad34445ac859e2956",
+        "status": "READY"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692eca0ad34445ac859e2957",
+        "status": "READY"
+      },
+      {
+        "menuItem": "691a0e8eb907d34faf47ef22",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "_id": "692eca0ad34445ac859e2958",
+        "status": "READY"
+      },
+      {
+        "menuItem": "691b97ec3fb465dae0c8a4e2",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "_id": "692eca0ad34445ac859e2959"
+      }
+    ],
+    "total": 600,
+    "notes": "soğansız",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T11:14:18.387Z",
+    "updatedAt": "2025-12-02T11:49:12.115Z",
+    "__v": 4
+  },
+  {
+    "_id": "692eca4ad34445ac859e2eb3",
+    "table": "6921fd3044b12927c05f9f17",
+    "tableId": "6921fd3044b12927c05f9f17",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692eca4ad34445ac859e2eb4"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692eca4ad34445ac859e2eb5"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692eca4ad34445ac859e2eb6"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692eca4ad34445ac859e2eb7"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692eca4ad34445ac859e2eb8"
+      }
+    ],
+    "total": 716,
+    "totalPrice": 716,
+    "notes": "",
+    "status": "PAID",
+    "items": [],
+    "createdAt": "2025-12-02T11:15:22.021Z",
+    "updatedAt": "2025-12-02T14:38:27.551Z",
+    "__v": 6,
+    "paidAt": "2025-12-02T14:38:27.551Z"
+  },
+  {
+    "_id": "692ed1f0c5b1be8265601a50",
+    "table": "6921fd2944b12927c05f9f09",
+    "tableId": "6921fd2944b12927c05f9f09",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692ed1f0c5b1be8265601a51"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692ed1f0c5b1be8265601a52"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "QUEUED",
+        "_id": "692ed1f0c5b1be8265601a53"
+      }
+    ],
+    "total": 391,
+    "totalPrice": 391,
+    "notes": "yyhsysy",
+    "status": "PAID",
+    "items": [],
+    "createdAt": "2025-12-02T11:48:00.502Z",
+    "updatedAt": "2025-12-02T14:38:23.993Z",
+    "__v": 2,
+    "paidAt": "2025-12-02T14:38:23.992Z"
+  },
+  {
+    "_id": "692ed291c5b1be82656025b1",
+    "table": "692ed1a9c5b1be826560175d",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692ed291c5b1be82656025b2"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692ed291c5b1be82656025b3"
+      }
+    ],
+    "total": 320,
+    "notes": "",
+    "status": "PAID",
+    "orderItems": [],
+    "createdAt": "2025-12-02T11:50:41.051Z",
+    "updatedAt": "2025-12-02T14:37:47.754Z",
+    "__v": 0,
+    "paidAt": "2025-12-02T14:37:47.753Z"
+  },
+  {
+    "_id": "692efa67b1afdd2c841539c5",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "items": [
+      {
+        "menuItem": "6912eac485cfe83496b76d12",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692efa67b1afdd2c841539c6",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692efa67b1afdd2c841539c7",
+        "status": "READY"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692efa67b1afdd2c841539c8",
+        "status": "READY"
+      },
+      {
+        "menuItem": "6912ec44937e7aef89e88afc",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "_id": "692efa67b1afdd2c841539c9",
+        "status": "READY"
+      }
+    ],
+    "total": 516,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T14:40:39.100Z",
+    "updatedAt": "2025-12-02T16:27:06.834Z",
+    "__v": 4
+  },
+  {
+    "_id": "692f13e49fc19dbd6c1525dc",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "tableId": "692ef9f0b1afdd2c8415399d",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f13e49fc19dbd6c1525dd"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f13e49fc19dbd6c1525de"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f13e49fc19dbd6c1525df"
+      }
+    ],
+    "total": 391,
+    "totalPrice": 391,
+    "notes": "aehaoıfjfjaıarfrgrgtgtg",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-02T16:29:24.348Z",
+    "updatedAt": "2025-12-02T16:42:25.714Z",
+    "__v": 6
+  },
+  {
+    "_id": "692f16d07f12b9c4f96f0a16",
+    "table": "692efa5ab1afdd2c841539b3",
+    "tableId": "692efa5ab1afdd2c841539b3",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f16d07f12b9c4f96f0a17"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f16d07f12b9c4f96f0a18"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f16d07f12b9c4f96f0a19"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f16d07f12b9c4f96f0a1a"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f16d07f12b9c4f96f0a1b"
+      }
+    ],
+    "total": 716,
+    "totalPrice": 716,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-02T16:41:52.126Z",
+    "updatedAt": "2025-12-02T16:42:38.105Z",
+    "__v": 10
+  },
+  {
+    "_id": "692f1af362576aeddb56d0f8",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "tableId": "692ef9f0b1afdd2c8415399d",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0f9"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0fa"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0fb"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0fc"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 1,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0fd"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0fe"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f1af362576aeddb56d0ff"
+      }
+    ],
+    "total": 771,
+    "totalPrice": 771,
+    "notes": "ol artık",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-02T16:59:31.716Z",
+    "updatedAt": "2025-12-02T23:26:35.557Z",
+    "__v": 14
+  },
+  {
+    "_id": "692f68298141c6d6ca45814f",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "waiter": "692f62db482f1db61d274ed6",
+    "items": [
+      {
+        "menuItem": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 2,
+        "price": 140,
+        "note": "Ekstra peynir",
+        "_id": "692f68298141c6d6ca458150"
+      }
+    ],
+    "total": 280,
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T22:28:57.029Z",
+    "updatedAt": "2025-12-02T23:26:51.352Z",
+    "__v": 0
+  },
+  {
+    "_id": "692f6ebac15315a21a4dc912",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "waiter": "692f6ce9c15315a21a4dc8f8",
+    "items": [
+      {
+        "menuItem": "6912eab185cfe83496b76cf8",
+        "name": "Köfte",
+        "qty": 1,
+        "price": 180,
+        "note": "",
+        "_id": "692f6ebac15315a21a4dc913"
+      }
+    ],
+    "total": 180,
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T22:56:58.149Z",
+    "updatedAt": "2025-12-02T23:27:02.902Z",
+    "__v": 0
+  },
+  {
+    "_id": "692f70f67fdc7220ab7094c3",
+    "table": "692f70f67fdc7220ab7094bb",
+    "items": [
+      {
+        "menuItem": "691905db98d1518fa089b0a3",
+        "name": "Kola",
+        "qty": 2,
+        "price": 45,
+        "note": "",
+        "_id": "692f70f67fdc7220ab7094c4"
+      },
+      {
+        "menuItem": "6928987696c10daf0fd2c304",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "_id": "692f70f67fdc7220ab7094c5"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f4",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692f70f67fdc7220ab7094c6"
+      },
+      {
+        "menuItem": "69122e06ee7af94802a543f2",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "_id": "692f70f67fdc7220ab7094c7"
+      }
+    ],
+    "total": 551,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T23:06:30.963Z",
+    "updatedAt": "2025-12-02T23:26:57.321Z",
+    "__v": 0
+  },
+  {
+    "_id": "692f71fb7fdc7220ab70a15c",
+    "table": "692ef9f0b1afdd2c8415399d",
+    "waiter": "692f71c37fdc7220ab70a147",
+    "items": [
+      {
+        "menuItem": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "_id": "692f71fb7fdc7220ab70a15d"
+      }
+    ],
+    "total": 140,
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T23:10:51.980Z",
+    "updatedAt": "2025-12-02T23:28:59.077Z",
+    "__v": 0
+  },
+  {
+    "_id": "692f7578854b37a80c3e2ddb",
+    "table": "692efa5ab1afdd2c841539b3",
+    "tableId": "692efa5ab1afdd2c841539b3",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 2,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7578854b37a80c3e2ddc"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7578854b37a80c3e2ddd"
+      }
+    ],
+    "total": 351,
+    "totalPrice": 351,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-02T23:25:44.272Z",
+    "updatedAt": "2025-12-02T23:28:47.009Z",
+    "__v": 4
+  },
+  {
+    "_id": "692f7590854b37a80c3e2f3a",
+    "table": "692f1cda62576aeddb56de14",
+    "tableId": "692f1cda62576aeddb56de14",
+    "tableNumber": null,
+    "waiterId": "69121630708a5b30bab7c05f",
+    "orderItems": [
+      {
+        "product": "690788846cc7f99189facc28",
+        "name": "Klasik Latte",
+        "qty": 1,
+        "price": 100,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f3b"
+      },
+      {
+        "product": "69078a186cc7f99189facc9c",
+        "name": "Sezar Salatası",
+        "qty": 1,
+        "price": 250,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f3c"
+      },
+      {
+        "product": "6908bf5e7f2e5636779188d5",
+        "name": "Kola",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f3d"
+      },
+      {
+        "product": "6908bf767f2e5636779188dc",
+        "name": "Çay",
+        "qty": 1,
+        "price": 10,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f3e"
+      },
+      {
+        "product": "69090234a911f8edfa66e3d9",
+        "name": "İçli Köfte",
+        "qty": 1,
+        "price": 45,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f3f"
+      },
+      {
+        "product": "69092ec2c751c884a8c0b5c3",
+        "name": "Patates Kızartması",
+        "qty": 1,
+        "price": 65,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f40"
+      },
+      {
+        "product": "69093722c751c884a8c0b72d",
+        "name": "Makarna",
+        "qty": 1,
+        "price": 164,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f41"
+      },
+      {
+        "product": "69093d8fc751c884a8c0b77b",
+        "name": "Hamburger",
+        "qty": 2,
+        "price": 200,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f42"
+      },
+      {
+        "product": "690a8fbf7aebd0ed6d2a1c55",
+        "name": "Magnolya ",
+        "qty": 1,
+        "price": 125,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f43"
+      },
+      {
+        "product": "690b61c8bf7b07583d3e55b4",
+        "name": "Karışık Tost",
+        "qty": 1,
+        "price": 71,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f44"
+      },
+      {
+        "product": "69122d437cfc1f2da75919c3",
+        "name": "Pizza",
+        "qty": 1,
+        "price": 140,
+        "note": "",
+        "station": "hot",
+        "status": "READY",
+        "_id": "692f7590854b37a80c3e2f45"
+      }
+    ],
+    "total": 1415,
+    "totalPrice": 1415,
+    "notes": "",
+    "status": "tamamlandi",
+    "items": [],
+    "createdAt": "2025-12-02T23:26:08.375Z",
+    "updatedAt": "2025-12-02T23:27:14.713Z",
+    "__v": 22
+  },
+  {
+    "_id": "692f760c854b37a80c3e57ef",
+    "table": "692f70f67fdc7220ab7094bb",
+    "items": [
+      {
+        "menuItem": "6912f2fbcb6f20a8c867fc16",
+        "name": "Patates Kızartması",
+        "qty": 10,
+        "price": 65,
+        "note": "",
+        "_id": "692f760c854b37a80c3e57f0",
+        "status": "READY"
+      }
+    ],
+    "total": 650,
+    "notes": "",
+    "status": "tamamlandi",
+    "orderItems": [],
+    "createdAt": "2025-12-02T23:28:12.707Z",
+    "updatedAt": "2025-12-02T23:28:40.938Z",
+    "__v": 1
+  }
+]

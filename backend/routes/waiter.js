@@ -35,10 +35,22 @@ router.post('/orders', async (req, res) => {
     const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
     const order = await Order.create({
-      table: tableId,
-      waiter: req.user.id,
-      items: orderItems,
-      total
+      tableId: tableId,
+      table: tableId, // Geriye uyumluluk için
+      waiterId: req.user.id,
+      waiter: req.user.id, // Geriye uyumluluk için
+      orderItems: orderItems.map(item => ({
+        product: item.menuItem, // menuItem → product mapping
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        note: item.note || '',
+        station: 'hot',
+        status: 'QUEUED'
+      })),
+      items: orderItems, // Geriye uyumluluk için
+      totalPrice: total,
+      total: total // Geriye uyumluluk için
     });
 
     await Table.findByIdAndUpdate(tableId, { status: 'dolu' });

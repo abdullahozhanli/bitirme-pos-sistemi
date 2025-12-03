@@ -33,6 +33,12 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// Index'ler - Performans optimizasyonu
+// email zaten unique: true olduğu için otomatik index var
+userSchema.index({ role: 1 }); // Rol bazlı sorgular için
+userSchema.index({ isActive: 1 }); // Aktif kullanıcı sorguları için
+userSchema.index({ role: 1, isActive: 1 }); // Rol + aktif durum kombinasyonu
+
 // --- ŞİFRE HASHLEME (ŞİFRELEME) ---
 // Bu, Mongoose'un "pre-save hook" (kaydetmeden-önce-kancası) özelliğidir.
 // 'save' komutu çalışmadan (yani yeni kullanıcı kayıt olmadan) HEMEN ÖNCE araya girer.
