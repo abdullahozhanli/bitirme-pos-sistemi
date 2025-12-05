@@ -299,6 +299,17 @@ export default function WaiterTableManagementPage() {
       });
       return;
     }
+    
+    // Sadece müsait masalarda sipariş alınabilir
+    if (selectedTable.status !== 'bos') {
+      setNotification({ 
+        open: true, 
+        message: 'Sadece müsait masalarda sipariş alabilirsiniz', 
+        severity: 'warning' 
+      });
+      return;
+    }
+    
     setIsOrderModalOpen(true);
   };
 
@@ -487,7 +498,7 @@ export default function WaiterTableManagementPage() {
       </Box>
 
       {/* Floating Action Button - Hızlı Sipariş */}
-      {selectedTable && (
+      {selectedTable && selectedTable.status === 'bos' && (
         <Fab
           color="primary"
           aria-label="Yeni Sipariş"

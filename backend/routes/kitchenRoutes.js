@@ -47,7 +47,7 @@ router.get('/queue', auth, requireRole('mutfak', 'admin', 'yetkili'), async (req
         // NOT: Boş array truthy olduğu için uzunluk kontrolü yapmalıyız
         const orderItems = (orderObj.orderItems && orderObj.orderItems.length > 0) 
           ? orderObj.orderItems 
-          : (orderObj.orderItems && orderObj.orderItems.length > 0 ? orderObj.orderItems : (orderObj.items && orderObj.items.length > 0 ? orderObj.items : []));
+          : (orderObj.items && orderObj.items.length > 0 ? orderObj.items : []);
         
         if (!Array.isArray(orderItems)) {
           console.warn('⚠️ Order items array değil:', order._id, typeof orderItems);

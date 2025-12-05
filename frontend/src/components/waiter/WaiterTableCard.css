@@ -2,51 +2,150 @@
 
 .waiter-table-card {
   position: relative;
-  background: white;
-  border: 3px solid #e0e0e0;
-  border-radius: 16px;
+  background-color: #fff5f5; /* Çok açık pembe zemin */
+  border: 2px solid #ff4d4f; /* Kırmızı çerçeve */
+  border-radius: 24px;       /* Oval köşeler */
   padding: 24px;
+  width: 100%;
+  max-width: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Hafif gölge */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 180px;
+  box-sizing: border-box;
+  transition: transform 0.2s ease;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  min-height: 220px;
+}
+
+.waiter-table-card:hover {
+  transform: translateY(-2px);
+}
+
+.waiter-table-card.selected {
+  box-shadow: 0 6px 16px rgba(255, 77, 79, 0.3);
+  border-color: #ff4d4f;
+}
+
+/* Üst Kısım (Header) */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.table-info h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.table-info p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #6b7280; /* Gri metin */
+}
+
+/* Dolu Etiketi (Badge) */
+.status-badge {
+  background-color: #ff4d4f;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Alt Kısım (Footer) */
+.card-footer {
   display: flex;
   flex-direction: column;
 }
 
-.waiter-table-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+.active-order-label {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 4px;
+  font-weight: 500;
 }
 
-.waiter-table-card.selected {
-  border-color: #1976d2;
-  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.3);
-  transform: translateY(-2px);
+.active-order-value {
+  font-size: 18px;
+  color: #111827;
+  font-weight: 700;
 }
 
-/* Durum Göstergesi - Daha Büyük */
+/* Diğer durumlar için basit tasarım */
+.table-info-simple {
+  flex: 1;
+}
+
+.table-info-simple h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.table-info-simple p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.card-footer-simple {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Diğer durumlar için stil */
 .status-indicator {
   position: absolute;
   top: 16px;
   right: 16px;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   z-index: 1;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.waiter-table-card.available {
+  border-color: #4caf50;
+  background-color: #f0fdf4;
 }
 
 .waiter-table-card.available .status-indicator {
   background: #4caf50;
 }
 
-.waiter-table-card.full .status-indicator {
-  background: #f44336;
+.waiter-table-card.reserved {
+  border-color: #ff9800;
+  background-color: #fff7ed;
 }
 
 .waiter-table-card.reserved .status-indicator {
   background: #ff9800;
+}
+
+.waiter-table-card.payment_pending {
+  border-color: #2196f3;
+  background-color: #eff6ff;
 }
 
 .waiter-table-card.payment_pending .status-indicator {
@@ -57,27 +156,6 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
-}
-
-/* Durum Renkleri - Daha Canlı */
-.waiter-table-card.available {
-  border-color: #4caf50;
-  background: linear-gradient(135deg, #f1f8e9 0%, #ffffff 100%);
-}
-
-.waiter-table-card.full {
-  border-color: #f44336;
-  background: linear-gradient(135deg, #ffebee 0%, #ffffff 100%);
-}
-
-.waiter-table-card.reserved {
-  border-color: #ff9800;
-  background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%);
-}
-
-.waiter-table-card.payment_pending {
-  border-color: #2196f3;
-  background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
 }
 
 /* Responsive */

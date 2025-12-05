@@ -77,18 +77,16 @@ npm run dev
 
 ## 📝 İlk Kurulum
 
-### İlk Admin Kullanıcı Oluşturma
+### Admin Kullanıcı Oluşturma
 
-Backend'de `.env` dosyası hazır olduktan sonra, **ilk admin kullanıcısını** oluşturun:
+Backend'de `.env` dosyası hazır olduktan sonra:
 
 ```bash
 # Backend klasöründe
-curl -X POST http://localhost:5001/api/auth/setup-first-admin \
+curl -X POST http://localhost:5001/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"admin123","name":"Admin"}'
+  -d '{"email":"admin@example.com","password":"admin123"}'
 ```
-
-**Not**: Bu endpoint sadece veritabanında hiç admin yoksa çalışır. İlk admin oluşturulduktan sonra, yeni kullanıcılar sadece admin panelinden eklenebilir.
 
 Sonra `/login` sayfasından giriş yapabilirsiniz.
 

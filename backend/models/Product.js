@@ -53,12 +53,6 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Index'ler - Performans optimizasyonu
-productSchema.index({ category: 1 }); // Kategori bazlı sorgular için
-productSchema.index({ station: 1 }); // İstasyon bazlı sorgular için
-productSchema.index({ category: 1, station: 1 }); // Kategori + istasyon kombinasyonu
-productSchema.index({ name: 'text' }); // Text search için (opsiyonel - arama özelliği için)
-
 // --- YENİ: KAYDETMEDEN ÖNCE KANCASI (PRE-SAVE HOOK) ---
 productSchema.pre('save', function(next) {
   // Sadece 'name' alanı değiştiyse veya yeniyse

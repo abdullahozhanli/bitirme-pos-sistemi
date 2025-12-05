@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const helmet = require('helmet');
 
 // routes
 const authRoutes = require('./routes/authRoutes');
@@ -25,28 +24,6 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 dotenv.config();
 
 const app = express();
-
-// Trust proxy (rate limiting için IP adresini doğru algılamak için)
-// Development'ta genellikle gerekmez ama production'da önemli
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-}
-
-// Helmet.js - HTTP header güvenliği
-// XSS, clickjacking, MIME type sniffing vb. korumaları
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"], // Material UI için
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"], // QR kod ve resimler için
-      connectSrc: ["'self'", "ws:", "wss:"], // WebSocket için
-    },
-  },
-  crossOriginEmbedderPolicy: false, // Development için
-  crossOriginResourcePolicy: { policy: "cross-origin" }, // Frontend'den erişim için
-}));
 
 // CORS whitelist
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
@@ -241,38 +218,14 @@ app.use((req, res, next) => {
   res.status(404).json({ message: 'Kaynak bulunamadı' });
 });
 
-// global error handler (production-safe)
+// global error handler (tek tip cevap)
 app.use((err, req, res, next) => {
+  console.error(err);
   const status = err.statusCode || 500;
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  
-  // Development'ta detaylı hata, production'da generic mesaj
-  if (isDevelopment) {
-    console.error('Error:', err);
-    res.status(status).json({
-      message: err.message || 'Sunucu hatası',
-      details: err.details || undefined,
-      stack: err.stack, // Sadece development'ta
-    });
-  } else {
-    // Production'da sadece generic mesaj
-    console.error('Error:', {
-      message: err.message,
-      statusCode: status,
-      path: req.path,
-      method: req.method,
-      // Stack trace'i log'a yaz ama client'a gönderme
-      stack: err.stack
-    });
-    
-    // Client'a generic mesaj gönder
-    res.status(status).json({
-      message: status === 500 
-        ? 'Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.'
-        : (err.message || 'Bir hata oluştu'),
-      // Production'da details gönderme
-    });
-  }
+  res.status(status).json({
+    message: err.message || 'Sunucu hatası',
+    details: err.details || undefined,
+  });
 });
 
 server.listen(PORT, '0.0.0.0', () => {

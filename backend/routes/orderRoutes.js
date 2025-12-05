@@ -28,9 +28,9 @@ router.get('/', authMiddleware, async (req, res, next) => {
 
     const [items, total] = await Promise.all([
       Order.find(filter)
-        .populate('tableId', 'name capacity')
-        .populate('waiterId', 'name email role')
-        .populate('orderItems.product', 'name price category')
+        .populate('table', 'name capacity')
+        .populate('waiter', 'name email role')
+        .populate('items.menuItem', 'name price category')
         .sort(sort)
         .skip(skip)
         .limit(Number(limit)),
@@ -179,23 +179,11 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'Sipariş kalemleri boş' });
     }
 
-    // Sipariş oluştur (yeni field'ları kullan, eski field'ları da ekle geriye uyumluluk için)
+    // Sipariş oluştur
     const order = await Order.create({
-      tableId: table._id,
-      table: table._id, // Geriye uyumluluk için
-      tableNumber: String(tableNumber),
-      orderItems: orderItems.map(item => ({
-        product: item.menuItem, // menuItem → product mapping
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-        note: item.note || '',
-        station: 'hot', // Varsayılan station
-        status: 'QUEUED'
-      })),
-      items: orderItems, // Geriye uyumluluk için
-      totalPrice: Number(total),
-      total: Number(total), // Geriye uyumluluk için
+      table: table._id,
+      items: orderItems,
+      total: Number(total),
       notes: notes || '', // Genel sipariş notu
       status: 'hazirlaniyor'
     });
@@ -205,8 +193,8 @@ router.post('/', async (req, res, next) => {
 
     // Populate ile döndür
     const populated = await Order.findById(order._id)
-      .populate('tableId', 'name capacity')
-      .populate('orderItems.product', 'name price category');
+      .populate('table', 'name capacity')
+      .populate('items.menuItem', 'name price category');
 
     // Socket.io emit: Yeni sipariş oluşturuldu ve masa durumu değişti
     try {
@@ -230,8 +218,8 @@ router.post('/', async (req, res, next) => {
         
         // Mutfağa bildir (QR siparişi için)
         const branchId = 'default';
-        // Yeni model kullan (orderItems), fallback olarak items
-        const itemsToNotify = order.orderItems || order.items || orderItems || [];
+        // QR siparişleri eski model kullanıyor (items array'i)
+        const itemsToNotify = order.items || orderItems || [];
         
         // Debug log'ları kaldırıldı
         
@@ -262,7 +250,7 @@ router.post('/', async (req, res, next) => {
             note: String(item.note || ''),
             status: 'QUEUED',
             order: populated.toObject(),
-            table: populated.tableId || updatedTable.toObject(),
+            table: populated.table || updatedTable.toObject(),
             tableId: table._id,
             tableNumber: tableNumber,
             orderSource: 'qr',

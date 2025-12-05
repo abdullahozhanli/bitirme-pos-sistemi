@@ -74,9 +74,7 @@ router.get('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (re
     const filter = {};
     
     if (tableId) {
-      filter.tableId = tableId;
-      // Geriye uyumluluk için eski field'ı da destekle
-      filter.$or = [{ tableId: tableId }, { table: tableId }];
+      filter.table = tableId;
     }
     if (status) {
       // READY status'ü sorgulandığında, hem READY hem de tamamlandi status'ündeki siparişleri döndür

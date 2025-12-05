@@ -1,45 +1,78 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { AppBar, Toolbar, Typography, Box, IconButton, Divider } from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import './WaiterLayout.css';
 
 export default function WaiterLayout() {
   const { pathname } = useLocation();
-  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const menuItems = [
+    { path: '/waiter', label: 'Anasayfa', icon: 'fas fa-home' },
+    { path: '/waiter/tables', label: 'Masa Haritası', icon: 'fas fa-map-marked-alt' },
+    { path: '/waiter/orders', label: 'Siparişler', icon: 'fas fa-list-alt' },
+    { path: '/waiter/menu', label: 'Menü', icon: 'fas fa-book' },
+    { path: '/waiter/reports', label: 'Raporlar', icon: 'fas fa-chart-bar' },
+  ];
+
+  const isActive = (path) => {
+    if (path === '/waiter') {
+      return pathname === '/waiter';
+    }
+    return pathname.startsWith(path);
+  };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (t) => t.zIndex.drawer + 1,
-          width: '100%',
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 'clamp(16px, 2vw, 20px)' }}>
-            {pathname === '/waiter' ? 'Garson Paneli' : pathname.includes('/waiter/tables') ? 'Masa Haritası' : pathname.includes('/waiter/orders') ? 'Sipariş Yönetimi' : 'Garson Paneli'}
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          <IconButton onClick={logout} color="inherit" sx={{ border: '1px solid #E5E5E5', borderRadius: 2, minHeight: '44px', minWidth: '44px' }}>
-            <LogoutIcon />
-          </IconButton>
-        </Toolbar>
-        <Divider />
-      </AppBar>
+    <div className="waiter-layout">
+      {/* Sidebar */}
+      <aside className="waiter-sidebar">
+        {/* Profile Section */}
+        <div className="waiter-profile">
+          <div className="waiter-avatar">
+            <i className="fas fa-user"></i>
+          </div>
+          <div className="waiter-profile-info">
+            <div className="waiter-name">{user?.name || user?.email || 'Garson'}</div>
+            <div className="waiter-role">Garson</div>
+          </div>
+        </div>
 
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          width: '100%',
-          p: { xs: 'clamp(8px, 2vw, 16px)', sm: 2, md: 3 },
-          mt: '64px', // AppBar height
-        }}
-      >
+        {/* Navigation Menu */}
+        <nav className="waiter-nav">
+          {menuItems.map((item) => (
+            <button
+              key={item.path}
+              className={`waiter-nav-item ${isActive(item.path) ? 'active' : ''}`}
+              onClick={() => navigate(item.path)}
+            >
+              <i className={item.icon}></i>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom Actions */}
+        <div className="waiter-sidebar-bottom">
+          <button className="waiter-nav-item" onClick={() => {}}>
+            <i className="fas fa-cog"></i>
+            <span>Ayarlar</span>
+          </button>
+          <button className="waiter-nav-item" onClick={() => {}}>
+            <i className="fas fa-question-circle"></i>
+            <span>Yardım</span>
+          </button>
+          <button className="waiter-nav-item logout-btn" onClick={logout}>
+            <i className="fas fa-sign-out-alt"></i>
+            <span>Çıkış Yap</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="waiter-main-content">
         <Outlet />
-      </Box>
-    </Box>
+      </main>
+    </div>
   );
 }
 

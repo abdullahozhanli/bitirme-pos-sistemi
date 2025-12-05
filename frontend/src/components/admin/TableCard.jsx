@@ -1,8 +1,6 @@
 import React from 'react';
-import { Box, Typography, IconButton, Chip } from '@mui/material';
+import { IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
-import PeopleIcon from '@mui/icons-material/People';
 import './TableCard.css';
 
 export default function TableCard({ table, statusLabels, isSelected, onClick, onEdit }) {
@@ -14,90 +12,95 @@ export default function TableCard({ table, statusLabels, isSelected, onClick, on
   };
 
   const statusClass = statusMap[table.status] || 'available';
-  const statusLabel = statusLabels[table.status] || table.status;
+
+  // Aktif siparişin süresini hesapla (dakika)
+  const calculateOrderDuration = () => {
+    if (!table.hasActiveOrder || !table.activeOrders || table.activeOrders.length === 0) {
+      return null;
+    }
+    
+    // En eski aktif siparişi bul
+    const oldestOrder = table.activeOrders
+      .map(order => new Date(order.createdAt || order.created_at))
+      .sort((a, b) => a - b)[0];
+    
+    if (!oldestOrder) return null;
+    
+    const now = new Date();
+    const diffMs = now - oldestOrder;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    return diffMins;
+  };
+
+  const orderDuration = calculateOrderDuration();
+  const displayTime = orderDuration !== null ? `${orderDuration}dk` : '';
+  const displayPrice = table.totalAmount ? table.totalAmount.toFixed(2) : '0,00';
 
   return (
-    <Box
+    <div 
       className={`table-card ${statusClass} ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
-      sx={{
-        position: 'relative',
-        cursor: 'pointer',
-        '&:hover .edit-button': {
-          opacity: 1,
-        },
-      }}
     >
-      {/* Durum Göstergesi */}
-      <Box className="status-indicator" />
-
       {/* Düzenle Butonu */}
-      <IconButton
-        className="edit-button"
-        size="small"
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        sx={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          opacity: 0,
-          transition: 'opacity 0.2s',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 1)',
-          },
-        }}
-      >
-        <EditIcon fontSize="small" />
-      </IconButton>
-
-      {/* İkon */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <TableRestaurantIcon sx={{ fontSize: 24, color: 'text.secondary' }} />
-        {table.capacity > 2 && (
-          <PeopleIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-        )}
-      </Box>
-
-      {/* Masa Adı */}
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-        {table.name}
-      </Typography>
-
-      {/* Kapasite */}
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-        {table.capacity} Kişilik
-      </Typography>
-
-      {/* Durum Badge */}
-      <Chip
-        label={statusLabel}
-        size="small"
-        color={
-          table.status === 'bos' ? 'success' :
-          table.status === 'dolu' ? 'error' :
-          table.status === 'rezerve' ? 'warning' : 'info'
-        }
-        sx={{ mb: 1 }}
-      />
-
-      {/* Aktif Sipariş Bilgisi */}
-      {table.hasActiveOrder && (
-        <Box sx={{ mt: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary">
-            {table.activeOrderCount} Aktif Sipariş
-          </Typography>
-          {table.totalAmount > 0 && (
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
-              ₺{table.totalAmount.toFixed(2)}
-            </Typography>
-          )}
-        </Box>
+      {onEdit && (
+        <IconButton
+          className="edit-button"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
       )}
-    </Box>
+
+      {/* Dolu masalar için özel tasarım */}
+      {table.status === 'dolu' ? (
+        <>
+          {/* Üst Kısım: Masa Adı ve Durum Etiketi */}
+          <div className="card-header">
+            <div className="table-info">
+              <h2>{table.name}</h2>
+              <p>{table.capacity} Kişilik</p>
+            </div>
+            
+            <div className="status-badge">
+              <span className="dot"></span>
+              DOLU
+            </div>
+          </div>
+
+          {/* Alt Kısım: Sipariş Bilgisi */}
+          {table.hasActiveOrder && (
+            <div className="card-footer">
+              <span className="active-order-label">Aktif Sipariş</span>
+              <span className="active-order-value">
+                {displayTime} / ₺{displayPrice.replace('.', ',')}
+              </span>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Diğer durumlar için basit tasarım */}
+          <div className="status-indicator" />
+          <div className="table-info-simple">
+            <h2>{table.name}</h2>
+            <p>{table.capacity} Kişilik</p>
+          </div>
+          {table.hasActiveOrder && (
+            <div className="card-footer-simple">
+              <span className="active-order-label">Aktif Sipariş</span>
+              <span className="active-order-value">
+                {table.activeOrderCount} Sipariş • ₺{table.totalAmount?.toFixed(2).replace('.', ',') || '0,00'}
+              </span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

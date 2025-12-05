@@ -370,7 +370,7 @@ router.put('/orders/:id/status', auth, requireRole('admin'), async (req, res, ne
     // Socket.io emit: Sipariş durumu değişti
     const io = req.app.get('io');
     if (io) {
-      const tableId = order.tableId?._id || order.tableId || order.table?._id || order.table;
+      const tableId = order.table?._id || order.table;
       if (tableId) {
         io.to('tables').emit('table:order:status:changed', {
           tableId: tableId,
@@ -490,7 +490,7 @@ router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, ne
     // Socket.io emit: Sipariş iptal edildi
     const io = req.app.get('io');
     if (io) {
-      const tableId = order.tableId?._id || order.tableId || order.table?._id || order.table;
+      const tableId = order.table?._id || order.table;
       if (tableId) {
         io.to('tables').emit('table:order:canceled', {
           tableId: tableId,
@@ -676,31 +676,13 @@ router.put('/categories/:id', auth, requireRole('admin'), async (req, res, next)
 
 /**
  * DELETE /api/admin/categories/:id
- * Kategori sil (admin) - Cascade delete: Ürün kontrolü ile
+ * Kategori sil (admin)
  */
 router.delete('/categories/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const categoryId = req.params.id;
-    
-    // Kategori var mı kontrol et
-    const category = await Category.findById(categoryId);
-    if (!category) {
-      return res.status(404).json({ message: 'Kategori bulunamadı' });
-    }
-    
-    // Bu kategoriye ait ürün var mı kontrol et
-    const productsCount = await Product.countDocuments({ category: categoryId });
-    if (productsCount > 0) {
-      return res.status(400).json({ 
-        message: `Bu kategoriye ait ${productsCount} ürün bulunmaktadır. Kategoriyi silmek için önce ürünleri silin veya başka bir kategoriye taşıyın.`,
-        productsCount,
-        categoryName: category.name
-      });
-    }
-    
-    // Ürün yoksa kategoriyi sil
-    await Category.findByIdAndDelete(categoryId);
-    res.json({ message: 'Kategori silindi', id: categoryId });
+    const deleted = await Category.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: 'Kategori bulunamadı' });
+    res.json({ message: 'Kategori silindi', id: deleted._id });
   } catch (e) {
     next(e);
   }
@@ -729,7 +711,7 @@ router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
         // Sadece gerçekten aktif olan siparişleri filtrele
         const trulyActiveOrders = activeOrders;
         
-        const totalAmount = trulyActiveOrders.reduce((sum, order) => sum + (order.totalPrice || order.total || 0), 0);
+        const totalAmount = trulyActiveOrders.reduce((sum, order) => sum + (order.total || 0), 0);
         const orderCount = trulyActiveOrders.length;
         
         // Masa durumunu aktif siparişlere göre güncelle
@@ -790,7 +772,7 @@ router.get('/tables/:id', auth, requireRole('admin'), async (req, res, next) => 
       orders: orders,
       activeOrders: activeOrders,
       activeOrderCount: activeOrders.length,
-      totalAmount: activeOrders.reduce((sum, o) => sum + (o.totalPrice || o.total || 0), 0)
+      totalAmount: activeOrders.reduce((sum, o) => sum + (o.total || 0), 0)
     });
   } catch (e) {
     next(e);

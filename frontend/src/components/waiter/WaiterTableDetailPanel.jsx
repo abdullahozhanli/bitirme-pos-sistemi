@@ -100,6 +100,8 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
             onClick={onCreateOrder}
             size="large"
             sx={{ py: 1.5, fontWeight: 600 }}
+            disabled={table.status !== 'bos'}
+            title={table.status !== 'bos' ? 'Sadece müsait masalarda sipariş alabilirsiniz' : 'Yeni sipariş al'}
           >
             Yeni Sipariş Al
           </Button>

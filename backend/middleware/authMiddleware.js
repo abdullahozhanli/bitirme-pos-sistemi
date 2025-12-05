@@ -16,13 +16,7 @@ function authMiddleware(req, res, next) {
     if (!token) return res.status(401).json({ message: 'Yetkisiz: token yok' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Token'dan id, role, email, name bilgilerini al
-    req.user = decoded.user || { 
-      id: decoded.id,
-      role: decoded.role,
-      email: decoded.email,
-      name: decoded.name
-    };
+    req.user = decoded.user || { id: decoded.id };
     next();
   } catch (e) {
     return res.status(401).json({ message: 'Yetkisiz: geçersiz veya süresi dolmuş token' });
