@@ -47,7 +47,17 @@ export default function AdminLayout() {
   };
 
   const drawerContent = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%',
+      overflow: 'hidden',
+      '&::-webkit-scrollbar': {
+        display: 'none',
+      },
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+    }}>
       {/* Kullanıcı Profili */}
       <Box sx={{ p: 3, borderBottom: '1px solid #E5E5E5' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -73,7 +83,17 @@ export default function AdminLayout() {
       </Box>
 
       {/* Ana Menü */}
-      <List sx={{ flex: 1, pt: 2, px: 1 }}>
+      <List sx={{ 
+        flex: 1, 
+        pt: 2, 
+        px: 1,
+        overflow: 'hidden',
+        '&::-webkit-scrollbar': {
+          display: 'none',
+        },
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}>
         {menuItems.map((it) => {
           // Aktif sayfa kontrolü - sadece tam eşleşme veya spesifik path kontrolü
           let active = false;
@@ -165,18 +185,19 @@ export default function AdminLayout() {
               mb: 0.5,
               borderRadius: 2,
               '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.04)',
+                bgcolor: 'rgba(233, 30, 99, 0.12)',
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: '#666' }}>
+            <ListItemIcon sx={{ minWidth: 40, color: '#e91e63' }}>
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText 
               primary="Çıkış Yap"
               primaryTypographyProps={{
                 fontSize: '0.9375rem',
-                color: '#333',
+                color: '#e91e63',
+                fontWeight: 500,
               }}
             />
           </ListItemButton>
@@ -227,6 +248,12 @@ export default function AdminLayout() {
             boxSizing: 'border-box',
             bgcolor: '#FFFFFF',
             borderRight: '1px solid #E5E5E5',
+            overflow: 'hidden',
+            '&::-webkit-scrollbar': {
+              display: 'none',
+            },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           },
         }}
       >
@@ -244,6 +271,12 @@ export default function AdminLayout() {
             boxSizing: 'border-box',
             bgcolor: '#FFFFFF',
             borderRight: '1px solid #E5E5E5',
+            overflow: 'hidden',
+            '&::-webkit-scrollbar': {
+              display: 'none',
+            },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           },
         }}
       >
