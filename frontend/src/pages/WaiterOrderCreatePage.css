@@ -1,0 +1,92 @@
+/* WaiterOrderCreatePage.css */
+
+/* Kategori chip'leri için özel stil */
+.MuiChip-root {
+  transition: all 0.2s ease;
+}
+
+.MuiChip-root:hover {
+  transform: translateY(-2px);
+}
+
+/* Sipariş özeti sticky pozisyon */
+.order-summary-paper {
+  position: sticky;
+  top: 20px;
+}
+
+/* Ürün kartları - HomePage ile aynı yapı */
+.products-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.product-card {
+  border: none;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.product-image-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+  background-color: #f6f6f6;
+}
+
+@media (max-width: 768px) {
+  .product-image {
+    aspect-ratio: 1/1;
+  }
+}
+
+.product-card-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* Responsive Grid - Her zaman 3 sütun (desktop'ta) */
+@media (max-width: 599px) {
+  .products-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 959px) {
+  .products-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 960px) {
+  .products-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+

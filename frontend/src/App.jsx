@@ -28,6 +28,7 @@ import QRCodeManagementPage from './pages/QRCodeManagementPage.jsx';
 import WaiterDashboard from './pages/WaiterDashboard.jsx';
 import WaiterTableManagementPage from './pages/WaiterTableManagementPage.jsx';
 import WaiterOrdersPage from './pages/WaiterOrdersPage.jsx';
+import WaiterOrderCreatePage from './pages/WaiterOrderCreatePage.jsx';
 import CashierDashboard from './pages/CashierDashboard.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
@@ -81,7 +82,7 @@ function App() {
         <Route index element={<WaiterDashboard />} />
         <Route path="tables" element={<WaiterTableManagementPage />} />
         <Route path="orders" element={<WaiterOrdersPage />} />
-        <Route path="orders/create" element={<WaiterOrdersPage />} />
+        <Route path="orders/create" element={<WaiterOrderCreatePage />} />
       </Route>
 
       {/* 4. MUTFAK ROTALARI (KORUMALI) - mutfak, admin, yetkili */}

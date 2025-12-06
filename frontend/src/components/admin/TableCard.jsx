@@ -1,6 +1,5 @@
 import React from 'react';
-import { IconButton } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
+import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import './TableCard.css';
 
 export default function TableCard({ table, statusLabels, isSelected, onClick, onEdit }) {
@@ -36,70 +35,53 @@ export default function TableCard({ table, statusLabels, isSelected, onClick, on
   const orderDuration = calculateOrderDuration();
   const displayTime = orderDuration !== null ? `${orderDuration}dk` : '';
   const displayPrice = table.totalAmount ? table.totalAmount.toFixed(2) : '0,00';
+  
+  // Sipariş bilgilerini hazırla
+  const activeOrder = table.activeOrders && table.activeOrders.length > 0 ? table.activeOrders[0] : null;
+  const orderNumber = activeOrder?._id ? activeOrder._id.slice(-4).toUpperCase() : (activeOrder?.orderNumber || '');
+  const productCount = activeOrder?.items?.length || table.activeOrderCount || 0;
+  const totalPrice = table.totalAmount || 0;
 
   return (
     <div 
       className={`table-card ${statusClass} ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
     >
-      {/* Düzenle Butonu */}
-      {onEdit && (
-        <IconButton
-          className="edit-button"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      )}
-
-      {/* Dolu masalar için özel tasarım */}
-      {table.status === 'dolu' ? (
-        <>
-          {/* Üst Kısım: Masa Adı ve Durum Etiketi */}
-          <div className="card-header">
-            <div className="table-info">
-              <h2>{table.name}</h2>
-              <p>{table.capacity} Kişilik</p>
-            </div>
-            
-            <div className="status-badge">
-              <span className="dot"></span>
-              DOLU
-            </div>
+      {/* Üst Kısım: Masa Bilgileri */}
+      <div className="card-top-section">
+        <div className="table-info-main">
+          <div className="table-icon-wrapper">
+            <TableRestaurantIcon className="table-icon" />
           </div>
-
-          {/* Alt Kısım: Sipariş Bilgisi */}
-          {table.hasActiveOrder && (
-            <div className="card-footer">
-              <span className="active-order-label">Aktif Sipariş</span>
-              <span className="active-order-value">
-                {displayTime} / ₺{displayPrice.replace('.', ',')}
-              </span>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {/* Diğer durumlar için basit tasarım */}
-          <div className="status-indicator" />
-          <div className="table-info-simple">
+          <div className="table-text-info">
             <h2>{table.name}</h2>
-            <p>{table.capacity} Kişilik</p>
+            <p className="capacity-text">Kapasite: {table.capacity}</p>
           </div>
-          {table.hasActiveOrder && (
-            <div className="card-footer-simple">
-              <span className="active-order-label">Aktif Sipariş</span>
-              <span className="active-order-value">
-                {table.activeOrderCount} Sipariş • ₺{table.totalAmount?.toFixed(2).replace('.', ',') || '0,00'}
-              </span>
-            </div>
-          )}
-        </>
-      )}
+        </div>
+        {/* Sağ üstte küçük status indicator */}
+        <div className={`status-dot ${statusClass}`}></div>
+      </div>
+
+      {/* Alt Kısım: Durum ve Sipariş Bilgisi */}
+      <div className="card-bottom-section">
+        {table.status === 'dolu' ? (
+          <>
+            <div className="status-text-large">DOLU</div>
+            {table.hasActiveOrder && (
+              <>
+                <div className="order-number">Sipariş #{orderNumber || '---'}</div>
+                <div className="order-summary">{productCount} ürün - {totalPrice.toFixed(2).replace('.', ',')}₺</div>
+              </>
+            )}
+          </>
+        ) : table.status === 'bos' ? (
+          <div>MÜSAİT</div>
+        ) : table.status === 'rezerve' ? (
+          <div>REZERVE</div>
+        ) : table.status === 'odeme_bekliyor' ? (
+          <div>ÖDEME BEKLİYOR</div>
+        ) : null}
+      </div>
     </div>
   );
 }

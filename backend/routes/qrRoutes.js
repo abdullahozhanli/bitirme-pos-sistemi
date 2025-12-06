@@ -187,17 +187,25 @@ router.get('/', auth, requireRole('admin'), async (req, res, next) => {
  * POST /api/qr
  * QR kod oluştur + masa oluştur (admin)
  * @access Admin
- * Body: { tableNumber: string }
+ * Body: { tableNumber: string, capacity?: number }
  */
 router.post('/', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const { tableNumber } = req.body;
+    const { tableNumber, capacity } = req.body;
     
     if (!tableNumber || !tableNumber.trim()) {
       return res.status(400).json({ message: 'Masa numarası gerekli' });
     }
 
     const tableNum = String(tableNumber).trim();
+    // Capacity'yi kontrol et - eğer yoksa, 0 ise veya geçersizse varsayılan 4 kullan
+    let tableCapacity = 4; // Varsayılan
+    if (capacity !== undefined && capacity !== null && capacity !== '') {
+      const parsedCapacity = Number(capacity);
+      if (!isNaN(parsedCapacity) && parsedCapacity > 0) {
+        tableCapacity = parsedCapacity;
+      }
+    }
 
     // QR kod zaten var mı kontrol et
     const existingQR = await QRCodeModel.findOne({ tableNumber: tableNum });
@@ -212,8 +220,30 @@ router.post('/', auth, requireRole('admin'), async (req, res, next) => {
       // Masa yoksa oluştur
       table = await Table.create({
         name: tableNum,
-        capacity: 4,
+        capacity: tableCapacity,
         status: 'bos'
+      });
+      console.log('✅ [QR CREATE /api/qr] Yeni masa oluşturuldu:', { 
+        _id: table._id,
+        name: table.name, 
+        capacity: table.capacity
+      });
+    } else {
+      // Masa varsa capacity'yi güncelle - findByIdAndUpdate kullan (daha güvenilir)
+      console.log('🔄 [QR CREATE /api/qr] Mevcut masa bulundu, capacity güncelleniyor:', { 
+        _id: table._id,
+        oldCapacity: table.capacity, 
+        newCapacity: tableCapacity
+      });
+      table = await Table.findByIdAndUpdate(
+        table._id,
+        { capacity: tableCapacity },
+        { new: true, runValidators: true }
+      );
+      console.log('✅ [QR CREATE /api/qr] Masa capacity güncellendi:', { 
+        _id: table._id,
+        name: table.name, 
+        capacity: table.capacity
       });
     }
 

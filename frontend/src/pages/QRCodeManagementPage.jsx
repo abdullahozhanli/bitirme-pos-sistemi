@@ -12,6 +12,7 @@ export default function QRCodeManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [capacity, setCapacity] = useState('');
   const [generating, setGenerating] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, qrCode: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
@@ -25,7 +26,12 @@ export default function QRCodeManagementPage() {
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
       
       const response = await axios.get('/api/admin/qr', { headers });
-      setQrCodes(Array.isArray(response.data) ? response.data : []);
+      const qrCodesData = Array.isArray(response.data) ? response.data : [];
+      console.log('📋 [FRONTEND] QR kodları yüklendi:', qrCodesData.map(qr => ({
+        tableNumber: qr.tableNumber,
+        capacity: qr.tableId?.capacity
+      })));
+      setQrCodes(qrCodesData);
     } catch (err) {
       console.error('QR kodları yükleme hatası:', err);
       setError(err.response?.data?.message || 'QR kodları yüklenemedi');
@@ -39,19 +45,46 @@ export default function QRCodeManagementPage() {
   }, []);
 
   // QR kod oluştur
-  const generateQR = async (tableNum) => {
+  const generateQR = async (tableNum, tableCapacity) => {
     try {
       setGenerating(true);
       setError('');
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
       
-      await axios.post('/api/admin/qr', { tableNumber: tableNum }, { headers });
+      // Capacity'yi number'a çevir ve kontrol et
+      const capacityNum = tableCapacity ? Number(tableCapacity) : 4;
+      console.log('🔍 [FRONTEND] QR oluşturuluyor:', { 
+        tableNum, 
+        tableCapacity, 
+        capacityNum,
+        tableCapacityType: typeof tableCapacity,
+        capacityNumType: typeof capacityNum
+      });
+      if (isNaN(capacityNum) || capacityNum < 1) {
+        setError('Geçerli bir kişi sayısı girin (en az 1)');
+        setSnackbar({ open: true, message: 'Geçerli bir kişi sayısı girin (en az 1)', severity: 'error' });
+        setGenerating(false);
+        return;
+      }
+      
+      const response = await axios.post('/api/admin/qr', { 
+        tableNumber: tableNum,
+        capacity: capacityNum 
+      }, { headers });
+      
+      console.log('✅ [FRONTEND] QR oluşturuldu, response:', {
+        tableNumber: response.data?.tableNumber,
+        tableId: response.data?.tableId,
+        capacity: response.data?.tableId?.capacity,
+        fullResponse: response.data
+      });
       
       setTableNumber('');
+      setCapacity('');
       setSnackbar({ 
         open: true, 
-        message: `QR kod ve masa başarıyla oluşturuldu (Masa ${tableNum})`, 
+        message: `QR kod ve masa başarıyla oluşturuldu (Masa ${tableNum}, ${capacityNum} kişilik)`, 
         severity: 'success' 
       });
       
@@ -119,7 +152,8 @@ export default function QRCodeManagementPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (tableNumber.trim()) {
-      generateQR(tableNumber.trim());
+      const capacityValue = capacity.trim() || '4'; // Boşsa varsayılan 4
+      generateQR(tableNumber.trim(), capacityValue);
     }
   };
 
@@ -137,31 +171,72 @@ export default function QRCodeManagementPage() {
       )}
 
       {/* QR Kod Oluşturma Formu */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '16px', flex: 1, minWidth: '200px' }}>
-              <TextField
-                label="Masa Numarası"
-                type="number"
-                value={tableNumber}
-                onChange={(e) => setTableNumber(e.target.value)}
-                placeholder="Örn: 5"
-                variant="outlined"
-                size="small"
-                sx={{ flex: 1, maxWidth: '200px' }}
-                inputProps={{ min: 1 }}
-              />
+      <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
+        <CardContent sx={{ p: 3 }}>
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Input Fields - Yan Yana */}
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <TextField
+                  label="Masa Numarası"
+                  type="number"
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  placeholder="Örn: 12"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ 
+                    flex: 1, 
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                  inputProps={{ min: 1 }}
+                />
+                <TextField
+                  label="Kişi Sayısı"
+                  type="number"
+                  value={capacity}
+                  onChange={(e) => setCapacity(e.target.value)}
+                  placeholder="Örn: 6"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ 
+                    flex: 1, 
+                    minWidth: '200px',
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                  inputProps={{ min: 1 }}
+                  helperText={capacity ? '' : 'Boş bırakılırsa varsayılan 4 kişi'}
+                />
+              </Box>
+              
+              {/* Button - Altında, Full Width */}
               <Button
                 type="submit"
                 variant="contained"
                 startIcon={<QrCodeIcon />}
                 disabled={generating || !tableNumber.trim()}
+                fullWidth
+                sx={{
+                  borderRadius: 2,
+                  py: 1.5,
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: 2,
+                  '&:hover': {
+                    boxShadow: 4,
+                  }
+                }}
               >
                 {generating ? 'Oluşturuluyor...' : 'QR Kod Oluştur'}
               </Button>
-            </form>
-          </Box>
+            </Box>
+          </form>
         </CardContent>
       </Card>
 
@@ -195,6 +270,21 @@ export default function QRCodeManagementPage() {
                 <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Typography variant="h6" gutterBottom>
                     Masa {qr.tableNumber}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {(() => {
+                      const capacity = qr.tableId?.capacity;
+                      console.log(`🔍 [FRONTEND] Masa ${qr.tableNumber} capacity:`, {
+                        capacity,
+                        capacityType: typeof capacity,
+                        tableId: qr.tableId,
+                        fullQr: qr
+                      });
+                      if (capacity !== undefined && capacity !== null && capacity !== '') {
+                        return `${capacity} Kişilik`;
+                      }
+                      return '4 Kişilik (Varsayılan)';
+                    })()}
                   </Typography>
                   
                   {qr.qrCode && (

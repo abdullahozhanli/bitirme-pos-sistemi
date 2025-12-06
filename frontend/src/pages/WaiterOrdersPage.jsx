@@ -143,6 +143,13 @@ export default function WaiterOrdersPage() {
       }
     });
 
+    // Yeni sipariş oluşturuldu bildirimi
+    socket.on('order:created', (data) => {
+      console.log('📡 Yeni sipariş oluşturuldu:', data);
+      // Siparişleri yenile
+      fetchOrders();
+    });
+
     // Ürün hazır bildirimi (mutfaktan)
     socket.on('item:ready', (data) => {
       console.log('📡 Ürün hazır bildirimi:', data);
@@ -363,7 +370,10 @@ export default function WaiterOrdersPage() {
             const orderNumber = orderId ? `SIP-${orderId.toString().substring(0, 8).toUpperCase()}` : 'N/A';
             const table = order.tableId || order.table;
             const tableName = typeof table === 'object' ? table?.name : table || 'N/A';
-            const items = order.items || order.orderItems || [];
+            // orderItems veya items kontrolü - backend'den orderItems geliyor
+            const items = order.orderItems || order.items || [];
+            // Toplam ürün sayısını hesapla (qty'leri topla)
+            const totalItemsCount = items.reduce((sum, item) => sum + (item.qty || 1), 0);
             const total = order.totalPrice || order.total || 0;
             const isReady = ['READY', 'Hazır', 'hazir', 'tamamlandi'].includes(order.status);
             const isServed = ['SERVED', 'serviste'].includes(order.status);
@@ -389,7 +399,7 @@ export default function WaiterOrdersPage() {
                         {orderNumber}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Masa: {tableName} • {items.length} ürün
+                        Masa: {tableName} • {totalItemsCount} ürün
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

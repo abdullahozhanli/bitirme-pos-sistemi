@@ -97,11 +97,13 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
             fullWidth
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={onCreateOrder}
+            onClick={() => {
+              // Sipariş alma sayfasına yönlendir ve masa ID'sini query parametresi olarak geçir
+              navigate(`/waiter/orders/create?tableId=${table._id || table.id}`);
+            }}
             size="large"
             sx={{ py: 1.5, fontWeight: 600 }}
-            disabled={table.status !== 'bos'}
-            title={table.status !== 'bos' ? 'Sadece müsait masalarda sipariş alabilirsiniz' : 'Yeni sipariş al'}
+            title="Yeni sipariş al"
           >
             Yeni Sipariş Al
           </Button>
@@ -147,7 +149,10 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
             {activeOrders.slice(0, 5).map((order) => {
               const orderId = order._id || order.id;
               const orderNumber = orderId ? `SIP-${orderId.toString().substring(0, 8).toUpperCase()}` : 'N/A';
-              const itemsCount = (order.items || order.orderItems || []).length;
+              // orderItems veya items kontrolü - backend'den orderItems geliyor
+              const items = order.orderItems || order.items || [];
+              // Toplam ürün sayısını hesapla (qty'leri topla)
+              const totalItemsCount = items.reduce((sum, item) => sum + (item.qty || 1), 0);
               const orderTotal = order.total || order.totalPrice || 0;
               
               return (
@@ -168,7 +173,7 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
                   <ReceiptIcon sx={{ fontSize: 20, mr: 1.5, color: 'primary.main' }} />
                   <ListItemText
                     primary={orderNumber}
-                    secondary={`${itemsCount} ürün • ₺${orderTotal.toFixed(2)}`}
+                    secondary={`${totalItemsCount} ürün • ₺${orderTotal.toFixed(2)}`}
                     primaryTypographyProps={{ fontWeight: 600 }}
                   />
                   <IconButton

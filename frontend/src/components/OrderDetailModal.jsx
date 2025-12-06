@@ -74,14 +74,29 @@ export default function OrderDetailModal({
 
         <div>
           <strong>Ürünler:</strong>
-          <ul style={{ marginTop: 8 }}>
-            {order.items?.map((it, i) => (
-              <li key={i}>
-                {it.qty} x {it.name} ({Number(it.price).toFixed(2)} TL)
-                {it.note && <span style={{ color: '#666', fontSize: '0.9em' }}> - {it.note}</span>}
-              </li>
-            ))}
-          </ul>
+          {(() => {
+            // orderItems veya items kontrolü - backend'den orderItems geliyor
+            const items = order.orderItems || order.items || [];
+            if (items.length === 0) {
+              return <div style={{ marginTop: 8, color: '#999' }}>Ürün bulunamadı</div>;
+            }
+            return (
+              <ul style={{ marginTop: 8 }}>
+                {items.map((it, i) => {
+                  // Eğer product populate edilmişse, product.name kullan
+                  const itemName = it.name || it.product?.name || 'Ürün';
+                  const itemPrice = it.price || it.product?.price || 0;
+                  const itemQty = it.qty || 1;
+                  return (
+                    <li key={i}>
+                      {itemQty} x {itemName} ({Number(itemPrice).toFixed(2)} TL)
+                      {it.note && <span style={{ color: '#666', fontSize: '0.9em' }}> - {it.note}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()}
           {order.notes && (
             <div style={{ marginTop: 8 }}>
               <strong>Not:</strong> {order.notes}

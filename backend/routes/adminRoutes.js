@@ -932,13 +932,43 @@ router.delete('/tables/:id', auth, requireRole('admin'), async (req, res, next) 
 router.get('/qr', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const QRCode = require('../models/QRCode');
+    const Table = require('../models/Table');
+    
+    // Önce QR kodları çek
     const qrCodes = await QRCode.find()
       .populate('tableId', 'name capacity status')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .lean();
     
-    res.json(qrCodes);
+    // Her QR kod için tableId'nin capacity'sini kontrol et ve gerekirse fresh data çek
+    const qrCodesWithFreshData = await Promise.all(
+      qrCodes.map(async (qr) => {
+        if (qr.tableId && qr.tableId._id) {
+          // Fresh table data çek (cache sorunlarını önlemek için)
+          const freshTable = await Table.findById(qr.tableId._id).lean();
+          if (freshTable) {
+            qr.tableId = {
+              ...qr.tableId,
+              capacity: freshTable.capacity,
+              name: freshTable.name,
+              status: freshTable.status
+            };
+          }
+        }
+        return qr;
+      })
+    );
+    
+    // Debug: Capacity bilgilerini logla
+    console.log('📋 [QR LIST] QR kodları listeleniyor:', qrCodesWithFreshData.map(qr => ({
+      tableNumber: qr.tableNumber,
+      tableId: qr.tableId?._id,
+      capacity: qr.tableId?.capacity,
+      tableIdFull: qr.tableId
+    })));
+    
+    res.json(qrCodesWithFreshData);
   } catch (error) {
     console.error('QR kodları listeleme hatası:', error);
     next(error);
@@ -948,19 +978,50 @@ router.get('/qr', auth, requireRole('admin'), async (req, res, next) => {
 /**
  * POST /api/admin/qr
  * QR kod oluştur (admin)
- * Body: { tableNumber: string }
+ * Body: { tableNumber: string, capacity?: number }
  */
 router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const QRCode = require('../models/QRCode');
     const QRCodeLib = require('qrcode');
-    const { tableNumber } = req.body;
+    const { tableNumber, capacity } = req.body;
     
     if (!tableNumber || !tableNumber.trim()) {
       return res.status(400).json({ message: 'Masa numarası gerekli' });
     }
 
     const tableNum = String(tableNumber).trim();
+    // Capacity'yi kontrol et - eğer yoksa, 0 ise veya geçersizse varsayılan 4 kullan
+    let tableCapacity = 4; // Varsayılan
+    console.log('🔍 [QR CREATE] Request body:', { 
+      tableNumber, 
+      capacity, 
+      capacityType: typeof capacity,
+      capacityValue: capacity,
+      body: req.body
+    });
+    
+    // Capacity string, number veya undefined olabilir
+    if (capacity !== undefined && capacity !== null && capacity !== '') {
+      // String ise trim yap
+      const capacityStr = String(capacity).trim();
+      console.log('🔍 [QR CREATE] Capacity string:', capacityStr, 'length:', capacityStr.length);
+      if (capacityStr !== '' && capacityStr !== 'undefined' && capacityStr !== 'null') {
+        const parsedCapacity = parseInt(capacityStr, 10);
+        console.log('🔍 [QR CREATE] Parsed capacity:', parsedCapacity, 'isNaN:', isNaN(parsedCapacity), 'original:', capacityStr, 'type:', typeof parsedCapacity);
+        if (!isNaN(parsedCapacity) && parsedCapacity > 0) {
+          tableCapacity = parsedCapacity;
+          console.log('✅ [QR CREATE] Capacity parse başarılı, tableCapacity güncellendi:', tableCapacity);
+        } else {
+          console.warn('⚠️ [QR CREATE] Capacity parse başarısız, varsayılan 4 kullanılacak');
+        }
+      } else {
+        console.warn('⚠️ [QR CREATE] Capacity string boş veya geçersiz, varsayılan 4 kullanılacak');
+      }
+    } else {
+      console.warn('⚠️ [QR CREATE] Capacity undefined/null/empty, varsayılan 4 kullanılacak');
+    }
+    console.log('🔍 [QR CREATE] Final tableCapacity:', tableCapacity, 'type:', typeof tableCapacity);
 
     // QR kod zaten var mı kontrol et
     const existingQR = await QRCode.findOne({ tableNumber: tableNum });
@@ -975,8 +1036,44 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
       // Masa yoksa oluştur
       table = await Table.create({
         name: tableNum,
-        capacity: 4,
+        capacity: tableCapacity,
         status: 'bos'
+      });
+      console.log('✅ [QR CREATE] Yeni masa oluşturuldu:', { 
+        _id: table._id,
+        name: table.name, 
+        capacity: table.capacity,
+        capacityType: typeof table.capacity
+      });
+    } else {
+      // Masa varsa capacity'yi güncelle - findByIdAndUpdate kullan (daha güvenilir)
+      console.log('🔄 [QR CREATE] Mevcut masa bulundu, capacity güncelleniyor:', { 
+        _id: table._id,
+        oldCapacity: table.capacity, 
+        newCapacity: tableCapacity,
+        oldCapacityType: typeof table.capacity
+      });
+      
+      // findByIdAndUpdate kullan (daha güvenilir)
+      table = await Table.findByIdAndUpdate(
+        table._id,
+        { capacity: tableCapacity },
+        { new: true, runValidators: true }
+      );
+      
+      console.log('✅ [QR CREATE] Masa capacity güncellendi (findByIdAndUpdate):', { 
+        _id: table._id,
+        name: table.name, 
+        capacity: table.capacity,
+        capacityType: typeof table.capacity
+      });
+      
+      // Double check - veritabanından tekrar oku
+      const verifyTable = await Table.findById(table._id).lean();
+      console.log('🔍 [QR CREATE] Veritabanından doğrulama:', {
+        _id: verifyTable._id,
+        capacity: verifyTable.capacity,
+        capacityType: typeof verifyTable.capacity
       });
     }
 
@@ -1027,11 +1124,77 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
       createdBy: req.user.id
     });
 
-    // Populate ile döndür
-    const populated = await QRCode.findById(qrCodeDoc._id)
-      .populate('tableId', 'name capacity status')
+    // Populate ile döndür - tableId'yi fresh oku
+    // Önce QRCode'u populate et (createdBy için)
+    let populated = await QRCode.findById(qrCodeDoc._id)
       .populate('createdBy', 'name email')
       .lean();
+    
+    // tableId'yi manuel olarak fresh data ile doldur (populate cache sorunlarını önlemek için)
+    // ÖNEMLİ: table._id kullan (güncellenmiş masa ID'si)
+    console.log('🔍 [QR CREATE] Fresh table data çekiliyor, table._id:', table._id, 'tableCapacity:', tableCapacity);
+    
+    // Önce table'ı tekrar oku (kesinlikle fresh data için)
+    const freshTable = await Table.findById(table._id).lean();
+    console.log('🔍 [QR CREATE] Fresh table data (findById):', {
+      _id: freshTable?._id,
+      name: freshTable?.name,
+      capacity: freshTable?.capacity,
+      capacityType: typeof freshTable?.capacity
+    });
+    
+    // Eğer fresh table'da capacity hala eski ise, direkt güncelle
+    if (freshTable && freshTable.capacity !== tableCapacity) {
+      console.warn('⚠️ [QR CREATE] Fresh table capacity yanlış! Güncelleniyor...', {
+        expected: tableCapacity,
+        actual: freshTable.capacity
+      });
+      // Tekrar güncelle
+      await Table.findByIdAndUpdate(
+        table._id,
+        { capacity: tableCapacity },
+        { new: true, runValidators: true }
+      );
+      // Tekrar oku
+      const reReadTable = await Table.findById(table._id).lean();
+      console.log('✅ [QR CREATE] Table tekrar güncellendi ve okundu:', {
+        capacity: reReadTable.capacity
+      });
+      populated.tableId = {
+        _id: reReadTable._id,
+        name: reReadTable.name,
+        capacity: reReadTable.capacity,
+        status: reReadTable.status
+      };
+    } else if (freshTable) {
+      populated.tableId = {
+        _id: freshTable._id,
+        name: freshTable.name,
+        capacity: freshTable.capacity,
+        status: freshTable.status
+      };
+      console.log('✅ [QR CREATE] populated.tableId güncellendi:', {
+        _id: populated.tableId._id,
+        capacity: populated.tableId.capacity,
+        capacityType: typeof populated.tableId.capacity
+      });
+    } else {
+      console.error('❌ [QR CREATE] Fresh table bulunamadı! table._id:', table._id);
+      // Fallback: populate kullan
+      populated = await QRCode.findById(qrCodeDoc._id)
+        .populate('tableId', 'name capacity status')
+        .populate('createdBy', 'name email')
+        .lean();
+    }
+    
+    console.log('📤 [QR CREATE] Response data (FINAL):', { 
+      tableNumber: populated.tableNumber, 
+      tableId: populated.tableId?._id, 
+      capacity: populated.tableId?.capacity,
+      capacityType: typeof populated.tableId?.capacity,
+      expectedCapacity: tableCapacity,
+      matches: populated.tableId?.capacity === tableCapacity
+    });
 
     res.status(201).json(populated);
   } catch (error) {

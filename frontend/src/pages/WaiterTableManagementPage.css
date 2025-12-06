@@ -2,20 +2,21 @@
 
 .waiter-table-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .waiter-table-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
 }
 
 @media (max-width: 768px) {
   .waiter-table-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .waiter-table-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 

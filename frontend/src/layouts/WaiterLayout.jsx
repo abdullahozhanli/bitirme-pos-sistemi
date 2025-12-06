@@ -10,6 +10,7 @@ export default function WaiterLayout() {
   const menuItems = [
     { path: '/waiter', label: 'Anasayfa', icon: 'fas fa-home' },
     { path: '/waiter/tables', label: 'Masa Haritası', icon: 'fas fa-map-marked-alt' },
+    { path: '/waiter/orders/create', label: 'Sipariş Al', icon: 'fas fa-shopping-cart' },
     { path: '/waiter/orders', label: 'Siparişler', icon: 'fas fa-list-alt' },
     { path: '/waiter/menu', label: 'Menü', icon: 'fas fa-book' },
     { path: '/waiter/reports', label: 'Raporlar', icon: 'fas fa-chart-bar' },
@@ -43,7 +44,13 @@ export default function WaiterLayout() {
             <button
               key={item.path}
               className={`waiter-nav-item ${isActive(item.path) ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                if (item.onClick) {
+                  item.onClick();
+                } else {
+                  navigate(item.path);
+                }
+              }}
             >
               <i className={item.icon}></i>
               <span>{item.label}</span>
