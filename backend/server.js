@@ -14,6 +14,7 @@ const cashierRoutes = require('./routes/cashier');
 const adminRoutes = require('./routes/adminRoutes');
 const admin = require('./routes/admin');
 const qrRoutes = require('./routes/qrRoutes');
+const superAdminRoutes = require('./routes/superAdminRoutes');
 
 // Eski route'lar (geriye dönük uyumluluk için - deprecated)
 const categoryRoutes = require('./routes/categoryRoutes');
@@ -175,6 +176,7 @@ app.get('/', (req, res) => {
 
 // api routes - Yeni role-based routing
 app.use('/api/auth', authRoutes);
+app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/waiter', waiterRoutes);
 app.use('/api/waiter', waiter);
 app.use('/api/kitchen', kitchenRoutes);

@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const branchAccess = require('../middleware/branchAccess');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
@@ -14,7 +15,7 @@ const Table = require('../models/Table');
  * GET /api/admin/stats/today
  * Bugünün dashboard istatistiklerini döner (önceki dönem karşılaştırmaları ile)
  */
-router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) => {
+router.get('/stats/today', auth, requireRole('admin'), branchAccess, async (req, res, next) => {
   try {
     // Bugünün başlangıcı (local timezone'da bugünün 00:00:00'ı)
     const now = new Date();
@@ -59,10 +60,14 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
     // Local timezone'da bugün ödenen siparişleri bul
     // Debug log'ları kaldırıldı
     
+    // Branch filtreleme için match objesi
+    const branchMatch = req.branchFilter || {};
+    
     const revenueData = await Order.aggregate([
       {
         $match: {
-          status: 'PAID'
+          status: 'PAID',
+          ...branchMatch
         }
       },
       {
@@ -89,23 +94,27 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
 
     const orders = await Order.countDocuments({
       createdAt: { $gte: today, $lt: tomorrow },
-      status: { $ne: 'CANCELED' }
+      status: { $ne: 'CANCELED' },
+      ...branchMatch
     });
 
     const pending = await Order.countDocuments({
-      status: { $in: ['CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] }
+      status: { $in: ['CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] },
+      ...branchMatch
     });
 
     const canceled = await Order.countDocuments({
       status: 'CANCELED',
-      createdAt: { $gte: today, $lt: tomorrow }
+      createdAt: { $gte: today, $lt: tomorrow },
+      ...branchMatch
     });
 
     // Dünün verileri - Dün ödenen tüm siparişler (paidAt'e göre)
     const yesterdayRevenueData = await Order.aggregate([
       {
         $match: {
-          status: 'PAID'
+          status: 'PAID',
+          ...branchMatch
         }
       },
       {
@@ -130,24 +139,28 @@ router.get('/stats/today', auth, requireRole('admin'), async (req, res, next) =>
 
     const yesterdayOrders = await Order.countDocuments({
       createdAt: { $gte: yesterday, $lt: yesterdayEnd },
-      status: { $ne: 'CANCELED' }
+      status: { $ne: 'CANCELED' },
+      ...branchMatch
     });
 
     const yesterdayCanceled = await Order.countDocuments({
       status: 'CANCELED',
-      createdAt: { $gte: yesterday, $lt: yesterdayEnd }
+      createdAt: { $gte: yesterday, $lt: yesterdayEnd },
+      ...branchMatch
     });
 
     // Bu haftanın sipariş sayısı
     const thisWeekOrders = await Order.countDocuments({
       createdAt: { $gte: thisWeekStart, $lt: tomorrow },
-      status: { $ne: 'CANCELED' }
+      status: { $ne: 'CANCELED' },
+      ...branchMatch
     });
 
     // Geçen haftanın sipariş sayısı
     const lastWeekOrders = await Order.countDocuments({
       createdAt: { $gte: lastWeekStart, $lt: lastWeekEnd },
-      status: { $ne: 'CANCELED' }
+      status: { $ne: 'CANCELED' },
+      ...branchMatch
     });
 
     const responseData = {

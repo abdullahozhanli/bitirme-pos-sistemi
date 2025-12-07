@@ -47,11 +47,20 @@ const productSchema = new mongoose.Schema(
       default: 'hot',
       required: true,
     },
+    branchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Branch',
+      required: false, // Migration için opsiyonel, sonra required yapılabilir
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// İndeksler
+productSchema.index({ branchId: 1 });
+productSchema.index({ category: 1, branchId: 1 });
 
 // --- YENİ: KAYDETMEDEN ÖNCE KANCASI (PRE-SAVE HOOK) ---
 productSchema.pre('save', function(next) {

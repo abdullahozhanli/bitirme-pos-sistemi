@@ -7,7 +7,16 @@ const tableSchema = new mongoose.Schema({
     type: String,
     enum: ['bos', 'dolu', 'rezerve', 'odeme_bekliyor'],
     default: 'bos'
+  },
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: false, // Migration için opsiyonel, sonra required yapılabilir
   }
 }, { timestamps: true });
+
+// İndeksler
+tableSchema.index({ branchId: 1 });
+tableSchema.index({ branchId: 1, name: 1 }, { unique: true });
 
 module.exports = mongoose.model('Table', tableSchema);

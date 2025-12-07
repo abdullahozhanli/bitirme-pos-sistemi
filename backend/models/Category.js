@@ -18,14 +18,21 @@ const categorySchema = new mongoose.Schema(
   {
     name: {
       type: String, 
-      required: true, 
-      unique: true, 
+      required: true,
+    },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Branch',
+      required: false, // Migration için opsiyonel, sonra required yapılabilir
     },
   },
   {
     timestamps: true,
   }
 );
+
+// BranchId + name unique olacak (unique constraint kaldırıldı, compound index eklendi)
+categorySchema.index({ branchId: 1, name: 1 }, { unique: true });
 
 // --- YENİ: KAYDETMEDEN ÖNCE KANCASI (PRE-SAVE HOOK) ---
 // 'save' (kaydet) komutu çalışmadan HEMEN ÖNCE araya girer

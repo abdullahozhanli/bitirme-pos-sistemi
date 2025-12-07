@@ -43,7 +43,9 @@ export default function RoleGuard({ allowedRoles = [], children, redirectTo = '/
     // Role'e göre uygun panele yönlendir
     let defaultRedirect = redirectTo;
     
-    if (userRole === 'admin') {
+    if (userRole === 'superadmin') {
+      defaultRedirect = '/superadmin';
+    } else if (userRole === 'admin') {
       defaultRedirect = '/admin';
     } else if (userRole === 'garson' || userRole === 'yetkili') {
       defaultRedirect = '/waiter';

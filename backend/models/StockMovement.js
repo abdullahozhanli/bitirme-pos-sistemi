@@ -27,6 +27,11 @@ const stockMovementSchema = new Schema(
       ref: 'User',
       required: false, // Kim yaptı (opsiyonel)
     },
+    branchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Branch',
+      required: false, // Migration için opsiyonel, sonra required yapılabilir
+    },
   },
   { timestamps: true }
 );
@@ -35,6 +40,7 @@ const stockMovementSchema = new Schema(
 stockMovementSchema.index({ productId: 1, createdAt: -1 });
 stockMovementSchema.index({ reason: 1, createdAt: -1 });
 stockMovementSchema.index({ refId: 1 });
+stockMovementSchema.index({ branchId: 1 });
 
 const StockMovement = mongoose.model('StockMovement', stockMovementSchema);
 

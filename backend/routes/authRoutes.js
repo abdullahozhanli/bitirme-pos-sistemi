@@ -24,7 +24,7 @@ router.post('/register', async (req, res, next) => {
     const userName = name || email.split('@')[0];
     
     // Role geçerliliğini kontrol et - yeni rolleri kullan
-    const validRoles = ['admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
+    const validRoles = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
     // Eski roller için mapping
     const roleMapping = {
       'waiter': 'garson',
@@ -150,17 +150,20 @@ router.post('/login', async (req, res, next) => {
 
     // Admin yoksa ilk giriş yapan kullanıcıyı admin yap
     const adminCount = await User.countDocuments({ role: 'admin' });
-    if (adminCount === 0) {
-      // Hiç admin yok, bu kullanıcıyı admin yap
+    const validRoles = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
+    
+    if (adminCount === 0 && user.role !== 'superadmin') {
+      // Hiç admin yok ve kullanıcı superadmin değilse, bu kullanıcıyı admin yap
       user.role = 'admin';
       await user.save();
       console.log(`✅ ${user.email} kullanıcısı ilk admin olarak ayarlandı`);
-    } else if (!user.role || !['admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'].includes(user.role)) {
+    } else if (!user.role || !validRoles.includes(user.role)) {
       // Role yoksa veya geçersizse default olarak 'garson' ver
       user.role = 'garson';
       await user.save();
       console.log(`⚠️  ${user.email} kullanıcısına otomatik olarak 'garson' rolü verildi`);
     }
+    // Superadmin rolü varsa değiştirme
 
     // Name kontrolü - yoksa email'den oluştur
     if (!user.name) {

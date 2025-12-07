@@ -7,6 +7,7 @@ import { useCart } from './context/CartContext.jsx';
 
 // Layout'ları import et
 import AdminLayout from './layouts/AdminLayout.jsx';
+import SuperAdminLayout from './layouts/SuperAdminLayout.jsx';
 import WaiterLayout from './layouts/WaiterLayout.jsx';
 import KitchenLayout from './layouts/KitchenLayout.jsx';
 import CashierLayout from './layouts/CashierLayout.jsx';
@@ -30,6 +31,9 @@ import WaiterTableManagementPage from './pages/WaiterTableManagementPage.jsx';
 import WaiterOrdersPage from './pages/WaiterOrdersPage.jsx';
 import WaiterOrderCreatePage from './pages/WaiterOrderCreatePage.jsx';
 import CashierDashboard from './pages/CashierDashboard.jsx';
+import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
+import SuperAdminBranchManagement from './pages/SuperAdminBranchManagement.jsx';
+import SuperAdminUserManagement from './pages/SuperAdminUserManagement.jsx';
 import Unauthorized from './pages/Unauthorized.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; 
 import RoleGuard from './components/RoleGuard.jsx';
@@ -95,7 +99,14 @@ function App() {
         <Route index element={<CashierDashboard />} />
       </Route>
 
-      {/* 6. ADMİN ROTALARI (KORUMALI) - sadece admin */}
+      {/* 6. SÜPER ADMİN ROTALARI (KORUMALI) - sadece superadmin */}
+      <Route path="/superadmin" element={<RoleGuard allowedRoles={['superadmin']}><SuperAdminLayout /></RoleGuard>}>
+        <Route index element={<SuperAdminDashboard />} />
+        <Route path="branches" element={<SuperAdminBranchManagement />} />
+        <Route path="users" element={<SuperAdminUserManagement />} />
+      </Route>
+
+      {/* 7. ADMİN ROTALARI (KORUMALI) - sadece admin */}
       {/* '/admin' ile başlayan tüm yollar ÖNCE 'RoleGuard'a gider */}
       <Route path="/admin" element={<RoleGuard allowedRoles={['admin']}><AdminLayout /></RoleGuard>}>
         {/* 'RoleGuard' içindeki 'AdminLayout'un <Outlet>'ine yüklenecekler: */}

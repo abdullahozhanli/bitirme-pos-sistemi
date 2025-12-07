@@ -147,9 +147,18 @@ router.get('/orders/ready', auth, requireRole('garson', 'admin', 'yetkili'), asy
  */
 router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   const session = await mongoose.startSession();
+  let finalTableId = null; // Scope dışında tanımla
   try {
-    const { tableId, tableNumber, items, notes } = req.body;
+    const { tableId, tableNumber, items, notes } = req.body || {};
     const waiterId = req.user.id;
+    
+    // Debug: Gelen veriyi logla
+    console.log('🔍 [DEBUG] Gelen request body:', {
+      hasTableId: !!tableId,
+      tableId: tableId,
+      tableNumber: tableNumber,
+      itemsCount: items?.length || 0
+    });
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Sepet boş' });
@@ -160,7 +169,18 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
     }
 
     // Eğer sadece tableNumber varsa, tableId'yi bul
-    let finalTableId = tableId;
+    finalTableId = tableId;
+    
+    // tableId string olarak geliyorsa ObjectId'ye çevir
+    if (finalTableId) {
+      if (typeof finalTableId === 'string' && mongoose.Types.ObjectId.isValid(finalTableId)) {
+        finalTableId = new mongoose.Types.ObjectId(finalTableId);
+      } else if (!(finalTableId instanceof mongoose.Types.ObjectId)) {
+        // Geçersiz format, sıfırla
+        finalTableId = null;
+      }
+    }
+    
     if (!finalTableId && tableNumber) {
       const table = await Table.findOne({ name: String(tableNumber) });
       if (table) {
@@ -188,6 +208,11 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
         return res.status(400).json({ message: `Masa bulunamadı: ${tableNumber}. Lütfen geçerli bir masa seçin.` });
       }
       return res.status(400).json({ message: 'Masa ID veya masa numarası zorunlu' });
+    }
+    
+    // finalTableId'nin ObjectId olduğundan emin ol
+    if (!(finalTableId instanceof mongoose.Types.ObjectId)) {
+      return res.status(400).json({ message: 'Geçersiz masa ID formatı' });
     }
 
     let created;
@@ -398,15 +423,21 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
       message: e.message,
       stack: e.stack,
       statusCode: e.statusCode,
-      tableId,
-      tableNumber,
-      itemsCount: items?.length
+      tableId: req.body?.tableId || 'undefined',
+      tableNumber: req.body?.tableNumber || 'undefined',
+      itemsCount: req.body?.items?.length || 0,
+      finalTableId: typeof finalTableId !== 'undefined' ? String(finalTableId) : 'undefined'
     });
     // Session'ı kapat
-    if (session.inTransaction()) {
-      await session.abortTransaction();
+    try {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+    } catch (sessionError) {
+      console.error('Session abort hatası:', sessionError);
+    } finally {
+      await session.endSession();
     }
-    session.endSession();
     // Hata mesajını döndür
     const statusCode = e.statusCode || 500;
     const message = e.message || 'Sipariş oluşturulamadı';

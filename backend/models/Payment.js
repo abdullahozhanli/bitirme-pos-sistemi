@@ -27,6 +27,11 @@ const paymentSchema = new Schema(
     paidAt: {
       type: Date,
     },
+    branchId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Branch',
+      required: false, // Migration için opsiyonel, sonra required yapılabilir
+    },
   },
   { timestamps: true }
 );
@@ -34,6 +39,7 @@ const paymentSchema = new Schema(
 // İndeksler
 paymentSchema.index({ orderId: 1 });
 paymentSchema.index({ status: 1, createdAt: -1 });
+paymentSchema.index({ branchId: 1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

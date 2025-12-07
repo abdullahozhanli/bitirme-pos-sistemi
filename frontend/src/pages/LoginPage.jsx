@@ -55,14 +55,18 @@ export default function LoginPage() {
         login(token, userData);
         
         // Role'e göre yönlendir
-        if (userData?.role === 'admin') {
+        if (userData?.role === 'superadmin') {
+          navigate('/superadmin');
+        } else if (userData?.role === 'admin') {
           navigate('/admin');
         } else if (userData?.role === 'garson' || userData?.role === 'yetkili') {
           navigate('/waiter');
         } else if (userData?.role === 'mutfak') {
           navigate('/kitchen');
+        } else if (userData?.role === 'kasa') {
+          navigate('/cashier');
         } else {
-          // Diğer rolleri (kasa, musteri vb.) ana sayfaya yönlendir
+          // Diğer rolleri (musteri vb.) ana sayfaya yönlendir
           navigate('/');
         }
       } else {

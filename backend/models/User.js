@@ -24,8 +24,13 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'],
+    enum: ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'],
     default: 'musteri',
+  },
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch',
+    required: false, // Süper admin'ler branch'e bağlı değil
   },
   isActive: {
     type: Boolean,
@@ -63,6 +68,11 @@ userSchema.pre('save', async function (next) {
 
   next();
 });
+
+// İndeksler
+userSchema.index({ email: 1 });
+userSchema.index({ branchId: 1 });
+userSchema.index({ role: 1 });
 
 // Bu şemayı kullanarak 'User' adında bir model oluşturuyoruz
 const User = mongoose.model('User', userSchema);

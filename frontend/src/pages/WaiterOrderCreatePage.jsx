@@ -157,6 +157,13 @@ export default function WaiterOrderCreatePage() {
       return;
     }
 
+    // Masa ID'sini güvenli bir şekilde al
+    const tableId = selectedTable._id || selectedTable.id;
+    if (!tableId) {
+      setError('Masa seçimi geçersiz. Lütfen tekrar bir masa seçin.');
+      return;
+    }
+
     if (cart.length === 0) {
       setError('Lütfen en az bir ürün seçin');
       return;
@@ -169,7 +176,7 @@ export default function WaiterOrderCreatePage() {
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
       const orderData = {
-        tableId: selectedTable._id || selectedTable.id,
+        tableId: String(tableId),
         items: cart.map(item => ({
           menuItemId: item._id,
           productId: item._id,
@@ -178,6 +185,14 @@ export default function WaiterOrderCreatePage() {
         })),
         notes: notes,
       };
+
+      // Debug: Gönderilen veriyi logla
+      console.log('🔍 [FRONTEND] Sipariş verisi gönderiliyor:', {
+        tableId: orderData.tableId,
+        tableIdType: typeof orderData.tableId,
+        itemsCount: orderData.items.length,
+        selectedTable: selectedTable
+      });
 
       const response = await axios.post('/api/waiter/orders', orderData, { headers });
       // Sipariş başarıyla oluşturuldu, siparişler sayfasına yönlendir
@@ -228,18 +243,28 @@ export default function WaiterOrderCreatePage() {
         <FormControl sx={{ minWidth: 200 }}>
           <InputLabel>Masa Seçimi</InputLabel>
           <Select
-            value={selectedTable?._id || selectedTable?.id || ''}
+            value={selectedTable ? String(selectedTable._id || selectedTable.id) : ''}
             label="Masa Seçimi"
             onChange={(e) => {
-              const table = tables.find(t => String(t._id || t.id) === String(e.target.value));
-              setSelectedTable(table);
+              const tableId = String(e.target.value);
+              const table = tables.find(t => String(t._id || t.id) === tableId);
+              if (table) {
+                setSelectedTable(table);
+              } else {
+                setError('Masa bulunamadı. Lütfen tekrar seçin.');
+              }
             }}
           >
-            {tables.map((table) => (
-              <MenuItem key={table._id || table.id} value={table._id || table.id}>
-                {table.name || `Masa ${table.number || ''}`}
-              </MenuItem>
-            ))}
+            {tables
+              .filter(table => table._id || table.id)
+              .map((table) => {
+                const tableId = String(table._id || table.id);
+                return (
+                  <MenuItem key={tableId} value={tableId}>
+                    {table.name || `Masa ${table.number || ''}`}
+                  </MenuItem>
+                );
+              })}
           </Select>
         </FormControl>
       </Box>
