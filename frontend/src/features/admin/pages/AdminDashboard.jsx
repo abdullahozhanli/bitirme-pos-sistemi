@@ -1,0 +1,286 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import {
+  Box,
+  Typography,
+  Paper,
+  Card,
+  CardContent,
+  Grid,
+  Chip,
+  Button,
+  Stack,
+  Divider,
+  CircularProgress,
+  Alert,
+} from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import PeopleIcon from '@mui/icons-material/People';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import PageHeader from '../../../shared/components/layout/PageHeader.jsx';
+import KpiCard from '../components/KpiCard.tsx';
+import { useQuery } from '@tanstack/react-query';
+import { getKpis } from '../../../shared/lib/api/dashboard.ts';
+import EmptyState from '../../../shared/components/state/EmptyState.tsx';
+import ErrorState from '../../../shared/components/state/ErrorState.tsx';
+import ViewportProbe from '../../../shared/components/dev/ViewportProbe.tsx';
+import { COLORS } from '../../../shared/constants/colors.js';
+
+// İstatistik kartı
+function StatCard({ title, value, unit, icon, subtitle, trend, trendDirection, accentColor }) {
+  return (
+    <Card sx={{ boxShadow: 3, height: '100%', position: 'relative', overflow: 'hidden', borderRadius: 2 }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: (theme)=>accentColor ? theme.palette[accentColor]?.main : 'primary.main', color: '#fff', flexShrink: 0 }}>
+              {icon}
+            </Box>
+            <Typography sx={{ fontSize: 'clamp(10px, 1.3vw, 13px)' }} color="text.secondary">
+          {title}
+        </Typography>
+          </Box>
+        </Box>
+        <Typography variant="h5" component="div" sx={{ fontSize: 'clamp(16px, 2.1vw, 22px)', color: 'text.primary', fontWeight: 700, mt: 0.25 }}>
+          {value} {unit}
+        </Typography>
+        {subtitle && (
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 'clamp(10px, 1.3vw, 12px)' }}>
+            {subtitle}
+          </Typography>
+        )}
+        {trend && (
+          <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700, color: trendDirection === 'down' ? 'error.main' : 'success.main', fontSize: '0.9rem' }}>
+            {trendDirection === 'down' ? <ArrowDownwardIcon sx={{ fontSize: 16 }} /> : <ArrowUpwardIcon sx={{ fontSize: 16 }} />}
+            <Typography variant="caption" sx={{ fontWeight: 700 }}>{trend}</Typography>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function AdminDashboard() {
+  const [summary, setSummary] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true); 
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('userData');
+        
+        console.log('🔍 AdminDashboard fetchData:', {
+          hasToken: !!token,
+          tokenPreview: token ? `${token.substring(0, 20)}...` : null,
+          userData: userData ? JSON.parse(userData) : null
+        });
+        
+        const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+        
+        const [summaryRes, ordersRes] = await Promise.all([
+          axios.get('/api/admin/stats/today', { headers }),
+          axios.get('/api/admin/orders?limit=100', { headers }),
+        ]);
+
+        setSummary(summaryRes.data);
+        const ordersList = Array.isArray(ordersRes.data) ? ordersRes.data : (ordersRes.data?.items || []);
+        setOrders(ordersList);
+      } catch (err) {
+        console.error('Dashboard verileri yüklenemedi:', err);
+        setError(err.response?.data?.message || err.message || 'Veriler yüklenemedi');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []); 
+
+  const { data: kpis, isLoading: kpisLoading, isError: kpisError, refetch: refetchKpis, error: kpisErrObj } = useQuery({
+    queryKey: ['kpis'],
+    queryFn: getKpis,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
+  
+  console.log('🔍 AdminDashboard - kpis değeri:', kpis);
+
+  const nf = useMemo(() => new Intl.NumberFormat('tr-TR'), []);
+
+  const calculatePercentageChange = (current, previous) => {
+    if (previous === undefined || previous === null) {
+      return null;
+    }
+    
+    if (previous === 0) {
+      if (current > 0) {
+        return { trend: 'up', value: '+100%' };
+      }
+      return null;
+    }
+    
+    const change = ((current - previous) / previous) * 100;
+    const rounded = Math.abs(change) < 0.1 ? 0 : Math.round(change * 10) / 10;
+    
+    if (rounded === 0) {
+      return null;
+    }
+    
+    const sign = rounded > 0 ? '+' : '';
+    return {
+      trend: rounded > 0 ? 'up' : 'down',
+      value: `${sign}${rounded}%`
+    };
+  };
+
+  const revenueDelta = useMemo(() => {
+    if (!kpis?.yesterday) return null;
+    return calculatePercentageChange(kpis.revenue, kpis.yesterday.revenue);
+  }, [kpis]);
+
+  const ordersDelta = useMemo(() => {
+    if (!kpis?.lastWeek || !kpis?.thisWeek) return null;
+    return calculatePercentageChange(kpis.thisWeek.orders, kpis.lastWeek.orders);
+  }, [kpis]);
+
+  const canceledDelta = useMemo(() => {
+    if (!kpis?.yesterday) return null;
+    return calculatePercentageChange(kpis.canceled, kpis.yesterday.canceled);
+  }, [kpis]);
+
+  const isZeroData = kpis !== undefined && kpis !== null && 
+    kpis.revenue === 0 && 
+    (kpis.thisWeek?.orders ?? kpis.orders ?? 0) === 0 && 
+    kpis.pending === 0 && 
+    kpis.canceled === 0;
+  
+  console.log('🔍 isZeroData kontrolü:', {
+    'kpis === undefined': kpis === undefined,
+    'kpis === null': kpis === null,
+    'kpis': kpis,
+    'revenue': kpis?.revenue,
+    'orders': kpis?.thisWeek?.orders ?? kpis?.orders,
+    'pending': kpis?.pending,
+    'canceled': kpis?.canceled,
+    'isZeroData': isZeroData
+  });
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
+  }
+
+
+  return (
+    <Box
+      className="container"
+      sx={{
+        flexGrow: 1,
+        maxWidth: '100%',
+        mx: 'auto',
+        px: { xs: 2, sm: 3, md: 4 },
+        py: { xs: 2, sm: 3, md: 4 },
+        minW: 0,
+        overflowX: 'hidden',
+      }}
+    >
+      <PageHeader title="Kontrol Paneli" subtitle="Bugünün özeti" />
+
+      <Box
+        sx={{
+          mb: { xs: 3, sm: 4 },
+          minW: 0,
+          overflowX: 'hidden',
+        }}
+      >
+        <Box role="status" aria-live="polite" sx={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
+          {kpisLoading ? 'KPI verileri yükleniyor' : kpisError ? 'KPI verileri alınamadı' : 'KPI verileri yüklendi'}
+        </Box>
+        <Box
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+            gap: { xs: 2, sm: 2.5, lg: 3 },
+            minW: 0,
+          }}
+        >
+        <KpiCard
+          label="Toplam Ciro (Ödenenler)"
+          value={`${nf.format(kpis?.revenue ?? 0)} TL`}
+          hint="dünden"
+          delta={revenueDelta}
+          icon={<CheckCircleIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.success}
+          loading={kpisLoading}
+          error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
+          onRetry={() => refetchKpis()}
+        />
+        <KpiCard
+          label="Toplam Sipariş"
+          value={`${nf.format(kpis?.thisWeek?.orders ?? kpis?.orders ?? 0)} Adet`}
+          hint="bu hafta"
+          delta={ordersDelta}
+          icon={<ShoppingCartIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.info}
+          loading={kpisLoading}
+          error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
+          onRetry={() => refetchKpis()}
+        />
+        <KpiCard
+          label="Bekleyen Sipariş"
+          value={`${nf.format(kpis?.pending ?? 0)} Adet`}
+          hint="aktif"
+          icon={<AccessTimeIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.warning}
+          loading={kpisLoading}
+          error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
+          onRetry={() => refetchKpis()}
+        />
+        <KpiCard
+          label="İptal Edilen"
+          value={`${nf.format(kpis?.canceled ?? 0)} Adet`}
+          hint="dünden"
+          delta={canceledDelta}
+          icon={<PersonIcon sx={{ color: '#fff', fontSize: 18 }} />}
+          iconBgColor={COLORS.error}
+          loading={kpisLoading}
+          error={kpisError ? (kpisErrObj?.message || 'Hata') : undefined}
+          onRetry={() => refetchKpis()}
+              />
+            </Box>
+          </Box>
+
+      {!kpisLoading && !kpisError && isZeroData && (
+        <EmptyState title="Veri bulunamadı" description="KPI verileri şu anda boş görünüyor." actionLabel="Yenile" onAction={() => refetchKpis()} />
+      )}
+      {kpisError && (
+        <Box sx={{ mt: 2 }}>
+          <ErrorState message={kpisErrObj?.message || 'KPI verileri alınamadı'} onRetry={() => refetchKpis()} />
+        </Box>
+      )}
+
+      {import.meta.env.DEV && <ViewportProbe />}
+    </Box>
+  );
+}
+

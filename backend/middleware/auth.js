@@ -19,7 +19,7 @@ module.exports = async function auth(req, res, next) {
     }
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findById(payload.id).lean();
+    const user = await User.findById(payload.id).select('_id role email branchId isActive').lean();
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Geçersiz kullanıcı' });
     }
@@ -29,7 +29,8 @@ module.exports = async function auth(req, res, next) {
     req.user = {
       id: user._id.toString(),
       role: user.role,
-      email: user.email
+      email: user.email,
+      branchId: user.branchId ? user.branchId.toString() : null
     };
 
     next();

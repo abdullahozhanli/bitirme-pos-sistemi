@@ -96,7 +96,7 @@ router.put('/branches/:id', async (req, res, next) => {
 
 /**
  * DELETE /api/superadmin/branches/:id
- * Branch sil (soft delete - isActive: false)
+ * Branch sil (hard delete - gerçekten sil)
  */
 router.delete('/branches/:id', async (req, res, next) => {
   try {
@@ -109,11 +109,40 @@ router.delete('/branches/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Şube bulunamadı' });
     }
 
-    // Soft delete - isActive: false yap
-    branch.isActive = false;
-    await branch.save();
+    // İlişkili modelleri kontrol et
+    const User = require('../models/User');
+    const Product = require('../models/Product');
+    const Category = require('../models/Category');
+    const Table = require('../models/Table');
+    const Order = require('../models/Order');
+    
+    const [userCount, productCount, categoryCount, tableCount, orderCount] = await Promise.all([
+      User.countDocuments({ branchId: req.params.id }),
+      Product.countDocuments({ branchId: req.params.id }),
+      Category.countDocuments({ branchId: req.params.id }),
+      Table.countDocuments({ branchId: req.params.id }),
+      Order.countDocuments({ branchId: req.params.id }),
+    ]);
 
-    res.json({ message: 'Şube devre dışı bırakıldı', branch });
+    const hasRelatedData = userCount > 0 || productCount > 0 || categoryCount > 0 || tableCount > 0 || orderCount > 0;
+
+    if (hasRelatedData) {
+      return res.status(400).json({ 
+        message: 'Bu şubeye ait veriler bulunmaktadır. Şube silinemez.',
+        details: {
+          users: userCount,
+          products: productCount,
+          categories: categoryCount,
+          tables: tableCount,
+          orders: orderCount
+        }
+      });
+    }
+
+    // İlişkili veri yoksa gerçekten sil
+    await Branch.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Şube başarıyla silindi' });
   } catch (e) {
     next(e);
   }
@@ -323,4 +352,5 @@ router.post('/users/:id/reset-password', async (req, res, next) => {
 });
 
 module.exports = router;
+
 

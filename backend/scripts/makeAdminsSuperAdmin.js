@@ -61,3 +61,10 @@ async function makeAdminsSuperAdmin() {
 
 makeAdminsSuperAdmin();
 
+
+
+
+
+
+
+

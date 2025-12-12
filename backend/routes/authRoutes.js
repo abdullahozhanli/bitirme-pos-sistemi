@@ -80,8 +80,8 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'E-posta ve şifre gerekli' });
     }
 
-    // Kullanıcıyı bul - passwordHash'i de getir
-    let user = await User.findOne({ email });
+    // Kullanıcıyı bul - passwordHash ve branchId'yi de getir
+    let user = await User.findOne({ email }).populate('branchId', 'name');
     if (!user) {
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
@@ -178,7 +178,12 @@ router.post('/login', async (req, res, next) => {
         id: user._id,
         email: user.email,
         role: user.role,
-        name: user.name
+        name: user.name,
+        branchId: user.branchId ? user.branchId._id || user.branchId : null,
+        branch: user.branchId ? {
+          _id: user.branchId._id || user.branchId,
+          name: user.branchId.name || null
+        } : null
       }
     });
 

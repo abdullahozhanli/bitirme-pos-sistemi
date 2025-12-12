@@ -71,3 +71,10 @@ async function createSuperAdmin() {
 
 createSuperAdmin();
 
+
+
+
+
+
+
+

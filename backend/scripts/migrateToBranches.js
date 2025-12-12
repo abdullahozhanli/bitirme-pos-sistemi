@@ -155,3 +155,10 @@ async function migrate() {
 // Script'i çalıştır
 migrate();
 
+
+
+
+
+
+
+

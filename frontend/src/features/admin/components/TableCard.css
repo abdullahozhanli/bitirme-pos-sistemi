@@ -1,0 +1,195 @@
+/* --- ANA KART GÖVDESİ --- */
+.table-card {
+  position: relative;
+  background: #ffffff;
+  border: none; 
+  border-radius: 40px; 
+  padding: 24px;
+  width: 100%;
+  max-width: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); 
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 180px;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.table-card:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+.table-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  border-top-left-radius: 40px; 
+  border-bottom-left-radius: 40px;
+  background-color: #e5e7eb;
+  z-index: 1;
+}
+
+.table-card.available::before { background-color: #2fb344; }
+.table-card.full::before { background-color: #ef4444; }
+.table-card.reserved::before { background-color: #f59e0b; }
+.table-card.payment_pending::before { background-color: #3b82f6; }
+
+.table-card.selected {
+  box-shadow: 0 0 0 2px #1976d2, 0 10px 40px rgba(0, 0, 0, 0.08);
+  background: #f3f7ff;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.table-card.selected::before {
+  width: 10px;
+  transition: width 0.2s ease;
+}
+
+.card-top-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-left: 16px;
+  margin-bottom: 24px;
+}
+
+.table-info-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.table-icon-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.table-icon {
+  font-size: 32px !important;
+  color: #4b5563;
+}
+
+.table-text-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-text-info h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.capacity-text {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.status-dot.full { background: #ef4444; }
+.status-dot.available { background: #2fb344; }
+.status-dot.reserved { background: #f59e0b; }
+.status-dot.payment_pending { background: #3b82f6; }
+
+.card-bottom-section {
+  width: 100%;
+  padding: 14px;
+  border-radius: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 55px;
+}
+
+.table-card.available .card-bottom-section {
+  background-color: #ecfdf3;
+}
+
+.table-card.available .card-bottom-section * {
+  color: #2fb344; 
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0;
+}
+
+.table-card.full .card-bottom-section {
+  background-color: #fef2f2; 
+}
+
+.status-text-large {
+  font-size: 16px;
+  color: #ef4444;
+  font-weight: 700;
+  margin: 0;
+}
+
+.order-number {
+  font-size: 13px;
+  color: #7f1d1d;
+  font-weight: 500;
+  margin: 0;
+}
+
+.order-summary {
+  font-size: 13px;
+  color: #7f1d1d;
+  font-weight: 500;
+  margin: 0;
+}
+
+.table-card.reserved .card-bottom-section {
+  background-color: #fffbeb;
+}
+
+.table-card.reserved .card-bottom-section * {
+  color: #f59e0b;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0;
+}
+
+.table-card.payment_pending .card-bottom-section {
+  background-color: #eff6ff;
+}
+
+.table-card.payment_pending .card-bottom-section * {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@media (max-width: 768px) {
+  .table-card {
+    padding: 16px;
+    min-height: auto;
+  }
+}
+
