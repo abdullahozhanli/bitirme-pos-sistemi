@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { authMiddleware } = require('../middleware/authMiddleware');
@@ -7,7 +8,7 @@ const router = express.Router();
 
 /**
  * GET /api/products
- * Query: page, limit, q, category, inStock, sort
+ * Query: page, limit, q, category, inStock, sort, branchId
  */
 router.get('/', async (req, res, next) => {
   try {
@@ -17,10 +18,20 @@ router.get('/', async (req, res, next) => {
       q,
       category,
       inStock,
+      branchId,
       sort = '-createdAt',
     } = req.query;
 
     const filter = {};
+
+    // Şube bazlı filtreleme (müşteri menüsü için)
+    if (branchId) {
+      if (!mongoose.Types.ObjectId.isValid(branchId)) {
+        return res.status(400).json({ message: 'Geçersiz branchId' });
+      }
+      filter.branchId = branchId;
+    }
+
     if (q) filter.name = { $regex: q, $options: 'i' };
     if (category) filter.category = category;
     if (inStock === 'true') filter.countInStock = { $gt: 0 };

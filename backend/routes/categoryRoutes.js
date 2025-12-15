@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router(); 
 const Category = require('../models/Category');
 const authMiddleware = require('../middleware/authMiddleware'); // YENİ: Güvenlik görevlisini import et
@@ -30,12 +31,22 @@ router.post('/', authMiddleware, async (req, res, next) => {
 
 /**
  * @route   GET /api/categories
- * @desc    Tüm kategorileri listeler
+ * @desc    Tüm kategorileri listeler (isteğe bağlı branchId filtresiyle)
  * @access  Public (Burası herkese açık kalmalı, 'authMiddleware' YOK)
  */
 router.get('/', async (req, res, next) => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    const { branchId } = req.query;
+
+    const filter = {};
+    if (branchId) {
+      if (!mongoose.Types.ObjectId.isValid(branchId)) {
+        return res.status(400).json({ message: 'Geçersiz branchId' });
+      }
+      filter.branchId = branchId;
+    }
+
+    const categories = await Category.find(filter).sort({ createdAt: -1 });
     res.json(categories);
   } catch (error) {
     console.error(error.message);

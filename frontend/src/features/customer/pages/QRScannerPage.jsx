@@ -11,28 +11,30 @@ export default function QRScannerPage() {
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
   const navigate = useNavigate();
-  const { setTableNumber } = useCart();
+  const { setTableNumber, setBranchId } = useCart();
 
-  // QR kod içinden masa numarasını parse et
-  const parseTableNumber = (qrText) => {
+  // QR kod içinden masa ve şube bilgisini parse et
+  const parseQrData = (qrText) => {
     try {
-      // URL formatı: http://localhost:5173/order?table=5
+      // URL formatı: http://localhost:5173/order?table=5&branch=<branchId>
       const url = new URL(qrText);
       const tableParam = url.searchParams.get('table');
+      const branchParam = url.searchParams.get('branch');
+
       if (tableParam) {
-        return tableParam;
+        return { tableNumber: tableParam, branchId: branchParam || null };
       }
       
       // Direkt masa numarası olabilir
       if (/^\d+$/.test(qrText.trim())) {
-        return qrText.trim();
+        return { tableNumber: qrText.trim(), branchId: null };
       }
       
       return null;
     } catch (e) {
       // URL değilse direkt sayı olabilir
       if (/^\d+$/.test(qrText.trim())) {
-        return qrText.trim();
+        return { tableNumber: qrText.trim(), branchId: null };
       }
       return null;
     }
@@ -92,23 +94,29 @@ export default function QRScannerPage() {
   // QR kod okutulduğunda
   const handleQRCodeScanned = (qrText) => {
     console.log('QR kod okundu:', qrText);
-    const tableNum = parseTableNumber(qrText);
-    console.log('Parse edilen masa numarası:', tableNum);
+    const data = parseQrData(qrText);
+    console.log('Parse edilen veri:', data);
     
-    if (!tableNum) {
+    if (!data || !data.tableNumber) {
       setError('Geçersiz QR kod. Lütfen masanızdaki QR kodu okutun.');
       return;
     }
 
     // Masa numarasını kaydet
-    console.log('Masa numarası kaydediliyor:', tableNum);
-    setTableNumber(tableNum);
+    console.log('Masa numarası kaydediliyor:', data.tableNumber);
+    setTableNumber(data.tableNumber);
+
+    // Şube bilgisini kaydet (varsa)
+    if (data.branchId) {
+      console.log('BranchId kaydediliyor:', data.branchId);
+      setBranchId(data.branchId);
+    }
     
     // localStorage'ı kontrol et
     const stored = localStorage.getItem('tableNumber');
     console.log('localStorage tableNumber:', stored);
     
-    setMessage(`Masa ${tableNum} seçildi. Menüye yönlendiriliyorsunuz...`);
+    setMessage(`Masa ${data.tableNumber} seçildi. Menüye yönlendiriliyorsunuz...`);
     
     // Kısa bir gecikme sonrası menüye yönlendir
     setTimeout(() => {

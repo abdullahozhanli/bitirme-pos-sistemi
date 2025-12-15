@@ -18,7 +18,7 @@ export interface Order {
 
 export async function getOrders(): Promise<Order[]> {
   const token = localStorage.getItem('token');
-  const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
   
   const response = await fetch('/api/admin/orders', { headers });
   if (!response.ok) {

@@ -37,7 +37,7 @@ export default function HomePage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
-  const { addToCart, cartItems } = useCart();
+  const { addToCart, cartItems, branchId } = useCart();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -71,9 +71,16 @@ export default function HomePage() {
         console.log('🔧 HomePage - Axios baseURL ayarlandı:', baseURL);
         
         // Public endpoint'leri kullan (authentication gerektirmez)
+        const productParams = { page: 1, limit: 12 };
+        if (branchId) {
+          productParams.branchId = branchId;
+        }
+
+        const categoryParams = branchId ? { branchId } : {};
+
         const [prodRes, catRes] = await Promise.all([
-          axios.get('/api/products', { params: { page: 1, limit: 12 } }),
-          axios.get('/api/categories'),
+          axios.get('/api/products', { params: productParams }),
+          axios.get('/api/categories', { params: categoryParams }),
         ]);
 
         const prodList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.items || [];
@@ -104,7 +111,7 @@ export default function HomePage() {
       }
     };
     fetchData();
-  }, []);
+  }, [branchId]);
 
   // Daha fazla ürün yükle
   const loadMore = useCallback(async () => {
@@ -121,8 +128,12 @@ export default function HomePage() {
       }
       
       const nextPage = page + 1;
+      const params = { page: nextPage, limit: 12 };
+      if (branchId) {
+        params.branchId = branchId;
+      }
       // Public endpoint kullan
-      const prodRes = await axios.get('/api/products', { params: { page: nextPage, limit: 12 } });
+      const prodRes = await axios.get('/api/products', { params });
       
       const prodList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.items || [];
       const total = prodRes.data?.total || prodRes.data?.pages || 0;
@@ -145,7 +156,7 @@ export default function HomePage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [page, hasMore, loadingMore]);
+  }, [page, hasMore, loadingMore, branchId]);
 
   // IntersectionObserver ile sonsuz scroll
   useEffect(() => {

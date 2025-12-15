@@ -293,7 +293,8 @@ router.put('/users/:id', async (req, res, next) => {
 
 /**
  * DELETE /api/superadmin/users/:id
- * Kullanıcı sil (soft delete - isActive: false)
+ * Kullanıcıyı VERİTABANINDAN tamamen sil (hard delete)
+ * Not: superadmin kullanıcılar silinemez
  */
 router.delete('/users/:id', async (req, res, next) => {
   try {
@@ -306,15 +307,15 @@ router.delete('/users/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
 
-    // Soft delete - isActive: false yap
-    user.isActive = false;
-    await user.save();
+    // Süper admin asla silinemez
+    if (user.role === 'superadmin') {
+      return res.status(400).json({ message: 'Süper admin kullanıcılar silinemez' });
+    }
 
-    const userResponse = user.toObject();
-    delete userResponse.passwordHash;
-    delete userResponse.password;
+    // Hard delete - kullanıcıyı tamamen sil
+    await User.findByIdAndDelete(req.params.id);
 
-    res.json({ message: 'Kullanıcı devre dışı bırakıldı', user: userResponse });
+    return res.json({ message: 'Kullanıcı başarıyla silindi' });
   } catch (e) {
     next(e);
   }

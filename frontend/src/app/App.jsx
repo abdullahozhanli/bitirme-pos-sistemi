@@ -44,17 +44,26 @@ import ViewportProbe from '../shared/components/dev/ViewportProbe.tsx';
 function TableSetter() {
   const [searchParams] = useSearchParams(); 
   const navigate = useNavigate();
-  const { setTableNumber } = useCart();
+  const { setTableNumber, setBranchId } = useCart();
   
   useEffect(() => {
     const table = searchParams.get('table');
+    const branch = searchParams.get('branch');
+
     if (table) {
       setTableNumber(table);
     } else {
       setTableNumber(null);
     }
+
+    if (branch) {
+      setBranchId(branch);
+    } else {
+      setBranchId(null);
+    }
+
     navigate('/');
-  }, [searchParams, setTableNumber, navigate]); 
+  }, [searchParams, setTableNumber, setBranchId, navigate]); 
   
   return <div>Masa numarası ayarlanıyor, lütfen bekleyin...</div>;
 }
@@ -124,4 +133,5 @@ function App() {
 }
 
 export default App;
+
 

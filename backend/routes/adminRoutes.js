@@ -319,6 +319,10 @@ router.post('/orders', auth, requireRole('admin'), async (req, res, next) => {
  */
 router.get('/orders', auth, requireRole('admin'), async (req, res, next) => {
   try {
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
     const {
       page = 1,
       limit = 50,
@@ -326,7 +330,7 @@ router.get('/orders', auth, requireRole('admin'), async (req, res, next) => {
       sort = '-createdAt',
     } = req.query;
 
-    const filter = {};
+    const filter = { branchId: req.user.branchId };
     if (status) filter.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -366,7 +370,10 @@ router.put('/orders/:id/status', auth, requireRole('admin'), async (req, res, ne
       return res.status(400).json({ message: 'Geçersiz durum' });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
     // Terminal durumlar kontrolü
@@ -484,7 +491,10 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
 router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { reason } = req.body;
-    const order = await Order.findById(req.params.id).populate('table', '_id name');
+    const order = await Order.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    }).populate('table', '_id name');
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
     if (order.status === 'PAID') {
@@ -556,7 +566,7 @@ router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, ne
 
 /**
  * GET /api/admin/products
- * Ürün listesi (admin)
+ * Ürün listesi (admin) - sadece kullanıcının şubesine ait ürünler
  */
 router.get('/products', auth, requireRole('admin'), async (req, res, next) => {
   try {
@@ -569,7 +579,12 @@ router.get('/products', auth, requireRole('admin'), async (req, res, next) => {
       sort = '-createdAt',
     } = req.query;
 
-    const filter = {};
+    // Branch filtreleme: her admin sadece kendi şubesini görsün
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const filter = { branchId: req.user.branchId };
     if (q) filter.name = { $regex: q, $options: 'i' };
     if (category) filter.category = category;
     if (inStock === 'true') filter.countInStock = { $gt: 0 };
@@ -599,12 +614,26 @@ router.get('/products', auth, requireRole('admin'), async (req, res, next) => {
 
 /**
  * POST /api/admin/products
- * Ürün oluştur (admin)
+ * Ürün oluştur (admin) - ürün, kullanıcının şubesine bağlanır
  */
 router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { name, price, description, imageUrl, category, countInStock, station } = req.body;
-    const product = new Product({ name, price, description, imageUrl, category, countInStock, station: station || 'hot' });
+    
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const product = new Product({ 
+      name, 
+      price, 
+      description, 
+      imageUrl, 
+      category, 
+      countInStock, 
+      station: station || 'hot',
+      branchId: req.user.branchId,
+    });
     await product.save();
     res.status(201).json(product);
   } catch (e) {
@@ -614,11 +643,19 @@ router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
 
 /**
  * PUT /api/admin/products/:id
- * Ürün güncelle (admin)
+ * Ürün güncelle (admin) - sadece kendi şubesine ait ürünü güncelleyebilir
  */
 router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const updated = await Product.findOneAndUpdate(
+      { _id: req.params.id, branchId: req.user.branchId },
+      req.body,
+      { new: true }
+    );
     if (!updated) return res.status(404).json({ message: 'Ürün bulunamadı' });
     res.json(updated);
   } catch (e) {
@@ -628,11 +665,18 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
 
 /**
  * DELETE /api/admin/products/:id
- * Ürün sil (admin)
+ * Ürün sil (admin) - sadece kendi şubesine ait ürünü silebilir
  */
 router.delete('/products/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const deleted = await Product.findByIdAndDelete(req.params.id);
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const deleted = await Product.findOneAndDelete({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
     if (!deleted) return res.status(404).json({ message: 'Ürün bulunamadı' });
     res.json({ message: 'Ürün silindi', id: deleted._id });
   } catch (e) {
@@ -642,11 +686,15 @@ router.delete('/products/:id', auth, requireRole('admin'), async (req, res, next
 
 /**
  * GET /api/admin/categories
- * Kategori listesi (admin)
+ * Kategori listesi (admin) - sadece kullanıcının şubesine ait kategoriler
  */
 router.get('/categories', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const categories = await Category.find({}).sort({ name: 1 });
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const categories = await Category.find({ branchId: req.user.branchId }).sort({ name: 1 });
     res.json(categories);
   } catch (e) {
     next(e);
@@ -655,16 +703,24 @@ router.get('/categories', auth, requireRole('admin'), async (req, res, next) => 
 
 /**
  * POST /api/admin/categories
- * Kategori oluştur (admin)
+ * Kategori oluştur (admin) - kategori, kullanıcının şubesine bağlanır
  */
 router.post('/categories', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { name } = req.body;
-    let category = await Category.findOne({ name });
+    
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    let category = await Category.findOne({ name, branchId: req.user.branchId });
     if (category) {
       return res.status(400).json({ message: 'Bu kategori zaten mevcut' });
     }
-    category = new Category({ name });
+    category = new Category({ 
+      name,
+      branchId: req.user.branchId,
+    });
     await category.save();
     res.status(201).json(category);
   } catch (e) {
@@ -674,12 +730,21 @@ router.post('/categories', auth, requireRole('admin'), async (req, res, next) =>
 
 /**
  * PUT /api/admin/categories/:id
- * Kategori güncelle (admin)
+ * Kategori güncelle (admin) - sadece kendi şubesine ait kategoriyi güncelleyebilir
  */
 router.put('/categories/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { name } = req.body;
-    const updated = await Category.findByIdAndUpdate(req.params.id, { name }, { new: true });
+    
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const updated = await Category.findOneAndUpdate(
+      { _id: req.params.id, branchId: req.user.branchId },
+      { name },
+      { new: true }
+    );
     if (!updated) return res.status(404).json({ message: 'Kategori bulunamadı' });
     res.json(updated);
   } catch (e) {
@@ -689,11 +754,18 @@ router.put('/categories/:id', auth, requireRole('admin'), async (req, res, next)
 
 /**
  * DELETE /api/admin/categories/:id
- * Kategori sil (admin)
+ * Kategori sil (admin) - sadece kendi şubesine ait kategoriyi silebilir
  */
 router.delete('/categories/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const deleted = await Category.findByIdAndDelete(req.params.id);
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const deleted = await Category.findOneAndDelete({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
     if (!deleted) return res.status(404).json({ message: 'Kategori bulunamadı' });
     res.json({ message: 'Kategori silindi', id: deleted._id });
   } catch (e) {
@@ -707,7 +779,11 @@ router.delete('/categories/:id', auth, requireRole('admin'), async (req, res, ne
  */
 router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const tables = await Table.find().sort({ name: 1 }).lean();
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const tables = await Table.find({ branchId: req.user.branchId }).sort({ name: 1 }).lean();
     
     // Her masa için aktif siparişleri ve toplam tutarı hesapla
     const tablesWithOrders = await Promise.all(
@@ -767,7 +843,14 @@ router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
  */
 router.get('/tables/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const table = await Table.findById(req.params.id).lean();
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    const table = await Table.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    }).lean();
     if (!table) return res.status(404).json({ message: 'Masa bulunamadı' });
     
     // Masa siparişlerini getir
@@ -799,6 +882,20 @@ router.get('/tables/:id', auth, requireRole('admin'), async (req, res, next) => 
 router.get('/tables/:id/orders', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { status, limit = 50 } = req.query;
+
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
+    // Önce masanın bu şubeye ait olduğundan emin ol
+    const table = await Table.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    }).lean();
+    if (!table) {
+      return res.status(404).json({ message: 'Masa bulunamadı' });
+    }
+
     const filter = { table: req.params.id };
     if (status) filter.status = status;
     
@@ -821,13 +918,17 @@ router.get('/tables/:id/orders', auth, requireRole('admin'), async (req, res, ne
 router.post('/tables', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const { name, capacity, status } = req.body;
+
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
     
     if (!name) {
       return res.status(400).json({ message: 'Masa adı gereklidir' });
     }
     
     // Aynı isimde masa var mı kontrol et
-    const existing = await Table.findOne({ name });
+    const existing = await Table.findOne({ name, branchId: req.user.branchId });
     if (existing) {
       return res.status(400).json({ message: 'Bu isimde bir masa zaten mevcut' });
     }
@@ -835,7 +936,8 @@ router.post('/tables', auth, requireRole('admin'), async (req, res, next) => {
     const table = new Table({
       name,
       capacity: capacity || 4,
-      status: status || 'bos'
+      status: status || 'bos',
+      branchId: req.user.branchId,
     });
     
     await table.save();
@@ -868,15 +970,23 @@ router.put('/tables/:id', auth, requireRole('admin'), async (req, res, next) => 
     if (capacity !== undefined) updateData.capacity = Number(capacity);
     if (status) updateData.status = status;
     
-    // İsim değişiyorsa, aynı isimde başka masa var mı kontrol et
+    // İsim değişiyorsa, aynı isimde başka masa var mı kontrol et (aynı şube içinde)
     if (name) {
-      const existing = await Table.findOne({ name, _id: { $ne: req.params.id } });
+      const existing = await Table.findOne({ 
+        name, 
+        branchId: req.user.branchId,
+        _id: { $ne: req.params.id } 
+      });
       if (existing) {
         return res.status(400).json({ message: 'Bu isimde bir masa zaten mevcut' });
       }
     }
     
-    const updated = await Table.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const updated = await Table.findOneAndUpdate(
+      { _id: req.params.id, branchId: req.user.branchId },
+      updateData,
+      { new: true }
+    );
     if (!updated) return res.status(404).json({ message: 'Masa bulunamadı' });
     
     // Socket.io emit: Masa güncellendi
@@ -909,6 +1019,10 @@ router.put('/tables/:id', auth, requireRole('admin'), async (req, res, next) => 
  */
 router.delete('/tables/:id', auth, requireRole('admin'), async (req, res, next) => {
   try {
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
     // Masa üzerinde aktif sipariş var mı kontrol et
     const activeOrders = await Order.countDocuments({
       table: req.params.id,
@@ -921,7 +1035,10 @@ router.delete('/tables/:id', auth, requireRole('admin'), async (req, res, next) 
       });
     }
     
-    const deleted = await Table.findByIdAndDelete(req.params.id);
+    const deleted = await Table.findOneAndDelete({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
     if (!deleted) return res.status(404).json({ message: 'Masa bulunamadı' });
     
     // Socket.io emit: Masa silindi
@@ -946,9 +1063,14 @@ router.get('/qr', auth, requireRole('admin'), async (req, res, next) => {
   try {
     const QRCode = require('../models/QRCode');
     const Table = require('../models/Table');
+
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
     
-    // Önce QR kodları çek
-    const qrCodes = await QRCode.find()
+    // Önce QR kodları çek - qrCode alanının da kesin gelmesini sağla
+    const qrCodes = await QRCode.find({ branchId: req.user.branchId })
+      .select('tableNumber qrUrl qrCode tableId createdBy createdAt updatedAt branchId')
       .populate('tableId', 'name capacity status')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
@@ -998,6 +1120,11 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
     const QRCode = require('../models/QRCode');
     const QRCodeLib = require('qrcode');
     const { tableNumber, capacity } = req.body;
+
+    // Her admin sadece kendi şubesine QR oluşturabilir
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
     
     if (!tableNumber || !tableNumber.trim()) {
       return res.status(400).json({ message: 'Masa numarası gerekli' });
@@ -1036,21 +1163,36 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
     }
     console.log('🔍 [QR CREATE] Final tableCapacity:', tableCapacity, 'type:', typeof tableCapacity);
 
-    // QR kod zaten var mı kontrol et
-    const existingQR = await QRCode.findOne({ tableNumber: tableNum });
+    // QR kod zaten var mı kontrol et (aynı şube + masa numarası için)
+    const existingQR = await QRCode.findOne({ 
+      tableNumber: tableNum,
+      branchId: req.user.branchId,
+    })
+      .populate('tableId', 'name capacity status')
+      .populate('createdBy', 'name email')
+      .lean();
     if (existingQR) {
-      return res.status(400).json({ message: 'Bu masa numarası için QR kod zaten mevcut' });
+      // Aynı QR zaten varsa hata vermek yerine mevcut kaydı başarıyla döndür
+      console.log('ℹ️ [QR CREATE] Mevcut QR bulundu, yeni oluşturmak yerine geri döndürülüyor:', {
+        tableNumber: existingQR.tableNumber,
+        id: existingQR._id,
+      });
+      return res.status(200).json(existingQR);
     }
 
-    // Masa var mı kontrol et
-    let table = await Table.findOne({ name: tableNum });
+    // Masa var mı kontrol et (şube bazlı)
+    let table = await Table.findOne({ 
+      name: tableNum,
+      branchId: req.user.branchId,
+    });
     
     if (!table) {
       // Masa yoksa oluştur
       table = await Table.create({
         name: tableNum,
         capacity: tableCapacity,
-        status: 'bos'
+        status: 'bos',
+        branchId: req.user.branchId,
       });
       console.log('✅ [QR CREATE] Yeni masa oluşturuldu:', { 
         _id: table._id,
@@ -1113,7 +1255,8 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
         : `http://${hostname}:5173`;
     }
     
-    const qrUrl = `${frontendOrigin}/order?table=${tableNum}`;
+    // QR URL'ine hem masa numarası hem de branchId bilgisini koy
+    const qrUrl = `${frontendOrigin}/order?table=${tableNum}&branch=${req.user.branchId}`;
 
     // QR kod oluştur (base64 data URL)
     const qrCodeDataURL = await QRCodeLib.toDataURL(qrUrl, {
@@ -1134,6 +1277,7 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
       qrUrl,
       qrCode: qrCodeDataURL,
       tableId: table._id,
+      branchId: req.user.branchId,
       createdBy: req.user.id
     });
 
@@ -1212,8 +1356,10 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
     res.status(201).json(populated);
   } catch (error) {
     console.error('QR kod oluşturma hatası:', error);
+    // Duplicate key olursa da gene üstteki mantıkla handle edilmesi gerekirdi,
+    // yine de extra güvenlik için generik hata döndürelim.
     if (error.code === 11000) {
-      return res.status(400).json({ message: 'Bu masa numarası için QR kod zaten mevcut' });
+      return res.status(400).json({ message: 'Bu masa için QR kod zaten mevcut, lütfen listeyi yenileyin.' });
     }
     next(error);
   }
@@ -1228,8 +1374,11 @@ router.delete('/qr/:id', auth, requireRole('admin'), async (req, res, next) => {
     const QRCode = require('../models/QRCode');
     const { id } = req.params;
 
-    // QRCode'u bul
-    const qrCode = await QRCode.findById(id);
+    // QRCode'u bul (yalnızca kendi şubesinden)
+    const qrCode = await QRCode.findOne({
+      _id: id,
+      branchId: req.user.branchId,
+    });
     if (!qrCode) {
       return res.status(404).json({ message: 'QR kod bulunamadı' });
     }

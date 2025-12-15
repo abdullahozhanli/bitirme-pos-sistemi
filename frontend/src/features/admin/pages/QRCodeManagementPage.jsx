@@ -93,8 +93,20 @@ export default function QRCodeManagementPage() {
     } catch (err) {
       console.error('QR kod oluşturma hatası:', err);
       const errorMsg = err.response?.data?.message || 'QR kod oluşturulamadı';
-      setError(errorMsg);
-      setSnackbar({ open: true, message: errorMsg, severity: 'error' });
+
+      // Eğer masa için zaten QR varsa, hata yerine mevcut durumu göster ve listeyi yenile
+      if (errorMsg.includes('Bu masa için QR kod zaten mevcut')) {
+        setError('');
+        setSnackbar({ 
+          open: true, 
+          message: errorMsg, 
+          severity: 'info' 
+        });
+        await fetchQRCodes();
+      } else {
+        setError(errorMsg);
+        setSnackbar({ open: true, message: errorMsg, severity: 'error' });
+      }
     } finally {
       setGenerating(false);
     }

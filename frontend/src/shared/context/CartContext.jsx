@@ -30,6 +30,17 @@ const getInitialTableNumber = () => {
   }
 };
 
+// 3. YENİ: Şube ID'sini Hafızadan Oku
+const getInitialBranchId = () => {
+  try {
+    const storedBranch = localStorage.getItem('branchId');
+    return storedBranch ? JSON.parse(storedBranch) : null;
+  } catch (error) {
+    console.error('BranchId hafızadan okunurken hata:', error);
+    return null;
+  }
+};
+
 // --- Ana Sağlayıcı (Provider) ---
 export function CartProvider({ children }) {
 
@@ -37,6 +48,7 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState(getInitialCartState());
   // YENİ: Masa Numarası state'i
   const [tableNumber, setTableNumber] = useState(getInitialTableNumber());
+  const [branchId, setBranchId] = useState(getInitialBranchId());
   // Önceki masa numarasını takip etmek için ref
   const prevTableNumberRef = useRef(tableNumber);
 
@@ -64,6 +76,19 @@ export function CartProvider({ children }) {
       console.error("Masa N_ hafızaya kaydedilirken hata:", error);
     }
   }, [tableNumber]); // [tableNumber] -> "Sadece 'tableNumber' değiştiğinde bu kodu çalıştır"
+
+  // YENİ: BranchId her değiştiğinde hafızaya kaydet
+  useEffect(() => {
+    try {
+      if (branchId) {
+        localStorage.setItem('branchId', JSON.stringify(branchId));
+      } else {
+        localStorage.removeItem('branchId');
+      }
+    } catch (error) {
+      console.error('BranchId hafızaya kaydedilirken hata:', error);
+    }
+  }, [branchId]);
 
   // YENİ: Masa numarası değiştiğinde sepeti temizle
   useEffect(() => {
@@ -148,7 +173,9 @@ export function CartProvider({ children }) {
       removeFromCart, 
       clearCart, 
       tableNumber,        // YENİ: Masa numarasını dışarıya aç
-      setTableNumber      // YENİ: Masa numarasını değiştirecek fonksiyonu dışarıya aç
+      setTableNumber,     // YENİ: Masa numarasını değiştirecek fonksiyonu dışarıya aç
+      branchId,           // YENİ: Şube bilgisini dışarıya aç
+      setBranchId         // YENİ: Şube bilgisini değiştirecek fonksiyonu dışarıya aç
     }}>
       {children}
     </CartContext.Provider>
@@ -159,4 +186,5 @@ export function CartProvider({ children }) {
 export function useCart() {
   return useContext(CartContext);
 }
+
 

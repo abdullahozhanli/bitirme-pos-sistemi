@@ -185,7 +185,8 @@ router.post('/', async (req, res, next) => {
       items: orderItems,
       total: Number(total),
       notes: notes || '', // Genel sipariş notu
-      status: 'hazirlaniyor'
+      status: 'hazirlaniyor',
+      branchId: table.branchId || null,
     });
 
     // Table status'unu güncelle

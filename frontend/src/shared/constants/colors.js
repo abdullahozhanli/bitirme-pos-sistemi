@@ -24,3 +24,4 @@ export const COLORS = {
   borderLight: '#EEEEEE',  // Çok açık gri border
 };
 
+

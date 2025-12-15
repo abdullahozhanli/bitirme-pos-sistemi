@@ -8,3 +8,4 @@ export const getSizeMeta = (sizeKey) => {
   return SIZE_OPTIONS.find((s) => s.key === sizeKey) || SIZE_OPTIONS[1]; // default medium
 };
 
+
