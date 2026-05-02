@@ -10,7 +10,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import './CartPage.css';
 
 export default function CartPage() {
-  const { cartItems, addToCart, removeFromCart, clearCart, tableNumber } = useCart();
+  const { cartItems, addToCart, removeFromCart, clearCart, tableNumber, branchId } = useCart();
+  
+  // Sadece Context'ten al (LocalStorage iptal)
+  const activeTableNumber = tableNumber;
+  
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -20,13 +24,11 @@ export default function CartPage() {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
 
-  // Debug: Masa numarasını kontrol et
+  // Debug
   useEffect(() => {
     console.log('CartPage - tableNumber:', tableNumber);
-    console.log('CartPage - localStorage tableNumber:', localStorage.getItem('tableNumber'));
   }, [tableNumber]);
 
-  // Kategori bazlı fallback görseller
   const FALLBACK_IMAGES = {
     'Ana Yemek': '/img/steak.jpg',
     'İçecekler': '/img/drink.jpg',
@@ -39,9 +41,7 @@ export default function CartPage() {
   const PLACEHOLDER_IMAGE = '/img/placeholder.webp';
 
   const getImageUrl = (item) => {
-    if (item.imageUrl) {
-      return item.imageUrl;
-    }
+    if (item.imageUrl) return item.imageUrl;
     const categoryName = item.category?.name || '';
     return FALLBACK_IMAGES[categoryName] || PLACEHOLDER_IMAGE;
   };
@@ -55,25 +55,27 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (submitting) return;
-    setMessage('Sipariş gönderiliyor...');
-    if (!tableNumber) {
-      const errorMsg = 'Sipariş verilemiyor. Lütfen önce masanızdaki QR kodu okutun.';
-      setMessage(`Hata: ${errorMsg}`);
+
+    if (!activeTableNumber) {
+      navigate('/qr-scan');
       return;
     }
+
+    setMessage('Sipariş gönderiliyor...');
 
     try {
       setSubmitting(true);
 
       const orderPayload = {
-        tableNumber: String(tableNumber),
+        tableNumber: String(activeTableNumber),
         items: cartItems.map((item) => ({
-          menuItemId: item._id || item.id, // Product ID'si de olabilir, backend handle edecek
-          productId: item._id || item.id, // Geriye dönük uyumluluk için
+          menuItemId: item._id || item.id,
+          productId: item._id || item.id,
           qty: item.qty,
           note: item.note || ''
         })),
         notes: notes || '',
+        branchId: branchId || localStorage.getItem('branchId'),
       };
 
       const res = await axios.post('/api/orders', orderPayload);
@@ -113,31 +115,40 @@ export default function CartPage() {
         </div>
       ) : (
         <div className="cart-container">
-          {/* Sol Panel: Ürünler Listesi */}
+          {/* Sol Panel */}
           <div className="cart-items-section">
             <div className="cart-header">
-              <button 
-                className="cart-close-btn" 
-                onClick={() => navigate('/')}
-                aria-label="Kapat"
-              >
+              <button className="cart-close-btn" onClick={() => navigate('/')} aria-label="Kapat">
                 <CloseIcon />
               </button>
               <div className="cart-header-details">
-                <h1 className="cart-title">
-                  Sepetiniz
-                </h1>
-                {tableNumber ? (
-                  <div className="cart-table-number">
-                    Masa: <strong>{tableNumber}</strong>
-                  </div>
-                ) : (
-                  <div className="cart-edit-delivery">
-                    <Link to="/qr-scan" style={{ color: '#667eea', textDecoration: 'underline' }}>
-                      QR Kod Okut
-                    </Link>
+                <h1 className="cart-title">Sepetiniz</h1>
+                
+                {/* 🔥 GÜNCELLEME BURADA 🔥 */}
+                {/* Masa numarası varsa göster, yanına DEĞİŞTİR butonu koy */}
+                {activeTableNumber && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    <div className="cart-table-number" style={{ margin: 0 }}>
+                      Masa: <strong>{activeTableNumber}</strong>
+                    </div>
+                    <button
+                      onClick={() => navigate('/qr-scan')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#d32f2f', // Kırmızımsı uyarı rengi
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                        padding: 0,
+                        fontWeight: 500
+                      }}
+                    >
+                      (Değiştir)
+                    </button>
                   </div>
                 )}
+                
               </div>
             </div>
 
@@ -147,27 +158,14 @@ export default function CartPage() {
                 return (
                   <div key={`${item._id}-${item.sizeKey}`} className="cart-item-card">
                     <div className="cart-item-image-wrapper">
-                      <img
-                        src={imageUrl}
-                        alt={item.name}
-                        className="cart-item-image"
-                        onError={handleImageError}
-                        loading="lazy"
-                      />
+                      <img src={imageUrl} alt={item.name} className="cart-item-image" onError={handleImageError} loading="lazy" />
                     </div>
                     <div className="cart-item-details">
                       <div className="cart-item-header">
                         <h3 className="cart-item-name">{item.name}</h3>
-                        <button
-                          className="cart-item-delete-btn"
-                          onClick={() => {
-                            for (let i = 0; i < item.qty; i++) {
-                              removeFromCart(item, item.sizeKey);
-                            }
-                          }}
-                          disabled={submitting}
-                          aria-label="Ürünü sil"
-                        >
+                        <button className="cart-item-delete-btn" onClick={() => {
+                            for (let i = 0; i < item.qty; i++) removeFromCart(item, item.sizeKey);
+                          }} disabled={submitting}>
                           <DeleteIcon />
                         </button>
                       </div>
@@ -176,28 +174,12 @@ export default function CartPage() {
                       </p>
                       <div className="cart-item-footer">
                         <div className="cart-quantity-control">
-                          <button
-                            className="cart-quantity-btn"
-                            onClick={() => removeFromCart(item, item.sizeKey)}
-                            disabled={submitting}
-                            aria-label="Azalt"
-                          >
-                            <RemoveIcon />
-                          </button>
+                          <button className="cart-quantity-btn" onClick={() => removeFromCart(item, item.sizeKey)} disabled={submitting}><RemoveIcon /></button>
                           <span className="cart-quantity-value">{item.qty}</span>
-                          <button
-                            className="cart-quantity-btn"
-                            onClick={() => addToCart(item, item.sizeKey)}
-                            disabled={submitting}
-                            aria-label="Arttır"
-                          >
-                            <AddIcon />
-                          </button>
+                          <button className="cart-quantity-btn" onClick={() => addToCart(item, item.sizeKey)} disabled={submitting}><AddIcon /></button>
                         </div>
                         <div className="cart-item-price">
-                          <span className="cart-item-price-total">
-                            ₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}
-                          </span>
+                          <span className="cart-item-price-total">₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -207,25 +189,17 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* Sağ Panel: Sipariş Özeti */}
+          {/* Sağ Panel */}
           <div className="cart-summary-section">
             <div className="cart-summary-card">
               <h2 className="cart-summary-title">Sipariş Özeti</h2>
-              
-              <div className="cart-manage-benefits">
-                Manage your benefits
-                <span className="arrow-icon">&gt;</span>
-              </div>
+              <div className="cart-manage-benefits">Manage your benefits <span className="arrow-icon">&gt;</span></div>
               
               <div className="cart-summary-items">
                 {cartItems.map((item) => (
                   <div key={`${item._id}-${item.sizeKey}`} className="cart-summary-item">
-                    <span className="cart-summary-item-name">
-                      {item.qty}x {item.name}
-                    </span>
-                    <span className="cart-summary-item-price">
-                      ₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}
-                    </span>
+                    <span className="cart-summary-item-name">{item.qty}x {item.name}</span>
+                    <span className="cart-summary-item-price">₺{(item.qty * Number(item.unitPrice ?? item.price)).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -239,51 +213,33 @@ export default function CartPage() {
 
               <div className="cart-notes">
                 <label className="cart-notes-label">Sipariş Notu (Opsiyonel)</label>
-                <textarea
-                  className="cart-notes-textarea"
-                  placeholder="Örn: Soğansız olsun, az acılı..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+                <textarea className="cart-notes-textarea" placeholder="Örn: Soğansız olsun, az acılı..." value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
 
               <button
                 className="cart-checkout-button"
                 onClick={handleCheckout}
-                disabled={submitting || cartItems.length === 0 || !tableNumber}
+                disabled={submitting || cartItems.length === 0}
               >
-                {submitting ? 'Gönderiliyor...' : !tableNumber ? 'QR Kodu Okutun' : 'Siparişi Tamamla'}
+                {submitting 
+                  ? 'Gönderiliyor...' 
+                  : !activeTableNumber 
+                    ? 'QR Kodu Okut' 
+                    : 'Siparişi Tamamla'
+                }
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Sipariş Onay Modal */}
       {orderSuccess && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-        }} onClick={handleCloseSuccessModal}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={handleCloseSuccessModal}>
           <div className="cart-success-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="cart-success-modal-title">
-              localhost:5173 web sitesinin mesajı
-            </div>
-            <div className="cart-success-modal-content">
-              Siparişiniz alındı. Masa {tableNumber} • ID: ...{orderId}
-            </div>
+            <div className="cart-success-modal-title">localhost:5173 web sitesinin mesajı</div>
+            <div className="cart-success-modal-content">Siparişiniz alındı. Masa {tableNumber} • ID: ...{orderId}</div>
             <div className="cart-success-modal-actions">
-              <button className="cart-success-modal-button" onClick={handleCloseSuccessModal}>
-                Tamam
-              </button>
+              <button className="cart-success-modal-button" onClick={handleCloseSuccessModal}>Tamam</button>
             </div>
           </div>
         </div>

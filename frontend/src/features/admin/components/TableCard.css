@@ -2,21 +2,42 @@
 .table-card {
   position: relative;
   background: #ffffff;
-  border: none; 
-  border-radius: 40px; 
-  padding: 24px;
+  border: 1px solid #E5E7EB; 
+  border-radius: var(--radius-large); 
+  padding: var(--spacing-lg);
   width: 100%;
   max-width: 100%;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08); 
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   min-height: 180px;
   box-sizing: border-box;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
   overflow: hidden;
+}
+
+.table-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover border colors by status */
+.table-card.available:hover {
+  border-color: var(--color-brand-green);
+}
+
+.table-card.full:hover {
+  border-color: #EF4444;
+}
+
+.table-card.reserved:hover {
+  border-color: #F59E0B;
+}
+
+.table-card.payment_pending:hover {
+  border-color: #3B82F6;
 }
 
 .table-card:active {
@@ -30,22 +51,31 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 8px;
-  border-top-left-radius: 40px; 
-  border-bottom-left-radius: 40px;
-  background-color: #e5e7eb;
+  width: var(--spacing-xs);
+  border-top-left-radius: var(--radius-large); 
+  border-bottom-left-radius: var(--radius-large);
+  background-color: var(--color-border);
   z-index: 1;
 }
 
-.table-card.available::before { background-color: #2fb344; }
-.table-card.full::before { background-color: #ef4444; }
-.table-card.reserved::before { background-color: #f59e0b; }
-.table-card.payment_pending::before { background-color: #3b82f6; }
+/* Soft pastel colors for status indicators */
+.table-card.available::before { background-color: #10B981; }
+.table-card.full::before { background-color: #EF4444; }
+.table-card.reserved::before { background-color: #F59E0B; }
+.table-card.payment_pending::before { background-color: #3B82F6; }
 
 .table-card.selected {
-  box-shadow: 0 0 0 2px #1976d2, 0 10px 40px rgba(0, 0, 0, 0.08);
-  background: #f3f7ff;
-  transition: box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 0 0 2px var(--color-brand-green), 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: #F0FDF4;
+  border-color: var(--color-brand-green);
+  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+/* Dolu masalar için kırmızı iç vurgu */
+.table-card.full.selected {
+  box-shadow: 0 0 0 2px #EF4444, 0 2px 8px rgba(239, 68, 68, 0.15);
+  background: #FEF2F2;
+  border-color: #EF4444;
 }
 
 .table-card.selected::before {
@@ -85,7 +115,7 @@
 .table-text-info h2 {
   margin: 0;
   font-size: 22px;
-  color: #111827;
+  color: var(--color-text);
   font-weight: 800;
   letter-spacing: -0.5px;
 }
@@ -93,7 +123,7 @@
 .capacity-text {
   margin: 0;
   font-size: 14px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -105,15 +135,16 @@
   flex-shrink: 0;
 }
 
-.status-dot.full { background: #ef4444; }
-.status-dot.available { background: #2fb344; }
-.status-dot.reserved { background: #f59e0b; }
-.status-dot.payment_pending { background: #3b82f6; }
+/* Soft pastel status dots */
+.status-dot.full { background: #EF4444; }
+.status-dot.available { background: #10B981; }
+.status-dot.reserved { background: #F59E0B; }
+.status-dot.payment_pending { background: #3B82F6; }
 
 .card-bottom-section {
   width: 100%;
   padding: 14px;
-  border-radius: 20px;
+  border-radius: var(--radius-large);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -123,61 +154,73 @@
   min-height: 55px;
 }
 
+/* Soft pastel backgrounds for status sections */
 .table-card.available .card-bottom-section {
-  background-color: #ecfdf3;
+  background-color: #ECFDF5;
+  border: 1px solid #D1FAE5;
 }
 
 .table-card.available .card-bottom-section * {
-  color: #2fb344; 
-  font-weight: 700;
-  font-size: 16px;
+  color: #059669; 
+  font-weight: 600;
+  font-size: 15px;
   margin: 0;
 }
 
 .table-card.full .card-bottom-section {
-  background-color: #fef2f2; 
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+}
+
+.table-card.full .card-bottom-section * {
+  color: #DC2626;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0;
 }
 
 .status-text-large {
-  font-size: 16px;
-  color: #ef4444;
-  font-weight: 700;
+  font-size: 15px;
+  color: #DC2626;
+  font-weight: 600;
   margin: 0;
 }
 
 .order-number {
   font-size: 13px;
-  color: #7f1d1d;
+  color: #991B1B;
   font-weight: 500;
   margin: 0;
 }
 
 .order-summary {
   font-size: 13px;
-  color: #7f1d1d;
+  color: #991B1B;
   font-weight: 500;
   margin: 0;
 }
 
 .table-card.reserved .card-bottom-section {
-  background-color: #fffbeb;
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
 }
 
 .table-card.reserved .card-bottom-section * {
-  color: #f59e0b;
-  font-weight: 700;
-  font-size: 16px;
+  color: #D97706;
+  font-weight: 600;
+  font-size: 15px;
   margin: 0;
 }
 
 .table-card.payment_pending .card-bottom-section {
-  background-color: #eff6ff;
+  background-color: #EFF6FF;
+  border: 1px solid #DBEAFE;
 }
 
 .table-card.payment_pending .card-bottom-section * {
-  color: #3b82f6;
-  font-weight: 700;
-  font-size: 16px;
+  color: #2563EB;
+  font-weight: 600;
+  font-size: 15px;
   margin: 0;
 }
 

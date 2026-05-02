@@ -1,4 +1,22 @@
 :root {
+  /* Design System - Colors */
+  --color-text: #111827;              /* soft black for text */
+  --color-text-muted: #6b7280;        /* muted text */
+  --color-bg-soft: #f5f5f5;           /* soft background */
+  --color-border: #e5e5e5;            /* border color */
+  --color-brand-green: #50C878;       /* brand green */
+  
+  /* Design System - Border Radius */
+  --radius-large: 16px;
+  --radius-medium: 12px;
+  --radius-pill: 999px;
+  
+  /* Design System - Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  
   /* Latte Theme */
   --font-main: 'Poppins', 'Inter', 'Segoe UI', 'Roboto', sans-serif;
   --bg-page: #ffffff;         /* page background */
@@ -129,22 +147,22 @@ button {
 
 /* Global cart button dark style */
 .btn-cart--dark{
-  background:#0b0b1a !important;
-  color:#fff !important;
-  border-color:#0b0b1a !important;
-  border-radius:10px !important;
-  font-weight:600 !important;
-  box-shadow:0 2px 8px rgba(0,0,0,0.2) !important;
-  transition:all .25s ease !important;
+  background: var(--color-text) !important;
+  color: #fff !important;
+  border-color: var(--color-text) !important;
+  border-radius: var(--radius-medium) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  transition: all .25s ease !important;
 }
-.btn-cart--dark:hover{ background:#1a1a2e !important; }
-.btn-cart--dark svg{ color:#fff !important; }
+.btn-cart--dark:hover{ background: #1f2937 !important; }
+.btn-cart--dark svg{ color: #fff !important; }
 
 /* Sepet butonları için siyah stil */
 .btn-cart-black {
-  background: #0B0B20 !important;
+  background: var(--color-text) !important;
   color: #fff !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-medium) !important;
 }
 
 

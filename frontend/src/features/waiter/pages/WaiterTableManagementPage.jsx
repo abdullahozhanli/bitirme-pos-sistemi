@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,9 @@ import {
   Fab,
   Badge,
   IconButton,
+  Drawer,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,33 +28,32 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PaymentIcon from '@mui/icons-material/Payment';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
 import WaiterTableCard from '../components/WaiterTableCard.jsx';
 import WaiterTableDetailPanel from '../components/WaiterTableDetailPanel.jsx';
 import OrderCreateModal from '../components/OrderCreateModal.jsx';
+import { TABLE_STATUS, STATUS_LABELS, STATUS_COLORS, STATUS_CLASS_MAP } from '../constants/tableStatus.js';
 import './WaiterTableManagementPage.css';
 
 export default function WaiterTableManagementPage() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [tables, setTables] = useState([]);
   const [filteredTables, setFilteredTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
   const socketRef = useRef(null);
-
-  const statusLabels = {
-    bos: 'Müsait',
-    dolu: 'Dolu',
-    rezerve: 'Rezerve',
-    odeme_bekliyor: 'Ödeme Bekliyor',
-  };
+  const handleSelectTableRef = useRef(null);
 
   // Masaları çek
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -101,16 +103,13 @@ export default function WaiterTableManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchTables();
     
     // Socket.io bağlantısı
-    const hostname = window.location.hostname;
-    const baseURL = hostname === 'localhost' || hostname === '127.0.0.1' 
-      ? 'http://localhost:5001' 
-      : `http://${hostname}:5001`;
+    const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
     const socket = io(baseURL, {
       transports: ['websocket', 'polling'],
@@ -149,9 +148,12 @@ export default function WaiterTableManagementPage() {
       console.log('📡 Masa güncellendi:', data);
       fetchTables();
       
-      if (selectedTable && data.table && String(data.table._id) === String(selectedTable._id)) {
-        handleSelectTable(data.table);
-      }
+      setSelectedTable(prev => {
+        if (prev && data.table && String(data.table._id) === String(prev._id) && handleSelectTableRef.current) {
+          handleSelectTableRef.current(data.table);
+        }
+        return prev;
+      });
     });
 
     // Masa durumu değişti
@@ -159,9 +161,12 @@ export default function WaiterTableManagementPage() {
       console.log('📡 Masa durumu değişti:', data);
       fetchTables();
       
-      if (selectedTable && String(data.tableId) === String(selectedTable._id)) {
-        handleSelectTable({ _id: data.tableId });
-      }
+      setSelectedTable(prev => {
+        if (prev && String(data.tableId) === String(prev._id) && handleSelectTableRef.current) {
+          handleSelectTableRef.current({ _id: data.tableId });
+        }
+        return prev;
+      });
     });
 
     // Masaya sipariş eklendi
@@ -169,13 +174,16 @@ export default function WaiterTableManagementPage() {
       console.log('📡 Masaya sipariş eklendi:', data);
       fetchTables();
       
-      if (selectedTable && String(data.tableId) === String(selectedTable._id)) {
-        handleSelectTable({ _id: data.tableId });
-      }
+      setSelectedTable(prev => {
+        if (prev && String(data.tableId) === String(prev._id) && handleSelectTableRef.current) {
+          handleSelectTableRef.current({ _id: data.tableId });
+        }
+        return prev;
+      });
       
       setNotification({ 
         open: true, 
-        message: `🔔 ${data.table.name} masasına yeni sipariş!`, 
+        message: `🔔 ${data.table?.name || 'Masa'} masasına yeni sipariş!`, 
         severity: 'success' 
       });
     });
@@ -185,9 +193,12 @@ export default function WaiterTableManagementPage() {
       console.log('📡 Sipariş iptal edildi:', data);
       fetchTables();
       
-      if (selectedTable && String(data.tableId) === String(selectedTable._id)) {
-        handleSelectTable({ _id: data.tableId });
-      }
+      setSelectedTable(prev => {
+        if (prev && String(data.tableId) === String(prev._id) && handleSelectTableRef.current) {
+          handleSelectTableRef.current({ _id: data.tableId });
+        }
+        return prev;
+      });
     });
 
     // Ürün hazır bildirimi (mutfaktan)
@@ -211,13 +222,16 @@ export default function WaiterTableManagementPage() {
       console.log('📡 Ödeme yapıldı:', data);
       fetchTables();
       
-      if (selectedTable && String(data.tableId) === String(selectedTable._id)) {
-        handleSelectTable({ _id: data.tableId });
-      }
+      setSelectedTable(prev => {
+        if (prev && String(data.tableId) === String(prev._id) && handleSelectTableRef.current) {
+          handleSelectTableRef.current({ _id: data.tableId });
+        }
+        return prev;
+      });
       
       setNotification({ 
         open: true, 
-        message: `💰 ${data.table.name} masası için ödeme tamamlandı`, 
+        message: `💰 ${data.table?.name || 'Masa'} masası için ödeme tamamlandı`, 
         severity: 'success' 
       });
     });
@@ -227,38 +241,44 @@ export default function WaiterTableManagementPage() {
       socket.disconnect();
       console.log('🔌 Socket.io bağlantısı kapatıldı (Garson Masa Yönetimi)');
     };
-  }, [selectedTable]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounce arama terimi
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Filtreleme ve arama
   useEffect(() => {
     let filtered = [...tables];
 
-    // Durum filtresi
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(table => table.status === statusFilter);
-    }
-
-    // Arama filtresi
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
+    // Arama filtresi (debounced)
+    if (debouncedSearchTerm.trim()) {
+      const search = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(table =>
-        table.name?.toLowerCase().includes(search)
+        table.name?.toLowerCase().includes(search) ||
+        String(table.name || '').includes(search)
       );
     }
 
     setFilteredTables(filtered);
-  }, [tables, statusFilter, searchTerm]);
+  }, [tables, debouncedSearchTerm]);
 
-  // Özet istatistikler
-  const summary = {
+  // Özet istatistikler - Tüm dataset üzerinden (filtre bağımsız)
+  const summary = useMemo(() => ({
     total: tables.length,
-    available: tables.filter(t => t.status === 'bos').length,
-    full: tables.filter(t => t.status === 'dolu').length,
-    paymentPending: tables.filter(t => t.status === 'odeme_bekliyor').length,
-  };
+    available: tables.filter(t => t.status === TABLE_STATUS.AVAILABLE).length,
+    full: tables.filter(t => t.status === TABLE_STATUS.OCCUPIED).length,
+    paymentPending: tables.filter(t => t.status === TABLE_STATUS.PAYMENT_PENDING).length,
+    reserved: tables.filter(t => t.status === TABLE_STATUS.RESERVED).length,
+  }), [tables]);
 
   // Masa seç
-  const handleSelectTable = async (table) => {
+  const handleSelectTable = useCallback(async (table) => {
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
@@ -276,18 +296,28 @@ export default function WaiterTableManagementPage() {
       const tableData = allTables.find(t => String(t._id || t.id) === String(table._id || table.id)) || table;
       const orders = Array.isArray(ordersRes.data) ? ordersRes.data : (ordersRes.data?.items || []);
       
-      setSelectedTable({
+      const selectedTableData = {
         ...tableData,
         orders: orders,
         activeOrders: orders.filter(o => 
           ['hazirlaniyor', 'serviste', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'].includes(o.status)
         ),
-      });
+      };
+      
+      setSelectedTable(selectedTableData);
+      
+      // Mobilde detay panelini aç
+      if (isMobile) {
+        setDetailPanelOpen(true);
+      }
     } catch (err) {
       console.error('Masa detayları yüklenemedi:', err);
       setError(err.response?.data?.message || 'Masa detayları yüklenemedi');
     }
-  };
+  }, [isMobile]);
+  
+  // Ref'e kaydet
+  handleSelectTableRef.current = handleSelectTable;
 
   // Yeni sipariş al
   const handleCreateOrder = () => {
@@ -301,7 +331,7 @@ export default function WaiterTableManagementPage() {
     }
     
     // Sadece müsait masalarda sipariş alınabilir
-    if (selectedTable.status !== 'bos') {
+    if (selectedTable.status !== TABLE_STATUS.AVAILABLE) {
       setNotification({ 
         open: true, 
         message: 'Sadece müsait masalarda sipariş alabilirsiniz', 
@@ -330,27 +360,33 @@ export default function WaiterTableManagementPage() {
     );
   }
 
+  // Debug: Sayfa render ediliyor mu kontrol et
+  console.log('WaiterTableManagementPage render:', { loading, tables: tables.length, error });
+
   return (
     <Box sx={{ width: '100%', maxWidth: '100%' }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => navigate('/waiter')} size="small">
+      <Box className="waiter-table-management-header" sx={{ mb: { xs: 2, lg: 3 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: { xs: 1, lg: 2 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, lg: 2 } }}>
+          <IconButton onClick={() => navigate('/waiter')} size="small" sx={{ display: { xs: 'none', sm: 'flex' } }}>
             <ArrowBackIcon />
           </IconButton>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, fontSize: { xs: '1.25rem', lg: '2rem' } }}>
               Masa Haritası
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', lg: '0.875rem' } }}>
               Tüm masaların anlık durumu
             </Typography>
           </Box>
         </Box>
         <Button
+          className="waiter-table-refresh-btn"
           variant="outlined"
           startIcon={<RefreshIcon />}
           onClick={fetchTables}
           disabled={loading}
+          size={isMobile ? 'small' : 'medium'}
+          sx={{ fontSize: { xs: '0.75rem', lg: '0.875rem' } }}
         >
           Yenile
         </Button>
@@ -362,112 +398,120 @@ export default function WaiterTableManagementPage() {
         </Alert>
       )}
 
-      {/* Özet İstatistikler */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      {/* Özet İstatistikler - Tüm dataset üzerinden */}
+      <Box className="waiter-table-stats" sx={{ mb: { xs: 2, lg: 3 }, display: 'flex', gap: { xs: 1, lg: 2 }, flexWrap: 'wrap' }}>
         <Chip
-          icon={<TableRestaurantIcon />}
+          icon={<TableRestaurantIcon sx={{ fontSize: { xs: '16px !important', lg: '20px !important' } }} />}
           label={`Toplam: ${summary.total}`}
-          color="default"
-          variant="outlined"
+          sx={{
+            backgroundColor: '#F9FAFB',
+            border: '1px solid #E5E7EB',
+            fontWeight: 600,
+            height: { xs: 28, lg: 32 },
+            '& .MuiChip-label': {
+              fontSize: { xs: '0.75rem', lg: '0.875rem' },
+              padding: { xs: '0 8px', lg: '0 12px' },
+            },
+          }}
         />
         <Chip
           label={`Müsait: ${summary.available}`}
-          color="success"
-          variant="outlined"
+          sx={{
+            backgroundColor: '#ECFDF5',
+            border: '1px solid #D1FAE5',
+            color: '#059669',
+            fontWeight: 600,
+            height: { xs: 28, lg: 32 },
+            '& .MuiChip-label': {
+              fontSize: { xs: '0.75rem', lg: '0.875rem' },
+              padding: { xs: '0 8px', lg: '0 12px' },
+            },
+          }}
         />
         <Chip
           label={`Dolu: ${summary.full}`}
-          color="error"
-          variant="outlined"
+          sx={{
+            backgroundColor: '#FEF2F2',
+            border: '1px solid #FECACA',
+            color: '#DC2626',
+            fontWeight: 600,
+            height: { xs: 28, lg: 32 },
+            '& .MuiChip-label': {
+              fontSize: { xs: '0.75rem', lg: '0.875rem' },
+              padding: { xs: '0 8px', lg: '0 12px' },
+            },
+          }}
         />
         {summary.paymentPending > 0 && (
           <Chip
-            icon={<PaymentIcon />}
-            label={`Ödeme Bekliyor: ${summary.paymentPending}`}
-            color="warning"
-            variant="outlined"
+            icon={<PaymentIcon sx={{ fontSize: { xs: '16px !important', lg: '20px !important' } }} />}
+            label={`Ödeme: ${summary.paymentPending}`}
+            sx={{
+              backgroundColor: '#EFF6FF',
+              border: '1px solid #DBEAFE',
+              color: '#2563EB',
+              fontWeight: 600,
+              height: { xs: 28, lg: 32 },
+              '& .MuiChip-label': {
+                fontSize: { xs: '0.75rem', lg: '0.875rem' },
+                padding: { xs: '0 8px', lg: '0 12px' },
+              },
+            }}
           />
         )}
       </Box>
 
-      {/* Filtreleme ve Arama */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Masa ara..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ flex: 1 }}
-          />
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant={statusFilter === 'all' ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => setStatusFilter('all')}
-            >
-              Tümü
-            </Button>
-            <Button
-              variant={statusFilter === 'bos' ? 'contained' : 'outlined'}
-              size="small"
-              color="success"
-              onClick={() => setStatusFilter('bos')}
-            >
-              Müsait
-            </Button>
-            <Button
-              variant={statusFilter === 'dolu' ? 'contained' : 'outlined'}
-              size="small"
-              color="error"
-              onClick={() => setStatusFilter('dolu')}
-            >
-              Dolu
-            </Button>
-            <Button
-              variant={statusFilter === 'odeme_bekliyor' ? 'contained' : 'outlined'}
-              size="small"
-              color="warning"
-              onClick={() => setStatusFilter('odeme_bekliyor')}
-            >
-              Ödeme Bekliyor
-            </Button>
-          </Stack>
-        </Stack>
+      {/* Arama */}
+      <Paper className="waiter-table-filters" sx={{ p: { xs: 1.5, lg: 2 }, mb: { xs: 2, lg: 3 } }}>
+        <TextField
+          className="waiter-table-search"
+          fullWidth
+          size="small"
+          placeholder="Masa ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: { xs: '18px', lg: '20px' } }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ 
+            '& .MuiInputBase-root': {
+              fontSize: { xs: '0.875rem', lg: '1rem' },
+              height: { xs: 40, lg: 40 },
+            }
+          }}
+        />
       </Paper>
 
       {/* Ana İçerik */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 400px' }, gap: 3 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 400px' }, gap: { xs: 2, lg: 3 } }}>
         {/* Sol Panel: Masa Grid */}
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+        <Paper sx={{ p: { xs: 2, lg: 3 }, display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, fontSize: { xs: '1rem', lg: '1.25rem' } }}>
             Masalar ({filteredTables.length})
           </Typography>
           
           {filteredTables.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
-              <TableRestaurantIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-              <Typography variant="body1">
-                {searchTerm || statusFilter !== 'all' 
+            <Box sx={{ textAlign: 'center', py: { xs: 4, lg: 8 }, color: 'text.secondary' }}>
+              <TableRestaurantIcon sx={{ fontSize: { xs: 48, lg: 64 }, mb: 2, opacity: 0.3 }} />
+              <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', lg: '1rem' } }}>
+                {searchTerm
                   ? 'Arama kriterlerinize uygun masa bulunamadı.'
                   : 'Henüz masa bulunmuyor.'}
               </Typography>
             </Box>
           ) : (
-            <Box className="waiter-table-grid">
+            <Box 
+              className="waiter-table-grid"
+            >
               {filteredTables.map((table) => (
                 <WaiterTableCard
                   key={table._id || table.id}
                   table={table}
-                  statusLabels={statusLabels}
+                  statusLabels={STATUS_LABELS}
                   isSelected={selectedTable?._id === table._id}
                   onClick={() => handleSelectTable(table)}
                 />
@@ -476,29 +520,85 @@ export default function WaiterTableManagementPage() {
           )}
         </Paper>
 
-        {/* Sağ Panel: Masa Detayları ve Aksiyonlar */}
-        {selectedTable ? (
-          <WaiterTableDetailPanel
-            table={selectedTable}
-            statusLabels={statusLabels}
-            onCreateOrder={handleCreateOrder}
-            onRefresh={() => {
-              fetchTables();
-              handleSelectTable(selectedTable);
-            }}
-          />
-        ) : (
-          <Paper sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
-            <TableRestaurantIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
-            <Typography variant="body1">
-              Detayları görmek için bir masa seçin
-            </Typography>
-          </Paper>
+        {/* Sağ Panel: Masa Detayları ve Aksiyonlar - Desktop */}
+        {!isMobile && (
+          <>
+            {selectedTable ? (
+              <WaiterTableDetailPanel
+                table={selectedTable}
+                statusLabels={STATUS_LABELS}
+                onCreateOrder={handleCreateOrder}
+                onRefresh={() => {
+                  fetchTables();
+                  handleSelectTable(selectedTable);
+                }}
+              />
+            ) : (
+              <Paper sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
+                <TableRestaurantIcon sx={{ fontSize: 64, mb: 2, opacity: 0.3 }} />
+                <Typography variant="body1">
+                  Detayları görmek için bir masa seçin
+                </Typography>
+              </Paper>
+            )}
+          </>
         )}
       </Box>
 
-      {/* Floating Action Button - Hızlı Sipariş */}
-      {selectedTable && selectedTable.status === 'bos' && (
+      {/* Mobil: Detay Paneli Drawer */}
+      {isMobile && (
+        <Drawer
+          anchor="bottom"
+          open={detailPanelOpen}
+          onClose={() => {
+            setDetailPanelOpen(false);
+            setSelectedTable(null);
+          }}
+          PaperProps={{
+            sx: {
+              maxHeight: '85vh',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)',
+            }
+          }}
+        >
+          <Box sx={{ 
+            overflowY: 'auto', 
+            maxHeight: '85vh',
+            '&::-webkit-scrollbar': {
+              width: '4px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#D1D5DB',
+              borderRadius: '2px',
+            }
+          }}>
+            {selectedTable ? (
+              <WaiterTableDetailPanel
+                table={selectedTable}
+                statusLabels={STATUS_LABELS}
+                onCreateOrder={handleCreateOrder}
+                onRefresh={() => {
+                  fetchTables();
+                  handleSelectTable(selectedTable);
+                }}
+                onClose={() => {
+                  setDetailPanelOpen(false);
+                  setSelectedTable(null);
+                }}
+              />
+            ) : (
+              <Box sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>
+                <Typography variant="body2">Masa seçilmedi</Typography>
+              </Box>
+            )}
+          </Box>
+        </Drawer>
+      )}
+
+      {/* Floating Action Button - Hızlı Sipariş - Sadece Desktop */}
+      {!isMobile && selectedTable && selectedTable.status === TABLE_STATUS.AVAILABLE && (
         <Fab
           color="primary"
           aria-label="Yeni Sipariş"

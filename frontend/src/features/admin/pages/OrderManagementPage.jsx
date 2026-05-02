@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, useMediaQuery, useTheme, Menu } from '@mui/material';
+import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormControl, InputLabel, Snackbar, Alert, useMediaQuery, useTheme, Menu, IconButton } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import { useQueryClient } from '@tanstack/react-query';
 import StatusChip from '../../../shared/components/ui/StatusChip.jsx';
 import OrderDetailModal from '../../../shared/components/modals/OrderDetailModal.jsx';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import '../styles/admin.css';
 // Dinamik import kullanıyoruz - Vite uyumluluğu için
 
 //
@@ -366,15 +368,6 @@ export default function OrderManagementPage(){
 
   const cols = [
     { 
-      field:'id', 
-      headerName:'Sipariş ID', 
-      width:140,
-      renderCell: (params) => {
-        const id = params.value || params.row?.id || '';
-        return id ? `...${String(id).slice(-6)}` : '—';
-      }
-    },
-    { 
       field:'table', 
       headerName:'Masa No', 
       width:90,
@@ -387,9 +380,11 @@ export default function OrderManagementPage(){
       field:'total', 
       headerName:'Toplam', 
       width:120,
+      align: 'right',
+      headerAlign: 'right',
       renderCell: (params) => {
         const price = params.value || params.row?.total || 0;
-        return `${Number(price).toFixed(2)} TL`;
+        return <span className="order-total-cell">{Number(price).toFixed(2)} TL</span>;
       }
     },
     { field:'status', headerName:'Durum', width:160, renderCell:p=><StatusChip status={p.value}/> },
@@ -399,8 +394,8 @@ export default function OrderManagementPage(){
       width:110,
       renderCell: (params) => {
         const row = params.row || {};
-        if (row.status === 'iptal') return '—';
-        return row.status === 'tamamlandi' ? 'Evet' : 'Hayır';
+        if (row.status === 'iptal' || row.status === 'CANCELED') return '—';
+        return row.status === 'tamamlandi' || row.status === 'PAID' ? 'Evet' : 'Hayır';
       }
     },
     { 
@@ -409,32 +404,47 @@ export default function OrderManagementPage(){
       width:180,
       renderCell: (params) => {
         const date = params.value || params.row?.createdAt;
-        return date ? new Date(date).toLocaleString('tr-TR') : '—';
+        return <span className="order-date-cell">{date ? new Date(date).toLocaleString('tr-TR') : '—'}</span>;
+      }
+    },
+    { 
+      field:'id', 
+      headerName:'Sipariş ID', 
+      width:140,
+      renderCell: (params) => {
+        const id = params.value || params.row?.id || '';
+        return <span className="order-id-cell">{id ? `...${String(id).slice(-6)}` : '—'}</span>;
       }
     },
     {
       field: 'actions',
-      headerName: 'İşlemler',
-      width: 140,
+      headerName: '',
+      width: 80,
       sortable: false,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: (params) => {
         const order = params.row;
         return (
-          <Button
-            onClick={() => handleViewDetails(order)}
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewDetails(order);
+            }}
             size="small"
-            variant="contained"
+            className="order-detail-button"
             sx={{
-              bgcolor: '#111',
-              color: '#fff',
-              textTransform: 'none',
-              borderRadius: 3,
-              px: 1.5,
-              '&:hover': { bgcolor: '#222' },
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+              '&:hover': {
+                backgroundColor: '#f9fafb',
+                borderColor: 'var(--color-brand-green)',
+                color: 'var(--color-brand-green)',
+              },
             }}
           >
-            Detay Gör
-          </Button>
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
         );
       },
     }
@@ -474,41 +484,59 @@ export default function OrderManagementPage(){
           Henüz sipariş bulunmuyor.
         </Typography>
       )}
-      {/* Filter Bar (no date filters) */}
-      <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-        <TextField
-          inputRef={searchRef}
-          label="Ara"
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e)=> setSearch(e.target.value)}
-          sx={{ flexGrow: { xs: 1, sm: 0 }, minWidth: { xs: '100%', sm: 200 } }}
-        />
-        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
-          <InputLabel>Durum</InputLabel>
-          <Select value={status} onChange={(e)=> setStatus(e.target.value)} label="Durum">
-            <MenuItem value="">Tümü</MenuItem>
-            <MenuItem value="hazirlaniyor">Hazırlanıyor</MenuItem>
-            <MenuItem value="serviste">Serviste</MenuItem>
-            <MenuItem value="tamamlandi">Tamamlandı</MenuItem>
-            <MenuItem value="iptal">İptal</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
-          <InputLabel>Ödeme Durumu</InputLabel>
-          <Select value={paid} onChange={(e)=> setPaid(e.target.value)} label="Ödeme Durumu">
-            <MenuItem value="">Tümü</MenuItem>
-            <MenuItem value="Evet">Evet</MenuItem>
-            <MenuItem value="Hayır">Hayır</MenuItem>
-          </Select>
-        </FormControl>
-        <Box sx={{ ml: { xs: 0, sm: 'auto' }, display:'flex', alignItems:'center', gap: 1, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'space-between', sm: 'flex-end' } }}>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 'clamp(11px, 1.5vw, 14px)' }}>{(search?1:0) + (status?1:0) + (paid?1:0)} filtre</Typography>
+      {/* Filter Bar */}
+      <Box className="order-filter-bar">
+        <Box className="order-filter-group">
+          <TextField
+            inputRef={searchRef}
+            label="Ara"
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e)=> setSearch(e.target.value)}
+            sx={{ minWidth: { xs: '100%', sm: 200 } }}
+          />
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
+            <InputLabel>Durum</InputLabel>
+            <Select value={status} onChange={(e)=> setStatus(e.target.value)} label="Durum">
+              <MenuItem value="">Tümü</MenuItem>
+              <MenuItem value="hazirlaniyor">Hazırlanıyor</MenuItem>
+              <MenuItem value="serviste">Serviste</MenuItem>
+              <MenuItem value="tamamlandi">Tamamlandı</MenuItem>
+              <MenuItem value="iptal">İptal</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 160 } }}>
+            <InputLabel>Ödeme Durumu</InputLabel>
+            <Select value={paid} onChange={(e)=> setPaid(e.target.value)} label="Ödeme Durumu">
+              <MenuItem value="">Tümü</MenuItem>
+              <MenuItem value="Evet">Evet</MenuItem>
+              <MenuItem value="Hayır">Hayır</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+        <Box className="order-filter-actions">
+          {(search || status || paid) && (
+            <Button
+              variant="text"
+              className="order-clear-filters"
+              onClick={() => {
+                setSearch('');
+                setStatus('');
+                setPaid('');
+                persistState({ search: '', status: '', paid: '' });
+              }}
+            >
+              Filtreleri Temizle
+            </Button>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem', display: { xs: 'none', sm: 'block' } }}>
+            {(search?1:0) + (status?1:0) + (paid?1:0)} filtre aktif
+          </Typography>
           <Button 
             variant="outlined" 
             onClick={handleExportMenuOpen}
-            sx={{ minHeight: '44px', fontSize: 'clamp(12px, 1.8vw, 14px)' }}
+            sx={{ minHeight: '40px', fontSize: '0.875rem' }}
           >
             İndir
           </Button>
@@ -538,12 +566,67 @@ export default function OrderManagementPage(){
           disableRowSelectionOnClick
           autoHeight={false}
           density={isMobile ? 'compact' : 'standard'}
+          onRowClick={(params) => handleViewDetails(params.row)}
+          localeText={{
+            // Pagination
+            paginationRowsPerPage: 'Sayfa başına satır:',
+            paginationLabelDisplayedRows: ({ from, to, count }) => {
+              if (count === -1) {
+                return `${from}-${to} / ${to}'den fazla`;
+              }
+              return `${from}-${to} / ${count}`;
+            },
+            // Toolbar
+            toolbarDensity: 'Yoğunluk',
+            toolbarDensityLabel: 'Yoğunluk',
+            toolbarDensityCompact: 'Kompakt',
+            toolbarDensityStandard: 'Standart',
+            toolbarDensityComfortable: 'Rahat',
+            // Columns
+            columnsManagementSearchTitle: 'Kolon ara',
+            columnsManagementNoColumns: 'Kolon yok',
+            columnsManagementShowHideAllText: 'Tümünü Göster/Gizle',
+            // Filter
+            filterPanelAddFilter: 'Filtre Ekle',
+            filterPanelDeleteIconLabel: 'Sil',
+            filterPanelOperators: 'Operatörler',
+            filterPanelOperatorAnd: 'Ve',
+            filterPanelOperatorOr: 'Veya',
+            filterPanelColumns: 'Kolonlar',
+            filterPanelInputLabel: 'Değer',
+            filterPanelInputPlaceholder: 'Filtre değeri',
+            // No rows
+            noRowsLabel: 'Satır yok',
+            noResultsOverlayLabel: 'Sonuç bulunamadı',
+            // Error
+            errorOverlayDefaultLabel: 'Bir hata oluştu',
+          }}
+          componentsProps={{
+            pagination: {
+              labelRowsPerPage: 'Sayfa başına satır:',
+              labelDisplayedRows: ({ from, to, count }) => {
+                if (count === -1) {
+                  return `${from}-${to} / ${to}'den fazla`;
+                }
+                return `${from}-${to} / ${count}`;
+              },
+            },
+          }}
           sx={{
             '& .MuiDataGrid-cell': {
               fontSize: { xs: '0.75rem', sm: '0.875rem' },
             },
             '& .MuiDataGrid-columnHeader': {
               fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            },
+            '& .MuiDataGrid-row': {
+              '&:nth-of-type(even)': {
+                backgroundColor: '#fafafa',
+              },
+              '&:hover': {
+                backgroundColor: '#f0f9ff !important',
+                cursor: 'pointer',
+              },
             },
           }}
         />

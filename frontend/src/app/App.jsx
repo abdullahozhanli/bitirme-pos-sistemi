@@ -37,7 +37,6 @@ import SuperAdminUserManagement from '../features/superadmin/pages/SuperAdminUse
 import Unauthorized from '../features/auth/pages/Unauthorized.jsx';
 import ProtectedRoute from '../shared/guards/ProtectedRoute.jsx'; 
 import RoleGuard from '../shared/guards/RoleGuard.jsx';
-import ViewportProbe from '../shared/components/dev/ViewportProbe.tsx';
 
 // QR Kod Okuyucu Bileşen (TableSetter)
 // URL parametresinden masa numarasını alır ve CartContext'e kaydeder
@@ -127,7 +126,6 @@ function App() {
         <Route path="qr-kodlar" element={<QRCodeManagementPage />} />
       </Route>
     </Routes>
-    {import.meta.env.DEV && <ViewportProbe />}
     </>
   );
 }

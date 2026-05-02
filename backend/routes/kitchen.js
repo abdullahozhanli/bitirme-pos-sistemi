@@ -7,6 +7,12 @@ router.use(auth, requireRole('mutfak', 'admin', 'yetkili'));
 
 router.get('/orders', async (req, res) => {
   try {
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    const branchFilter = {};
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      branchFilter.branchId = req.user.branchId;
+    }
+    
     // Tüm aktif siparişleri getir (yeni, hazırlanıyor, hazır)
     // Garson siparişleri de dahil (waiterId veya waiter field'ı olanlar)
     const orders = await Order.find({
@@ -16,7 +22,8 @@ router.get('/orders', async (req, res) => {
           'hazirlaniyor', 'serviste', // Eski status'lar
           'tamamlandi', 'PAID', 'SERVED' // Tamamlanan siparişler (istatistik için)
         ] 
-      }
+      },
+      ...branchFilter
     })
       .populate('table', 'name capacity')
       .populate('tableId', 'name capacity')

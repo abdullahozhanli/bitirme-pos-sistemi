@@ -48,7 +48,7 @@ export default function OrderDetailModal({
   const statusNorm = normalizeTr(order.status);
   const isCancelled = statusNorm === 'iptal' || order.status === 'CANCELED';
   const isPreparing = statusNorm === 'hazirlaniyor' || order.status === 'CREATED' || order.status === 'IN_PREP';
-  const isPaid = statusNorm === 'tamamlandi' || order.status === 'PAID';
+  const isPaid = statusNorm === 'tamamlandi' || statusNorm === 'odendi' || order.status === 'ödendi' || order.status === 'PAID';
 
   const disabledPaid = isPaid || isCancelled;
   const disabledReady = !isPreparing;
@@ -151,5 +151,11 @@ export default function OrderDetailModal({
     </Modal>
   );
 }
+
+
+
+
+
+
 
 

@@ -6,7 +6,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import ReceiptLongIcon from '@mui/icons-material/Description';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CategoryIcon from '@mui/icons-material/LocalOffer';
-import QrCodeIcon from '@mui/icons-material/QrCode';
 import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import LaunchIcon from '@mui/icons-material/Visibility';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -16,6 +15,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import PersonIcon from '@mui/icons-material/Person';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useAuth } from '../../../shared/context/AuthContext.jsx';
+import '../styles/admin.css';
 
 const drawerWidth = 240;
 
@@ -70,7 +70,6 @@ export default function AdminLayout() {
     { to: '/admin/masalar', label: 'Masa Yönetimi', icon: <TableRestaurantIcon /> },
     { to: '/admin/urunler', label: 'Ürün Yönetimi', icon: <Inventory2Icon /> },
     { to: '/admin/kategoriler', label: 'Kategori Yönetimi', icon: <CategoryIcon /> },
-    { to: '/admin/qr-kodlar', label: 'QR Kod Yönetimi', icon: <QrCodeIcon /> },
     { to: '/', label: 'Müşteri Arayüzünü Gör', icon: <LaunchIcon /> },
   ];
 
@@ -101,11 +100,11 @@ export default function AdminLayout() {
       msOverflowStyle: 'none',
     }}>
       {/* Kullanıcı Profili */}
-      <Box sx={{ p: 3, borderBottom: '1px solid #E5E5E5' }}>
+      <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar 
             sx={{ 
-              bgcolor: '#4CAF50', 
+              bgcolor: 'var(--color-brand-green)', 
               width: 48, 
               height: 48,
               fontSize: '1.5rem'
@@ -114,10 +113,10 @@ export default function AdminLayout() {
             <PersonIcon />
           </Avatar>
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#000', mb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--color-text)', mb: 0.5 }}>
               {user?.name || 'Admin'}
             </Typography>
-            <Typography variant="body2" sx={{ color: '#1976d2', fontSize: '0.875rem', mb: 0.25 }}>
+            <Typography variant="body2" sx={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', mb: 0.25 }}>
               Yönetici
             </Typography>
             {branchName ? (
@@ -174,20 +173,20 @@ export default function AdminLayout() {
               onClick={() => isMobile && setMobileOpen(false)}
               sx={{
                 mb: 0.5,
-                borderRadius: 1,
-                bgcolor: active ? 'rgba(25, 118, 210, 0.15)' : 'transparent',
+                borderRadius: 'var(--radius-medium)',
+                bgcolor: active ? 'rgba(5, 150, 105, 0.1)' : 'transparent',
                 '&:hover': {
-                  bgcolor: active ? 'rgba(25, 118, 210, 0.20)' : 'rgba(0, 0, 0, 0.04)',
+                  bgcolor: active ? 'rgba(5, 150, 105, 0.15)' : '#f9fafb',
                 },
                 '&.Mui-selected': {
-                  bgcolor: 'rgba(25, 118, 210, 0.15)',
+                  bgcolor: 'rgba(5, 150, 105, 0.1)',
                   '&:hover': {
-                    bgcolor: 'rgba(25, 118, 210, 0.20)',
+                    bgcolor: 'rgba(5, 150, 105, 0.15)',
                   },
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: active ? '#1976d2' : '#666' }}>
+              <ListItemIcon sx={{ minWidth: 40, color: active ? 'var(--color-brand-green)' : 'var(--color-text-muted)' }}>
                 {it.icon}
               </ListItemIcon>
               <ListItemText 
@@ -195,7 +194,7 @@ export default function AdminLayout() {
                 primaryTypographyProps={{
                   fontSize: '0.9375rem',
                   fontWeight: active ? 600 : 400,
-                  color: active ? '#1976d2' : '#333',
+                  color: active ? 'var(--color-brand-green)' : 'var(--color-text)',
                 }}
               />
             </ListItemButton>
@@ -204,7 +203,7 @@ export default function AdminLayout() {
       </List>
 
       {/* Alt Menü (Ayarlar, Yardım ve Çıkış) */}
-      <Box sx={{ borderTop: '1px solid #E5E5E5', pt: 1, pb: 2 }}>
+      <Box sx={{ borderTop: '1px solid var(--color-border)', pt: 1, pb: 2 }}>
         <List sx={{ px: 1 }}>
           {bottomMenuItems.map((it) => (
             <ListItemButton
@@ -213,24 +212,24 @@ export default function AdminLayout() {
                 it.onClick();
                 if (isMobile) setMobileOpen(false);
               }}
-              sx={{
-                mb: 0.5,
-                borderRadius: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(0, 0, 0, 0.04)',
-                },
+            sx={{
+              mb: 0.5,
+              borderRadius: 'var(--radius-medium)',
+              '&:hover': {
+                bgcolor: '#f9fafb',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 40, color: 'var(--color-text-muted)' }}>
+              {it.icon}
+            </ListItemIcon>
+            <ListItemText 
+              primary={it.label}
+              primaryTypographyProps={{
+                fontSize: '0.9375rem',
+                color: 'var(--color-text)',
               }}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: '#666' }}>
-                {it.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={it.label}
-                primaryTypographyProps={{
-                  fontSize: '0.9375rem',
-                  color: '#333',
-                }}
-              />
+            />
             </ListItemButton>
           ))}
           {/* Çıkış Yap Butonu */}
@@ -241,20 +240,20 @@ export default function AdminLayout() {
             }}
             sx={{
               mb: 0.5,
-              borderRadius: 2,
+              borderRadius: 'var(--radius-medium)',
               '&:hover': {
-                bgcolor: 'rgba(233, 30, 99, 0.12)',
+                bgcolor: '#fef2f2',
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40, color: '#e91e63' }}>
+            <ListItemIcon sx={{ minWidth: 40, color: '#dc2626' }}>
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText 
               primary="Çıkış Yap"
               primaryTypographyProps={{
                 fontSize: '0.9375rem',
-                color: '#e91e63',
+                color: '#dc2626',
                 fontWeight: 500,
               }}
             />
@@ -280,11 +279,11 @@ export default function AdminLayout() {
             onClick={handleDrawerToggle}
             sx={{
               bgcolor: '#FFFFFF',
-              border: '1px solid #E5E5E5',
-              borderRadius: 1,
-              color: '#333',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-medium)',
+              color: 'var(--color-text)',
               '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.04)',
+                bgcolor: '#f9fafb',
               },
             }}
           >
@@ -305,7 +304,7 @@ export default function AdminLayout() {
             width: drawerWidth,
             boxSizing: 'border-box',
             bgcolor: '#FFFFFF',
-            borderRight: '1px solid #E5E5E5',
+            borderRight: '1px solid var(--color-border)',
             overflow: 'hidden',
             '&::-webkit-scrollbar': {
               display: 'none',
@@ -328,7 +327,7 @@ export default function AdminLayout() {
             width: drawerWidth,
             boxSizing: 'border-box',
             bgcolor: '#FFFFFF',
-            borderRight: '1px solid #E5E5E5',
+            borderRight: '1px solid var(--color-border)',
             overflow: 'hidden',
             '&::-webkit-scrollbar': {
               display: 'none',

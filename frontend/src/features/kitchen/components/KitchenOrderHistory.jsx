@@ -182,7 +182,7 @@ export default function KitchenOrderHistory({ open, onClose }) {
                       <Stack spacing={1} mb={notes ? 1.5 : 0}>
                         {items.map((item, idx) => (
                           <Stack key={idx} direction="row" spacing={1} alignItems="center">
-                            <Typography variant="body2" fontWeight={700} sx={{ color: '#000', minWidth: '30px' }}>
+                            <Typography variant="body2" fontWeight={700} sx={{ color: '#111827', minWidth: '30px' }}>
                               {item.qty || 1}x
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#666', flex: 1 }}>
@@ -208,7 +208,7 @@ export default function KitchenOrderHistory({ open, onClose }) {
                       {/* Toplam Tutar */}
                       <Divider sx={{ my: 1.5 }} />
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="body2" fontWeight={700} sx={{ color: '#000' }}>
+                        <Typography variant="body2" fontWeight={700} sx={{ color: '#111827' }}>
                           Toplam:
                         </Typography>
                         <Typography variant="body2" fontWeight={700} sx={{ color: '#2196F3', fontSize: '1rem' }}>

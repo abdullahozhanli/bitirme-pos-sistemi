@@ -32,13 +32,15 @@ const orderSchema = new mongoose.Schema({
   notes: { type: String }, // Genel sipariş notu (müşteri notu)
   status: {
     type: String,
-    enum: ['hazirlaniyor', 'serviste', 'tamamlandi', 'iptal', 'PAID', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY', 'SERVED', 'CANCELED'],
+    enum: ['hazirlaniyor', 'serviste', 'tamamlandi', 'iptal', 'ödendi', 'PAID', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY', 'SERVED', 'CANCELED'],
     default: 'hazirlaniyor'
   },
   paidAt: {
     type: Date
   },
-  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' } // Yeni model için
+  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }, // Yeni model için
+  /** Mobil müşteri (giriş yapmış) siparişi */
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
 }, { timestamps: true, strict: false }); // strict: false - eski ve yeni field'ları destekle
 
 module.exports = mongoose.model('Order', orderSchema);

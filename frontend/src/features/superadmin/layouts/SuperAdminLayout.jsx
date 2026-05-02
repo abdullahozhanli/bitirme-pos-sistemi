@@ -64,7 +64,7 @@ export default function SuperAdminLayout() {
             <PersonIcon />
           </Avatar>
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#000', mb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#111827', mb: 0.5 }}>
               {user?.name || 'Süper Admin'}
             </Typography>
             <Typography variant="body2" sx={{ color: '#e91e63', fontSize: '0.875rem' }}>

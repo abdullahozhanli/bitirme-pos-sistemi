@@ -108,10 +108,7 @@ export default function WaiterOrdersPage() {
 
   // Socket.io bağlantısı ve bildirimler
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const baseURL = hostname === 'localhost' || hostname === '127.0.0.1' 
-      ? 'http://localhost:5001' 
-      : `http://${hostname}:5001`;
+    const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
     const socket = io(baseURL, {
       transports: ['websocket', 'polling'],

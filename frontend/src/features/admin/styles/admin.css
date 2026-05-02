@@ -1,0 +1,1377 @@
+/* Admin Panel - Zarif MUI Override Stilleri */
+
+/* Butonlar - Zarif ve Minimal */
+.MuiButton-root {
+  font-family: var(--font-main) !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  border-radius: var(--radius-medium) !important;
+  padding: 10px 20px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: transparent !important;
+}
+
+/* Focus state - outline kaldır, sadece keyboard navigation için */
+.MuiButton-root:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.MuiButton-root:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15) !important;
+}
+
+.MuiButton-root:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Active state - border değişmemeli */
+.MuiButton-root:active {
+  transform: none !important;
+  border-width: 1px !important;
+}
+
+.MuiButton-contained {
+  background-color: var(--color-brand-green) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-contained:hover {
+  background-color: #047857 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.2) !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-contained:active {
+  background-color: #047857 !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 1px 4px rgba(5, 150, 105, 0.2) !important;
+}
+
+.MuiButton-outlined {
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+  background-color: #ffffff !important;
+}
+
+.MuiButton-outlined:hover {
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
+  border-width: 1px !important;
+}
+
+.MuiButton-outlined:active {
+  background-color: #f3f4f6 !important;
+  border-width: 1px !important;
+}
+
+.MuiButton-outlined:focus {
+  border-width: 1px !important;
+}
+
+.MuiButton-text {
+  color: var(--color-text) !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-text:hover {
+  background-color: #f9fafb !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-text:active {
+  background-color: #f3f4f6 !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-text:focus {
+  border: 1px solid transparent !important;
+}
+
+.MuiButton-containedPrimary {
+  background-color: var(--color-brand-green) !important;
+  color: #ffffff !important;
+}
+
+.MuiButton-containedPrimary:hover {
+  background-color: #047857 !important;
+}
+
+.MuiButton-containedSuccess {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+.MuiButton-containedSuccess:hover {
+  background-color: #047857 !important;
+}
+
+.MuiButton-containedError {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.MuiButton-containedError:hover {
+  background-color: #b91c1c !important;
+}
+
+.MuiButton-containedWarning {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+.MuiButton-containedWarning:hover {
+  background-color: #b45309 !important;
+}
+
+.MuiButton-outlinedPrimary {
+  border-color: var(--color-brand-green) !important;
+  color: var(--color-brand-green) !important;
+}
+
+.MuiButton-outlinedPrimary:hover {
+  background-color: rgba(5, 150, 105, 0.1) !important;
+  border-color: var(--color-brand-green) !important;
+}
+
+.MuiButton-outlinedSuccess {
+  border-color: #059669 !important;
+  color: #059669 !important;
+}
+
+.MuiButton-outlinedSuccess:hover {
+  background-color: rgba(5, 150, 105, 0.1) !important;
+}
+
+.MuiButton-outlinedError {
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.MuiButton-outlinedError:hover {
+  background-color: rgba(220, 38, 38, 0.1) !important;
+}
+
+.MuiButton-outlinedWarning {
+  border-color: #d97706 !important;
+  color: #d97706 !important;
+}
+
+.MuiButton-outlinedWarning:hover {
+  background-color: rgba(217, 119, 6, 0.1) !important;
+}
+
+/* TextField - Zarif Input */
+.MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: var(--radius-medium) !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root fieldset {
+  border: 1px solid var(--color-border) !important;
+  border-width: 1px !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:hover fieldset {
+  border-color: #d1d5db !important;
+  border-width: 1px !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-color: var(--color-brand-green) !important;
+  border-width: 1px !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15) !important;
+}
+
+.MuiTextField-root .MuiInputLabel-root {
+  color: var(--color-text-muted) !important;
+  font-family: var(--font-main) !important;
+}
+
+.MuiTextField-root .MuiInputLabel-root.Mui-focused {
+  color: var(--color-brand-green) !important;
+}
+
+/* Card ve Paper - Zarif Kartlar */
+.MuiCard-root,
+.MuiPaper-root {
+  border-radius: var(--radius-large) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiCard-root:hover,
+.MuiPaper-root:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Table Card Hover - Status-based Border Colors */
+.table-card.available:hover {
+  border-color: var(--color-brand-green) !important;
+}
+
+.table-card.full:hover {
+  border-color: #EF4444 !important;
+}
+
+.table-card.reserved:hover {
+  border-color: #F59E0B !important;
+}
+
+.table-card.payment_pending:hover {
+  border-color: #3B82F6 !important;
+}
+
+.MuiCardContent-root {
+  padding: var(--spacing-lg) !important;
+}
+
+/* Chip - Zarif Etiketler */
+.MuiChip-root {
+  border-radius: var(--radius-pill) !important;
+  font-family: var(--font-main) !important;
+  font-weight: 500 !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: #f9fafb !important;
+  color: var(--color-text) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiChip-root:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.MuiChip-colorPrimary {
+  background-color: #e8f5e9 !important;
+  color: var(--color-brand-green) !important;
+  border-color: #c8e6c9 !important;
+}
+
+.MuiChip-colorSuccess {
+  background-color: #e8f5e9 !important;
+  color: #059669 !important;
+  border-color: #c8e6c9 !important;
+}
+
+.MuiChip-colorError {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.MuiChip-colorWarning {
+  background-color: #fffbeb !important;
+  color: #d97706 !important;
+  border-color: #fde68a !important;
+}
+
+.MuiChip-colorInfo {
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #dbeafe !important;
+}
+
+.MuiChip-outlined {
+  background-color: transparent !important;
+}
+
+/* Alert - Zarif Uyarılar */
+.MuiAlert-root {
+  border-radius: var(--radius-medium) !important;
+  border: 1px solid !important;
+  font-family: var(--font-main) !important;
+}
+
+.MuiAlert-standardSuccess {
+  background-color: #f0fdf4 !important;
+  border-color: #d1fae5 !important;
+  color: #059669 !important;
+}
+
+.MuiAlert-standardError {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+.MuiAlert-standardWarning {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #d97706 !important;
+}
+
+.MuiAlert-standardInfo {
+  background-color: #eff6ff !important;
+  border-color: #dbeafe !important;
+  color: #2563eb !important;
+}
+
+/* Drawer - Sidebar */
+.MuiDrawer-paper {
+  border-right: 1px solid var(--color-border) !important;
+  box-shadow: none !important;
+}
+
+/* ListItemButton - Menü Öğeleri */
+.MuiListItemButton-root {
+  border-radius: var(--radius-medium) !important;
+  margin: 4px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiListItemButton-root:hover {
+  background-color: #f9fafb !important;
+}
+
+.MuiListItemButton-root.Mui-selected {
+  background-color: rgba(5, 150, 105, 0.1) !important;
+  color: var(--color-brand-green) !important;
+}
+
+.MuiListItemButton-root.Mui-selected:hover {
+  background-color: rgba(5, 150, 105, 0.15) !important;
+}
+
+/* Typography - Zarif Metinler */
+.MuiTypography-root {
+  font-family: var(--font-main) !important;
+  color: var(--color-text) !important;
+}
+
+.MuiTypography-h1,
+.MuiTypography-h2,
+.MuiTypography-h3,
+.MuiTypography-h4,
+.MuiTypography-h5,
+.MuiTypography-h6 {
+  color: var(--color-text) !important;
+  font-weight: 600 !important;
+}
+
+/* CircularProgress - Loading */
+.MuiCircularProgress-root {
+  color: var(--color-brand-green) !important;
+}
+
+/* Dialog - Modal */
+.MuiDialog-paper {
+  border-radius: var(--radius-large) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.MuiDialogTitle-root {
+  font-family: var(--font-main) !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  padding: var(--spacing-lg) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.MuiDialogContent-root {
+  padding: var(--spacing-lg) !important;
+}
+
+.MuiDialogActions-root {
+  padding: var(--spacing-lg) !important;
+  border-top: 1px solid var(--color-border) !important;
+  gap: var(--spacing-sm) !important;
+}
+
+/* Select - Dropdown */
+.MuiSelect-root {
+  border-radius: var(--radius-medium) !important;
+  font-family: var(--font-main) !important;
+}
+
+.MuiOutlinedInput-root .MuiSelect-root {
+  padding: 12px 14px !important;
+}
+
+.MuiSelect-root:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.MuiFormControl-root:focus,
+.MuiFormControl-root:focus-within {
+  outline: none !important;
+}
+
+.MuiMenu-paper {
+  border-radius: var(--radius-medium) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--color-border) !important;
+  margin-top: 4px !important;
+}
+
+.MuiMenuItem-root {
+  font-family: var(--font-main) !important;
+  border-radius: var(--radius-medium) !important;
+  margin: 4px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: #f9fafb !important;
+}
+
+/* Snackbar - Bildirimler */
+.MuiSnackbar-root {
+  border-radius: var(--radius-medium) !important;
+}
+
+.MuiSnackbarContent-root {
+  border-radius: var(--radius-medium) !important;
+  font-family: var(--font-main) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Avatar */
+.MuiAvatar-root {
+  font-family: var(--font-main) !important;
+}
+
+/* IconButton */
+.MuiIconButton-root {
+  border-radius: var(--radius-medium) !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiIconButton-root:hover {
+  background-color: #f9fafb !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiIconButton-root:active {
+  background-color: #f3f4f6 !important;
+  border: 1px solid transparent !important;
+  transform: none !important;
+}
+
+.MuiIconButton-root:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiIconButton-root:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15) !important;
+  border: 1px solid transparent !important;
+}
+
+.MuiIconButton-root:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* DataGrid - Tablo */
+.MuiDataGrid-root {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-large) !important;
+  font-family: var(--font-main) !important;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: #f9fafb !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.MuiDataGrid-cell {
+  border-bottom: 1px solid #f3f4f6 !important;
+  outline: none !important;
+}
+
+.MuiDataGrid-cell:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.MuiDataGrid-cell:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15) !important;
+}
+
+.MuiDataGrid-row:hover {
+  background-color: #f9fafb !important;
+}
+
+.MuiDataGrid-footerContainer {
+  border-top: 1px solid var(--color-border) !important;
+}
+
+/* Pagination - Türkçe metinler için CSS override */
+.MuiDataGrid-footerContainer .MuiTablePagination-root {
+  font-family: var(--font-main) !important;
+}
+
+.MuiDataGrid-footerContainer .MuiTablePagination-selectLabel {
+  font-family: var(--font-main) !important;
+  color: var(--color-text) !important;
+  margin: 0 8px 0 0 !important;
+}
+
+.MuiDataGrid-footerContainer .MuiTablePagination-displayedRows {
+  font-family: var(--font-main) !important;
+  color: var(--color-text) !important;
+}
+
+/* Order Management - Özel Stiller */
+.order-table-row {
+  transition: background-color 0.15s ease !important;
+}
+
+.order-table-row:nth-of-type(even) {
+  background-color: #fafafa !important;
+}
+
+.order-table-row:hover {
+  background-color: #f0f9ff !important;
+  cursor: pointer !important;
+}
+
+/* Toplam kolonu - sağa hizalı ve kalın */
+.order-total-cell {
+  text-align: right !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+}
+
+/* Tarih kolonu - küçük ve muted */
+.order-date-cell {
+  font-size: 0.8125rem !important;
+  color: var(--color-text-muted) !important;
+}
+
+/* Sipariş ID - truncated ve muted */
+.order-id-cell {
+  font-size: 0.8125rem !important;
+  color: var(--color-text-muted) !important;
+  font-family: 'Monaco', 'Menlo', monospace !important;
+  max-width: 120px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Detay butonu - küçük outline */
+.order-detail-button {
+  min-width: auto !important;
+  padding: 4px 12px !important;
+  font-size: 0.8125rem !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+  background-color: transparent !important;
+  border-radius: var(--radius-medium) !important;
+  text-transform: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.order-detail-button:hover {
+  background-color: #f9fafb !important;
+  border-color: var(--color-brand-green) !important;
+  color: var(--color-brand-green) !important;
+}
+
+/* Filter bar - gruplandırılmış */
+.order-filter-bar {
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  padding: 16px !important;
+  background-color: #f9fafb !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-medium) !important;
+  margin-bottom: 16px !important;
+}
+
+.order-filter-group {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+}
+
+.order-filter-actions {
+  margin-left: auto !important;
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.order-clear-filters {
+  font-size: 0.8125rem !important;
+  color: var(--color-text-muted) !important;
+  text-transform: none !important;
+  padding: 6px 12px !important;
+}
+
+.order-clear-filters:hover {
+  background-color: #f3f4f6 !important;
+  color: var(--color-text) !important;
+}
+
+/* Divider */
+.MuiDivider-root {
+  border-color: var(--color-border) !important;
+}
+
+/* FormControl */
+.MuiFormControl-root {
+  font-family: var(--font-main) !important;
+}
+
+.MuiInputLabel-root {
+  font-family: var(--font-main) !important;
+  color: var(--color-text-muted) !important;
+}
+
+.MuiInputLabel-root.Mui-focused {
+  color: var(--color-brand-green) !important;
+}
+
+/* Stack */
+.MuiStack-root {
+  font-family: var(--font-main) !important;
+}
+
+/* QR Code Management Page - Özel Stiller */
+
+/* QR Creation Panel - Compact Primary Action Area */
+.qr-management-page .qr-creation-panel {
+  background-color: #F9FAFB !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 16px !important;
+  height: auto !important;
+  min-height: unset !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiCardContent-root {
+  padding: 16px !important;
+}
+
+/* Form Container - Compact Layout */
+.qr-management-page .qr-creation-panel form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+.qr-management-page .qr-creation-panel form > .MuiBox-root {
+  display: flex !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  margin: 0 !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiFormHelperText-root {
+  font-size: 0.75rem !important;
+  color: var(--color-text-muted) !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* Compact Input Fields in QR Form */
+.qr-management-page .qr-creation-panel .MuiTextField-root {
+  margin: 0 !important;
+  flex: 1 !important;
+  min-width: 200px !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiTextField-root .MuiOutlinedInput-root {
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  border-radius: 12px !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiTextField-root .MuiOutlinedInput-root input {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiTextField-root .MuiOutlinedInput-root fieldset {
+  border-width: 1px !important;
+  border-radius: 12px !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiTextField-root .MuiOutlinedInput-root.Mui-focused fieldset {
+  border-width: 1px !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1) !important;
+}
+
+/* Compact Label in QR Form */
+.qr-management-page .qr-creation-panel .MuiInputLabel-root {
+  font-size: 12px !important;
+  color: #6B7280 !important;
+  transform: translate(14px, 14px) scale(1) !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiInputLabel-root.Mui-focused,
+.qr-management-page .qr-creation-panel .MuiInputLabel-root.MuiInputLabel-shrink {
+  transform: translate(14px, -9px) scale(0.85) !important;
+  font-size: 12px !important;
+  color: #6B7280 !important;
+}
+
+/* Primary Green Button in QR Form - Compact */
+.qr-management-page .qr-creation-panel .MuiButton-contained {
+  background-color: var(--color-brand-green) !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  padding: 0 16px !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  transition: all 0.2s ease !important;
+  margin-top: 0 !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiButton-contained:hover {
+  background-color: #047857 !important;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2) !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiButton-contained:disabled {
+  background-color: #D1D5DB !important;
+  color: #9CA3AF !important;
+}
+
+.qr-management-page .qr-creation-panel .MuiButton-contained:focus {
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.1) !important;
+}
+
+/* QR Cards - Improved Visual Hierarchy */
+.qr-management-page .MuiGrid-container .MuiCard-root {
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  border-color: #D1D5DB !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiCardContent-root {
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* QR Image - More Visually Centered */
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiCardContent-root img {
+  width: 100% !important;
+  max-width: 250px !important;
+  height: auto !important;
+  margin: 16px auto !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-medium) !important;
+  padding: 12px !important;
+  background-color: #ffffff !important;
+  display: block !important;
+}
+
+/* URL Text - Reduced Visual Noise */
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiTypography-caption {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 0.75rem !important;
+  color: var(--color-text-muted) !important;
+  margin-bottom: 16px !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+  display: block !important;
+}
+
+/* Delete Icon - Reduced Aggressiveness */
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiIconButton-root {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 1 !important;
+  background-color: #F3F4F6 !important;
+  color: var(--color-text-muted) !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 6px !important;
+  transition: all 0.2s ease !important;
+  border-radius: 50% !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiIconButton-root:hover {
+  background-color: #FEF2F2 !important;
+  color: #DC2626 !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiIconButton-root svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Download Button - Outline Style with Soft Green Hover */
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiButton-outlined {
+  border: 1px solid var(--color-border) !important;
+  background-color: transparent !important;
+  color: var(--color-text) !important;
+  border-radius: var(--radius-medium) !important;
+  padding: 8px 16px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  transition: all 0.2s ease !important;
+  min-height: 36px !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiButton-outlined:hover {
+  background-color: #F0FDF4 !important;
+  border-color: var(--color-brand-green) !important;
+  color: var(--color-brand-green) !important;
+}
+
+/* Card Typography - Improved Hierarchy */
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiTypography-h6 {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  margin-bottom: 8px !important;
+}
+
+.qr-management-page .MuiGrid-container .MuiCard-root .MuiTypography-body2 {
+  font-size: 0.875rem !important;
+  color: var(--color-text-muted) !important;
+  margin-bottom: 16px !important;
+}
+
+/* Empty State */
+.qr-management-page .MuiCard-root:not(.qr-creation-panel) .MuiBox-root[style*="textAlign: center"] {
+  background-color: #FAFAFA !important;
+  border: 2px dashed #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+  padding: 48px 24px !important;
+}
+
+.qr-management-page .MuiCard-root:not(.qr-creation-panel) .MuiBox-root[style*="textAlign: center"] .MuiSvgIcon-root {
+  color: var(--color-text-muted) !important;
+  opacity: 0.4 !important;
+  margin-bottom: 16px !important;
+}
+
+.qr-management-page .MuiCard-root:not(.qr-creation-panel) .MuiBox-root[style*="textAlign: center"] .MuiTypography-root {
+  color: var(--color-text-muted) !important;
+}
+
+/* ============================================
+   ÜRÜN YÖNETİMİ SAYFASI - Product Management
+   ============================================ */
+
+/* Target Paper containing product form - Single Row Compact Layout */
+.MuiPaper-root form[onSubmit],
+.MuiPaper-root .MuiBox-root[component="form"] {
+  background-color: #F9FAFB !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+  padding: 16px !important;
+  margin-bottom: 24px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Single Row Layout: Ad | Fiyat | Stok | Görsel URL | Kategori | [Ekle] */
+.MuiPaper-root form[onSubmit] > .MuiTextField-root:nth-of-type(1),
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiTextField-root:nth-of-type(1) {
+  flex: 1 1 150px !important;
+  min-width: 120px !important;
+  max-width: none !important;
+}
+
+.MuiPaper-root form[onSubmit] > .MuiTextField-root:nth-of-type(2),
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiTextField-root:nth-of-type(2) {
+  flex: 0 0 100px !important;
+  min-width: 80px !important;
+  max-width: 100px !important;
+}
+
+.MuiPaper-root form[onSubmit] > .MuiTextField-root:nth-of-type(3),
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiTextField-root:nth-of-type(3) {
+  flex: 0 0 90px !important;
+  min-width: 70px !important;
+  max-width: 90px !important;
+}
+
+.MuiPaper-root form[onSubmit] > .MuiTextField-root:nth-of-type(4),
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiTextField-root:nth-of-type(4) {
+  flex: 1 1 200px !important;
+  min-width: 150px !important;
+  max-width: none !important;
+}
+
+/* Hide Description field from main row (optional: can be shown as expandable) */
+.MuiPaper-root form[onSubmit] > .MuiTextField-root:nth-of-type(5),
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiTextField-root:nth-of-type(5) {
+  display: none !important;
+}
+
+/* Kategori Select */
+.MuiPaper-root form[onSubmit] > .MuiFormControl-root,
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiFormControl-root {
+  flex: 0 0 150px !important;
+  min-width: 130px !important;
+  max-width: 150px !important;
+}
+
+/* Ekle Button - Far Right, Same Height as Inputs */
+.MuiPaper-root form[onSubmit] > .MuiButton-root,
+.MuiPaper-root .MuiBox-root[component="form"] > .MuiButton-root {
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+  align-self: center !important;
+  white-space: nowrap !important;
+}
+
+/* Form Title - First h5 in Paper */
+.MuiPaper-root > .MuiTypography-h5:first-of-type {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  margin-bottom: 12px !important;
+}
+
+/* Error/Status Message - Subtle Alert */
+.MuiPaper-root > .MuiTypography-root[color="error"],
+.MuiPaper-root > .MuiTypography-root[color="success"] {
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.875rem !important;
+  margin-bottom: 16px !important;
+  border: 1px solid #FECACA !important;
+  display: inline-block !important;
+}
+
+.MuiPaper-root > .MuiTypography-root[color="success"] {
+  background-color: #D1FAE5 !important;
+  color: #059669 !important;
+  border-color: #A7F3D0 !important;
+}
+
+/* Form Inputs - Standardized Height and Styling */
+.MuiPaper-root form[onSubmit] .MuiTextField-root,
+.MuiPaper-root form[onSubmit] .MuiFormControl-root {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.MuiPaper-root form[onSubmit] .MuiTextField-root .MuiOutlinedInput-root {
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  border-radius: 12px !important;
+}
+
+.MuiPaper-root form[onSubmit] .MuiTextField-root .MuiOutlinedInput-root input {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: 14px !important;
+}
+
+.MuiPaper-root form[onSubmit] .MuiFormControl-root .MuiOutlinedInput-root {
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  border-radius: 12px !important;
+}
+
+.MuiPaper-root form[onSubmit] .MuiInputLabel-root {
+  font-size: 12px !important;
+  color: #6B7280 !important;
+}
+
+/* Remove minWidth constraint from Görsel URL field */
+.MuiPaper-root form[onSubmit] .MuiTextField-root[placeholder*="https"] {
+  min-width: unset !important;
+}
+
+/* Form Button - Primary Action (Right Aligned in Grid) */
+.MuiPaper-root form[onSubmit] .MuiButton-contained.MuiButton-containedSuccess {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 20px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  background-color: var(--color-brand-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.MuiPaper-root form[onSubmit] .MuiButton-contained.MuiButton-containedSuccess:hover {
+  background-color: #047857 !important;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2) !important;
+}
+
+/* Divider - Clearer Separation */
+.MuiPaper-root > .MuiBox-root[style*="borderTop"] {
+  border-top: 2px solid #E5E7EB !important;
+  margin: 24px 0 !important;
+}
+
+/* Table Section Title - Second h5 in Paper */
+.MuiPaper-root > .MuiTypography-h5:nth-of-type(2) {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+  margin-bottom: 16px !important;
+  margin-top: 0 !important;
+}
+
+/* DataGrid - Improved Readability */
+.MuiPaper-root .MuiDataGrid-root {
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+}
+
+.MuiPaper-root .MuiDataGrid-row {
+  min-height: 56px !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.MuiPaper-root .MuiDataGrid-row:hover {
+  background-color: #F0F9FF !important;
+}
+
+.MuiPaper-root .MuiDataGrid-row:nth-of-type(even) {
+  background-color: #FAFAFA !important;
+}
+
+.MuiPaper-root .MuiDataGrid-row:nth-of-type(even):hover {
+  background-color: #F0F9FF !important;
+}
+
+/* Price Column - Right Aligned */
+.MuiPaper-root .MuiDataGrid-cell[data-field="price"] {
+  text-align: right !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+}
+
+/* Stock Column - Right Aligned, Clean Alignment */
+.MuiPaper-root .MuiDataGrid-cell[data-field="countInStock"] {
+  text-align: right !important;
+  vertical-align: middle !important;
+}
+
+/* Normal Stock - Muted Text (No Badge) */
+.MuiPaper-root .MuiDataGrid-cell[data-field="countInStock"] .stock-text {
+  display: inline-block !important;
+  color: var(--color-text-muted) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+}
+
+/* Stock Badge - Small Inline Badge (Only for Low/Zero Stock) */
+.MuiPaper-root .MuiDataGrid-cell[data-field="countInStock"] .stock-badge {
+  display: inline-block !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  max-height: 22px !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+/* Zero Stock - Soft Red Badge */
+.MuiPaper-root .MuiDataGrid-cell[data-field="countInStock"] .stock-badge.stock-zero {
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+  border: none !important;
+}
+
+/* Low Stock - Soft Yellow Badge */
+.MuiPaper-root .MuiDataGrid-cell[data-field="countInStock"] .stock-badge.stock-low {
+  background-color: #FEF3C7 !important;
+  color: #D97706 !important;
+  border: none !important;
+}
+
+/* Description Column - Ellipsis */
+.MuiPaper-root .MuiDataGrid-cell[data-field="description"] {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 0.875rem !important;
+  color: var(--color-text-muted) !important;
+}
+
+/* Actions Column - Reduced Aggressiveness */
+.MuiPaper-root .MuiDataGrid-cell[data-field="actions"] .MuiStack-root {
+  gap: 8px !important;
+}
+
+/* Düzenle Button - Neutral Gray Ghost Style */
+.MuiPaper-root .MuiDataGrid-cell[data-field="actions"] .MuiButton-contained.MuiButton-containedPrimary {
+  background-color: transparent !important;
+  color: #6B7280 !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 8px !important;
+  padding: 6px 16px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  min-height: 32px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiPaper-root .MuiDataGrid-cell[data-field="actions"] .MuiButton-contained.MuiButton-containedPrimary:hover {
+  background-color: #F3F4F6 !important;
+  border-color: #D1D5DB !important;
+  color: #374151 !important;
+}
+
+/* Sil Button - Soft Red Background, Smaller Size */
+.MuiPaper-root .MuiDataGrid-cell[data-field="actions"] .MuiButton-contained.MuiButton-containedError {
+  background-color: #FEE2E2 !important;
+  color: #991B1B !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  min-height: 30px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiPaper-root .MuiDataGrid-cell[data-field="actions"] .MuiButton-contained.MuiButton-containedError:hover {
+  background-color: #FCA5A5 !important;
+  color: #7F1D1D !important;
+  border-color: transparent !important;
+}
+
+/* ============================================
+   ÜRÜN DÜZENLEME MODAL - Edit Product Modal
+   ============================================ */
+
+/* Modal Container - Compact and Professional */
+.MuiDialog-paper {
+  max-width: 600px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+.MuiDialogTitle-root {
+  padding: 20px 24px 16px 24px !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text) !important;
+  border-bottom: 1px solid #E5E7EB !important;
+}
+
+.MuiDialogContent-root {
+  padding: 20px 24px !important;
+}
+
+/* Form Layout - 2 Column Grid */
+.MuiDialogContent-root .MuiBox-root {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  padding-top: 0 !important;
+}
+
+/* Row 1: Ad | Kategori */
+.MuiDialogContent-root .MuiBox-root > .MuiTextField-root:nth-of-type(1) {
+  grid-column: 1 !important;
+  order: 1 !important;
+}
+
+.MuiDialogContent-root .MuiBox-root > .MuiFormControl-root {
+  grid-column: 2 !important;
+  order: 2 !important;
+}
+
+/* Row 2: Fiyat | Stok Adedi */
+.MuiDialogContent-root .MuiBox-root > .MuiTextField-root:nth-of-type(2) {
+  grid-column: 1 !important;
+  order: 3 !important;
+}
+
+.MuiDialogContent-root .MuiBox-root > .MuiTextField-root:nth-of-type(3) {
+  grid-column: 2 !important;
+  order: 4 !important;
+}
+
+/* Row 3: Görsel URL (full width) */
+.MuiDialogContent-root .MuiBox-root > .MuiTextField-root:nth-of-type(4) {
+  grid-column: 1 / -1 !important;
+  order: 5 !important;
+}
+
+/* Row 4: Açıklama (textarea, full width) */
+.MuiDialogContent-root .MuiBox-root > .MuiTextField-root:nth-of-type(5) {
+  grid-column: 1 / -1 !important;
+  order: 6 !important;
+}
+
+/* Standardize Input Heights and Styling */
+.MuiDialogContent-root .MuiTextField-root .MuiOutlinedInput-root {
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  border-radius: 12px !important;
+}
+
+.MuiDialogContent-root .MuiTextField-root .MuiOutlinedInput-root input {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: 14px !important;
+}
+
+.MuiDialogContent-root .MuiFormControl-root .MuiOutlinedInput-root {
+  height: 44px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  border-radius: 12px !important;
+}
+
+.MuiDialogContent-root .MuiInputLabel-root {
+  font-size: 12px !important;
+  color: #6B7280 !important;
+}
+
+/* Açıklama Textarea - 2 Rows */
+.MuiDialogContent-root .MuiTextField-root:nth-of-type(5) .MuiOutlinedInput-root {
+  height: auto !important;
+  min-height: 80px !important;
+  padding: 10px 14px !important;
+}
+
+.MuiDialogContent-root .MuiTextField-root:nth-of-type(5) .MuiOutlinedInput-root textarea {
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  resize: vertical !important;
+}
+
+/* Görsel URL - Prevent Overflow */
+.MuiDialogContent-root .MuiTextField-root:nth-of-type(4) .MuiOutlinedInput-root input {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Modal Footer - Professional Actions */
+.MuiDialogActions-root {
+  padding: 16px 24px 20px 24px !important;
+  border-top: 1px solid #E5E7EB !important;
+  gap: 12px !important;
+  justify-content: flex-end !important;
+}
+
+/* İptal Button - Ghost/Outline Neutral */
+.MuiDialogActions-root .MuiButton-root:not(.MuiButton-contained) {
+  background-color: transparent !important;
+  color: #6B7280 !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 12px !important;
+  padding: 0 20px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiDialogActions-root .MuiButton-root:not(.MuiButton-contained):hover {
+  background-color: #F3F4F6 !important;
+  border-color: #D1D5DB !important;
+  color: #374151 !important;
+}
+
+/* Kaydet Button - Primary Green */
+.MuiDialogActions-root .MuiButton-contained.MuiButton-containedPrimary {
+  background-color: var(--color-brand-green) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  padding: 0 20px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiDialogActions-root .MuiButton-contained.MuiButton-containedPrimary:hover {
+  background-color: #047857 !important;
+  box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2) !important;
+}

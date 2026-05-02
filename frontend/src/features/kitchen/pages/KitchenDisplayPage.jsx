@@ -25,12 +25,15 @@ import './KitchenDisplayPage.css';
 const API = import.meta?.env?.VITE_API_URL || 'http://localhost:5001';
 
 export default function KitchenDisplayPage() {
-  const { isAuthenticated } = useAuth?.() || { isAuthenticated: true };
+  const { isAuthenticated, user } = useAuth?.() || { isAuthenticated: true, user: null };
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const socketRef = useRef(null);
   const fetchTimeoutRef = useRef(null);
+  
+  // Kullanıcının branchId'sini al
+  const branchId = user?.branchId || user?.branch?._id || 'default';
 
   const fetchOrders = async () => {
     try {
@@ -67,11 +70,11 @@ export default function KitchenDisplayPage() {
   useEffect(() => { 
     fetchOrders(); 
     
+    // Kullanıcının branchId'sini al
+    const currentBranchId = user?.branchId || user?.branch?._id || 'default';
+    
     // Socket.io bağlantısı
-    const hostname = window.location.hostname;
-    const baseURL = hostname === 'localhost' || hostname === '127.0.0.1' 
-      ? 'http://localhost:5001' 
-      : `http://${hostname}:5001`;
+    const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
     const socket = io(baseURL, {
       transports: ['websocket', 'polling'],
@@ -86,9 +89,9 @@ export default function KitchenDisplayPage() {
 
     socket.on('connect', () => {
       console.log('✅ Socket.io bağlandı (Mutfak Ekranı)');
-      // Mutfak room'una subscribe ol
-      socket.emit('subscribe:kitchen', { branchId: 'default', station: '*' });
-      console.log('📡 Mutfak room\'una katıldı');
+      // Mutfak room'una subscribe ol - kullanıcının branchId'sini kullan
+      socket.emit('subscribe:kitchen', { branchId: currentBranchId, station: '*' });
+      console.log(`📡 Mutfak room'una katıldı: kitchen.${currentBranchId}`);
     });
 
     // Debounce fonksiyonu
@@ -185,7 +188,7 @@ export default function KitchenDisplayPage() {
         socketRef.current = null;
       }
     };
-  }, []);
+  }, [user]);
 
   // İstatistikleri hesapla
   const stats = useMemo(() => {
@@ -474,34 +477,28 @@ export default function KitchenDisplayPage() {
     // Siparişin başlangıç durumunu sakla (hover efekti için)
     const [initialOrderStatus, setInitialOrderStatus] = useState(null);
     
+    // YENİ: Toplu işlem loading durumu
+    const [isMarkingAll, setIsMarkingAll] = useState(false);
+    
     // Order değiştiğinde optimistic state'i sıfırla ve başlangıç durumunu sakla
-    // NOT: Sadece order._id değiştiğinde temizle, order.items değiştiğinde temizleme
     useEffect(() => {
-      // Sadece order._id değiştiğinde optimisticItems'i temizle
-      // order.items değiştiğinde temizleme (backend güncellemesi için)
       setItemLoadingStates({});
-      // Siparişin başlangıç durumunu sakla (sadece ilk yüklemede)
       if (initialOrderStatus === null) {
         const status = getOrderStatus(order);
         setInitialOrderStatus(status.label === 'YENİ');
       }
     }, [order._id]);
     
-    // QR siparişlerinde optimisticItems'i KORU - backend'den gelen veriler item status'u içermeyebilir
-    // Sadece sipariş tamamen tamamlandığında (tamamlandi, PAID, SERVED) temizle
+    // QR siparişlerinde optimisticItems'i KORU
     useEffect(() => {
       if (optimisticItems) {
         const orderStatus = order.status || '';
         const completedStatuses = ['tamamlandi', 'PAID', 'SERVED', 'CANCELED', 'iptal'];
-        
-        // Sipariş tamamen tamamlandıysa optimisticItems'i temizle
         if (completedStatuses.includes(orderStatus)) {
           setOptimisticItems(null);
         }
-        // QR siparişlerinde backend'den gelen veriler item status'u içermeyebilir
-        // Bu yüzden optimisticItems'i koru, sadece sipariş tamamlandığında temizle
       }
-    }, [order.status]); // Sadece order.status değiştiğinde kontrol et
+    }, [order.status]);
     
     // Hem orderItems hem items field'larını kontrol et
     let items = [];
@@ -511,158 +508,89 @@ export default function KitchenDisplayPage() {
       items = order.items;
     }
     
-    // Optimistic update varsa onu kullan
     if (optimisticItems) {
       items = optimisticItems;
     }
     
-    // Debug: Eğer items boşsa logla
+    // Debug
     if (items.length === 0) {
-      console.warn('⚠️ Siparişte ürün bulunamadı:', {
-        orderId: order._id,
-        hasOrderItems: !!order.orderItems,
-        orderItemsLength: order.orderItems?.length || 0,
-        hasItems: !!order.items,
-        itemsLength: order.items?.length || 0,
-        order: order
-      });
+      console.warn('⚠️ Siparişte ürün bulunamadı:', { orderId: order._id });
     }
     
     const tableName = order.table?.name || order.tableId?.name || order.tableNumber || '—';
     const notes = order.notes || '';
-    // QR siparişleri için items array'inde status olmayabilir, bu durumda kontrol et
+    
     const allItemsReady = items.length > 0 && items.every(item => {
-      // Eğer status yoksa, READY değil demektir
-      if (!item.status) {
-        return false;
-      }
+      if (!item.status) return false;
       const status = item.status;
       return status === 'READY' || status === 'SERVED';
     });
     
-    // Timer için createdAt, order status ve allItemsReady kullan (tamamlandıysa veya tüm ürünler hazırsa durur)
     const timerData = useOrderTimer(order.createdAt, order.status, allItemsReady);
     const { timeString: elapsedTime, totalMinutes } = timerData;
-    
-    // 20 dakikadan fazla bekleyen siparişler için uyarı
     const isDelayed = totalMinutes >= 20;
-    
-    // Sipariş kaynağını belirle (QR veya Garson)
     const orderSource = (order.waiterId || order.waiter) ? 'garson' : 'qr';
     
-    // Item durumunu güncelle (optimistic update)
+    // Tekli Item durumunu güncelle
     const handleItemReady = async (itemId, itemIndex, currentStatus) => {
-      // Butonu hemen disabled yap
       setItemLoadingStates(prev => ({ ...prev, [itemId]: true }));
       
       try {
-        // QR siparişlerinde status undefined olabilir, bu durumda QUEUED olarak kabul et
         const status = currentStatus || 'QUEUED';
         
-        // Mevcut items array'ini al - order'dan direkt al (closure sorununu önlemek için)
         let baseItems = [];
-        if (order.orderItems && Array.isArray(order.orderItems) && order.orderItems.length > 0) {
-          baseItems = order.orderItems;
-        } else if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-          baseItems = order.items;
-        }
+        if (order.orderItems?.length > 0) baseItems = order.orderItems;
+        else if (order.items?.length > 0) baseItems = order.items;
         
-        // Functional update kullan - her zaman en güncel state'i al
-        let itemCurrentStatusForBackend = status; // Backend çağrıları için sakla
+        let itemCurrentStatusForBackend = status;
         setOptimisticItems(prevOptimisticItems => {
-          // OptimisticItems varsa onu kullan, yoksa baseItems'ı kullan
           const currentItems = prevOptimisticItems || baseItems;
-          
-          // Item'ın mevcut status'unu kontrol et (functional update içinde, güncel state'ten)
           const currentItem = currentItems[itemIndex];
           const itemCurrentStatus = currentItem?.status || 'QUEUED';
-          itemCurrentStatusForBackend = itemCurrentStatus; // Dışarıda kullanmak için sakla
+          itemCurrentStatusForBackend = itemCurrentStatus;
           
-          // Eğer item zaten READY veya SERVED ise, değişiklik yapma
           if (itemCurrentStatus === 'READY' || itemCurrentStatus === 'SERVED') {
             return prevOptimisticItems || baseItems;
           }
           
-          // Optimistic update - hemen UI'da güncelle
-          if (itemCurrentStatus === 'QUEUED' || itemCurrentStatus === undefined || itemCurrentStatus === null || itemCurrentStatus === '') {
-            // READY için optimistic update - direkt READY yap (STARTED'ı atla)
-            const readyItems = currentItems.map((item, idx) => {
-              if (idx === itemIndex) {
-                return { ...item, status: 'READY' };
-              }
-              return item;
-            });
-            return readyItems;
-          } else if (itemCurrentStatus === 'STARTED') {
-            // READY için optimistic update
-            const readyItems = currentItems.map((item, idx) => {
-              if (idx === itemIndex) {
-                return { ...item, status: 'READY' };
-              }
-              return item;
-            });
-            return readyItems;
-          }
-          
-          // Durum değişmediyse mevcut state'i döndür
-          return prevOptimisticItems || baseItems;
+          const readyItems = currentItems.map((item, idx) => {
+            if (idx === itemIndex) return { ...item, status: 'READY' };
+            return item;
+          });
+          return readyItems;
         });
         
-        // Loading state'i hemen kaldır (optimistic update yapıldı)
         setItemLoadingStates(prev => {
           const newState = { ...prev };
           delete newState[itemId];
           return newState;
         });
         
-        // Backend çağrılarını arka planda yap (await etmeden) - güncel status'u kullan
-        // QR siparişlerinde item ID formatı orderId-index şeklinde ve backend'de /start endpoint'i bu formatı handle edemiyor
-        // Bu yüzden QR siparişlerinde STARTED çağrısını atla, direkt READY çağrısı yap
-        const backendStatus = status; // Closure'dan gelen status'u kullan
+        const backendStatus = status;
         if (orderSource === 'qr') {
-          // QR siparişlerinde direkt READY çağrısı yap, STARTED'ı atla
           updateItemStatus(order._id, itemId, 'READY').catch(err => {
-            console.warn('QR siparişi READY hatası (arka plan):', err);
-            // QR siparişlerinde hata olsa bile optimisticItems'i koru, backend güncellemesi gecikebilir
+            console.warn('QR siparişi READY hatası:', err);
           });
         } else {
-          // Garson siparişlerinde normal akış: STARTED -> READY
-          if (backendStatus === 'QUEUED' || backendStatus === undefined || backendStatus === null || backendStatus === '') {
-            // Önce STARTED, sonra READY
+          if (backendStatus === 'QUEUED' || !backendStatus) {
             Promise.all([
-              updateItemStatus(order._id, itemId, 'STARTED').catch(err => console.warn('STARTED hatası:', err)),
-              updateItemStatus(order._id, itemId, 'READY').catch(err => console.warn('READY hatası:', err))
-            ]).catch(err => {
-              console.error('Backend güncelleme hatası:', err);
-              // Hata durumunda optimistic update'i geri al
+              updateItemStatus(order._id, itemId, 'STARTED').catch(console.warn),
+              updateItemStatus(order._id, itemId, 'READY').catch(console.warn)
+            ]).catch(() => {
               setOptimisticItems(null);
               fetchOrders();
             });
           } else if (backendStatus === 'STARTED') {
-            // Sadece READY
-            updateItemStatus(order._id, itemId, 'READY').catch(err => {
-              console.error('Backend güncelleme hatası:', err);
-              // Hata durumunda optimistic update'i geri al
+            updateItemStatus(order._id, itemId, 'READY').catch(() => {
               setOptimisticItems(null);
               fetchOrders();
             });
           }
         }
-        
-        // Socket event'lerinden otomatik güncellenecek
-        // QR siparişlerinde backend güncellemesi biraz gecikebilir, bu yüzden optimisticItems'i daha uzun süre tut
-        // fetchOrders() çağrısını kaldırdık çünkü socket event'leri zaten güncellemeleri sağlıyor
-        // fetchOrders() çağrısı optimisticItems'i override ediyor ve item'ın yeşil kalmasını engelliyor
-        // useEffect'te backend'den gelen veriler kontrol edilecek ve eğer READY ise optimisticItems temizlenecek
-        
-        // OptimisticItems'i sadece backend'den gelen veriler READY olduğunda temizle
-        // useEffect içinde kontrol edilecek, bu yüzden burada timeout ile temizlemeye gerek yok
       } catch (error) {
         console.error('❌ Item ready hatası:', error);
-        // Hata durumunda optimistic update'i geri al
         setOptimisticItems(null);
         fetchOrders();
-        // Loading state'i kaldır
         setItemLoadingStates(prev => {
           const newState = { ...prev };
           delete newState[itemId];
@@ -671,8 +599,60 @@ export default function KitchenDisplayPage() {
       }
     };
 
-    // Siparişin yeni olup olmadığını kontrol et (hover efekti için)
-    // Başlangıç durumunu kullan, eğer yoksa mevcut duruma bak
+    // 🔥 YENİ: Optimize Edilmiş Hızlı Toplu Güncelleme
+    const handleOptimizedMarkAllReady = async () => {
+        if (isMarkingAll) return; // Çift tıklamayı önle
+        setIsMarkingAll(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+
+            // 1. Optimistic Update: Kullanıcıya anında yeşil göster
+            const updatedItems = items.map(item => ({ ...item, status: 'READY' }));
+            setOptimisticItems(updatedItems);
+
+            // 2. Paralel İstekler: Tüm ürünler için istekleri hazırla
+            const promises = items.map(item => {
+                const currentStatus = item.status || 'QUEUED';
+                // Zaten hazırsa işlem yapma
+                if (currentStatus === 'READY' || currentStatus === 'SERVED') return Promise.resolve();
+
+                const itemId = (orderSource === 'qr' || !item._id) 
+                    ? `${String(order._id)}-${items.indexOf(item)}` 
+                    : String(item._id);
+
+                // QR siparişleri için direkt READY
+                if (orderSource === 'qr') {
+                    return axios.post(`${API}/api/kitchen/items/${itemId}/ready`, {}, { headers });
+                }
+
+                // Garson siparişleri için (Queued ise Start -> Ready zinciri)
+                if (currentStatus === 'QUEUED' || !currentStatus) {
+                    return axios.post(`${API}/api/kitchen/items/${itemId}/start`, {}, { headers })
+                        .then(() => axios.post(`${API}/api/kitchen/items/${itemId}/ready`, {}, { headers }))
+                        .catch(() => axios.post(`${API}/api/kitchen/items/${itemId}/ready`, {}, { headers })); // Start hata verirse yine de Ready dene
+                } else {
+                    return axios.post(`${API}/api/kitchen/items/${itemId}/ready`, {}, { headers });
+                }
+            });
+
+            // 3. Hepsini aynı anda gönder (Sırayla bekleme yok!)
+            await Promise.all(promises);
+
+            // 4. Siparişi tamamla
+            await updateOrderStatus(order._id, 'tamamlandi');
+
+        } catch (err) {
+            console.error('Toplu güncelleme hatası:', err);
+            // Hata olursa optimistic update'i geri al
+            setOptimisticItems(null);
+            fetchOrders();
+        } finally {
+            setIsMarkingAll(false);
+        }
+    };
+
     const isNewOrder = initialOrderStatus !== null ? initialOrderStatus : (orderStatus.label === 'YENİ');
     
     return (
@@ -707,37 +687,10 @@ export default function KitchenDisplayPage() {
               )}
             </Stack>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ position: 'relative', zIndex: 3 }}>
-              <Box
-                sx={{
-                  bgcolor: '#42A5F5 ',
-                  color: 'white',
-                  fontWeight: 700,
-                  minWidth: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 0.5,
-                  fontSize: '0.875rem'
-                }}
-              >
+              <Box sx={{ bgcolor: '#42A5F5 ', color: 'white', fontWeight: 700, minWidth: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 0.5, fontSize: '0.875rem' }}>
                 {items.length}
               </Box>
-              <Box
-                sx={{
-                  bgcolor: isDelayed ? '#FFEBEE' : '#E0E0E0',  // Gecikmiş: kırmızı, Normal: gri
-                  color: isDelayed ? '#F44336' : '#FFC107',     // Gecikmiş: kırmızı, Normal: sarı
-                  fontWeight: 700,
-                  height: '24px',
-                  fontSize: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  px: 1.5,
-                  borderRadius: 0.5,
-                  minWidth: '50px'
-                }}
-              >
+              <Box sx={{ bgcolor: isDelayed ? '#FFEBEE' : '#E0E0E0', color: isDelayed ? '#F44336' : '#FFC107', fontWeight: 700, height: '24px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 1.5, borderRadius: 0.5, minWidth: '50px' }}>
                 {elapsedTime}
               </Box>
             </Stack>
@@ -756,20 +709,9 @@ export default function KitchenDisplayPage() {
               overflowX: 'hidden',
               maxHeight: items.length > 4 ? '280px' : 'none',
               pr: 0.5,
-              '&::-webkit-scrollbar': {
-                width: '6px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '10px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#888',
-                borderRadius: '10px',
-                '&:hover': {
-                  background: '#555',
-                },
-              },
+              '&::-webkit-scrollbar': { width: '6px' },
+              '&::-webkit-scrollbar-track': { background: '#f1f1f1', borderRadius: '10px' },
+              '&::-webkit-scrollbar-thumb': { background: '#888', borderRadius: '10px', '&:hover': { background: '#555' } }
             }}
           >
             {items.length === 0 && (
@@ -779,80 +721,29 @@ export default function KitchenDisplayPage() {
             )}
             {items.map((item, idx) => {
               const itemStatus = getItemStatus(item);
-              // Item ID'yi belirle: QR siparişlerinde her zaman orderId-index formatını kullan
-              // Çünkü backend'de item._id ile bulunamayabilir
-              // Garson siparişlerinde item._id varsa onu kullan
-              const itemId = (orderSource === 'qr' || !item._id)
-                ? `${String(order._id)}-${idx}`
-                : String(item._id);
-              
-              // items array'i zaten optimisticItems kullanıyor (satır 538-540)
-              // O yüzden item.status zaten güncel optimistic status'u içeriyor
-              // Direkt item.status'u kullan, ekstra kontrol yapma
+              const itemId = (orderSource === 'qr' || !item._id) ? `${String(order._id)}-${idx}` : String(item._id);
               const itemStatusValue = item.status || 'QUEUED';
               const isItemReady = itemStatusValue === 'READY' || itemStatusValue === 'SERVED';
               
               return (
-                <Box 
-                  key={`${order._id}-${itemId}-${idx}`}
-                  sx={{ 
-                    p: 1, 
-                    borderRadius: 1,
-                    bgcolor: 'transparent',
-                    border: 'none',
-                    mb: 1
-                  }}
-                >
+                <Box key={`${order._id}-${itemId}-${idx}`} sx={{ p: 1, borderRadius: 1, bgcolor: 'transparent', border: 'none', mb: 1 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                    {/* Sol taraf - Ürün bilgisi */}
                     <Stack direction="row" spacing={0.5} alignItems="center" flex={1} sx={{ minWidth: 0 }}>
-                      <Typography variant="body1" fontWeight={700} sx={{ color: '#000', whiteSpace: 'nowrap' }}>
+                      <Typography variant="body1" fontWeight={700} sx={{ color: '#111827', whiteSpace: 'nowrap' }}>
                         {item.qty || 1}x
                       </Typography>
-                      <Typography 
-                        variant="body1" 
-                        className={isItemReady ? 'kitchen-item-ready' : ''}
-                        sx={{ 
-                          color: isItemReady ? '#666' : '#666', 
-                          fontWeight: 400,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          ...(isItemReady ? {
-                            textDecoration: 'line-through !important',
-                            textDecorationLine: 'line-through !important',
-                            textDecorationColor: '#666 !important',
-                            textDecorationStyle: 'solid !important',
-                            opacity: 0.7,
-                            color: '#666 !important'
-                          } : {
-                            textDecoration: 'none',
-                            textDecorationLine: 'none'
-                          })
-                        }}
-                        style={{
-                          textDecoration: isItemReady ? 'line-through' : 'none',
-                          textDecorationLine: isItemReady ? 'line-through' : 'none',
-                          textDecorationColor: isItemReady ? '#666' : 'transparent'
-                        }}
-                      >
-                        {item.name || 
-                          item.productName || 
-                          item.product?.name || 
-                          item.menuItem?.name || 
-                          'Ürün'}
+                      <Typography variant="body1" className={isItemReady ? 'kitchen-item-ready' : ''} sx={{ color: isItemReady ? '#666' : '#666', fontWeight: 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: isItemReady ? 'line-through' : 'none', opacity: isItemReady ? 0.7 : 1 }}>
+                        {item.name || item.productName || item.product?.name || item.menuItem?.name || 'Ürün'}
                       </Typography>
                     </Stack>
-                    {/* Sağ taraf - Hazır butonu */}
                     <Button
                       variant={isItemReady ? "outlined" : "contained"}
                       color={isItemReady ? "default" : "success"}
                       size="medium"
-                      disabled={isItemReady || itemLoadingStates[itemId]}
+                      disabled={isItemReady || itemLoadingStates[itemId] || isMarkingAll}
                       onClick={() => {
                         if (!isItemReady && !itemLoadingStates[itemId]) {
-                          const currentStatus = itemStatusValue;
-                          handleItemReady(itemId, idx, currentStatus);
+                          handleItemReady(itemId, idx, itemStatusValue);
                         }
                       }}
                       sx={{ 
@@ -863,17 +754,9 @@ export default function KitchenDisplayPage() {
                         color: isItemReady ? '#666' : '#FFFFFF',
                         borderColor: isItemReady ? '#E0E0E0' : '#4CAF50',
                         fontWeight: 600,
-                        opacity: itemLoadingStates[itemId] ? 0.6 : 1,
+                        opacity: (itemLoadingStates[itemId] || isMarkingAll) ? 0.6 : 1,
                         transition: 'all 0.2s ease',
-                        '&:hover': {
-                          bgcolor: isItemReady ? '#F5F5F5' : '#45a049',
-                          borderColor: isItemReady ? '#E0E0E0' : '#45a049',
-                        },
-                        '&:disabled': {
-                          bgcolor: isItemReady ? 'transparent' : '#4CAF50',
-                          color: isItemReady ? '#666' : '#FFFFFF',
-                          opacity: isItemReady ? 1 : 0.6,
-                        }
+                        '&:hover': { bgcolor: isItemReady ? '#F5F5F5' : '#45a049', borderColor: isItemReady ? '#E0E0E0' : '#45a049' }
                       }}
                     >
                       {itemLoadingStates[itemId] ? '...' : 'Hazır'}
@@ -897,18 +780,19 @@ export default function KitchenDisplayPage() {
             </>
           )}
 
-          {/* Action Button - Alt kısma sabitlenmiş */}
+          {/* Action Button - GÜNCELLENEN KISIM */}
           <Box sx={{ mt: 'auto', pt: 1.5, flexShrink: 0 }}>
             <Button
               variant="contained"
               color={allItemsReady ? "success" : "primary"}
               fullWidth
               startIcon={allItemsReady ? <CheckCircleIcon /> : null}
+              disabled={isMarkingAll} // İşlem bitene kadar butonu pasif yap
               onClick={async () => {
                 if (allItemsReady) {
                   await updateOrderStatus(order._id, 'tamamlandi');
                 } else {
-                  await markAllReady(order);
+                  await handleOptimizedMarkAllReady(); // Yeni hızlı fonksiyonu çağır
                 }
               }}
               sx={{ 
@@ -916,12 +800,16 @@ export default function KitchenDisplayPage() {
                 fontWeight: 600,
                 bgcolor: allItemsReady ? '#4CAF50' : '#212121',
                 color: '#FFFFFF',
+                opacity: isMarkingAll ? 0.7 : 1,
                 '&:hover': {
                   bgcolor: allItemsReady ? '#45a049' : '#424242',
                 }
               }}
             >
-              {allItemsReady ? 'Teslim Edildi' : 'Tümünü Hazır Yap'}
+              {isMarkingAll 
+                ? 'İşleniyor...' 
+                : (allItemsReady ? 'Teslim Edildi' : 'Tümünü Hazır Yap')
+              }
             </Button>
           </Box>
         </CardContent>

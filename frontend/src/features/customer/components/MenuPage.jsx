@@ -219,8 +219,8 @@ export default function MenuPage() {
                             }
                             className={`text-xs py-2 h-auto transition-all duration-200 ${
                               isSelected
-                                ? 'bg-[#1a1a1a] hover:bg-[#333333] text-white border-[#1a1a1a]'
-                                : 'bg-white border-[#cccccc] hover:bg-[#f5f5f5] text-[#1a1a1a]'
+                                ? 'bg-[#111827] hover:bg-[#1f2937] text-white border-[#111827]'
+                                : 'bg-white border-[#cccccc] hover:bg-[#f5f5f5] text-[#111827]'
                             }`}
                           >
                             <div className="flex flex-col items-center" style={{ borderRadius: 8 }}>
@@ -242,9 +242,9 @@ export default function MenuPage() {
                 <Button
                   onClick={() => handleAddToCart(item)}
                   className="w-full text-white py-6 text-base font-semibold transition-all duration-200"
-                  style={{ backgroundColor: '#000000', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#222222')}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#000000')}
+                  style={{ backgroundColor: '#111827', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1f2937')}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#111827')}
                 >
                   Sepete Ekle
                 </Button>
@@ -329,9 +329,9 @@ export default function MenuPage() {
 
                   <Button
                     className="w-full text-white py-6 text-base font-semibold"
-                    style={{ backgroundColor: '#0b0b1a', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', transition: 'all 0.25s ease', fontFamily: 'Poppins, Inter, Segoe UI, Roboto, sans-serif' }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1a1a2e')}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0b0b1a')}
+                    style={{ backgroundColor: '#111827', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', transition: 'all 0.25s ease', fontFamily: 'Poppins, Inter, Segoe UI, Roboto, sans-serif' }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1f2937')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#111827')}
                     onClick={handlePlaceOrder}
                   >
                     Sipariş Ver
@@ -339,9 +339,9 @@ export default function MenuPage() {
 
                   <Button
                     className="w-full text-white py-6 text-base font-semibold"
-                    style={{ backgroundColor: '#0b0b1a', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', transition: 'all 0.25s ease', fontFamily: 'Poppins, Inter, Segoe UI, Roboto, sans-serif' }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1a1a2e')}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#0b0b1a')}
+                    style={{ backgroundColor: '#111827', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', transition: 'all 0.25s ease', fontFamily: 'Poppins, Inter, Segoe UI, Roboto, sans-serif' }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#1f2937')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#111827')}
                     onClick={handleClearCart}
                   >
                     Sepeti Temizle

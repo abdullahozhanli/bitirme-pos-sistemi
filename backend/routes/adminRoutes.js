@@ -317,7 +317,7 @@ router.post('/orders', auth, requireRole('admin'), async (req, res, next) => {
  * GET /api/admin/orders
  * Sipariş listesi (admin)
  */
-router.get('/orders', auth, requireRole('admin'), async (req, res, next) => {
+router.get('/orders', auth, requireRole('admin', 'kasa'), async (req, res, next) => {
   try {
     if (!req.user || !req.user.branchId) {
       return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
@@ -362,7 +362,7 @@ router.get('/orders', auth, requireRole('admin'), async (req, res, next) => {
  * PUT /api/admin/orders/:id/status
  * Sipariş durumu güncelle (admin)
  */
-router.put('/orders/:id/status', auth, requireRole('admin'), async (req, res, next) => {
+router.put('/orders/:id/status', auth, requireRole('admin', 'kasa'), async (req, res, next) => {
   try {
     const { status } = req.body;
     const allowed = ['hazirlaniyor', 'serviste', 'tamamlandi', 'iptal'];
@@ -412,24 +412,31 @@ router.put('/orders/:id/status', auth, requireRole('admin'), async (req, res, ne
  * PUT /api/admin/orders/:id/pay
  * Sipariş ödeme işaretle (admin)
  */
-router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next) => {
+router.put('/orders/:id/pay', auth, requireRole('admin', 'kasa'), async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id);
+    if (!req.user || !req.user.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+    
+    const order = await Order.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
-    if (order.status === 'PAID' || order.status === 'tamamlandi') {
+    if (order.status === 'PAID' || order.status === 'tamamlandi' || order.status === 'ödendi') {
       return res.status(409).json({ message: 'Sipariş zaten ödendi' });
     }
 
     // Önceki durumu sakla
     const previousStatus = order.status;
     
-    // Sipariş durumunu 'PAID' yap ve paidAt'i kaydet
+    // Sipariş durumunu 'ödendi' yap ve paidAt'i kaydet
     const paidAtDate = new Date();
     const updatedOrder = await Order.findByIdAndUpdate(
       order._id,
       { 
-        status: 'PAID',
+        status: 'ödendi',
         paidAt: paidAtDate
       },
       { new: true, runValidators: true }
@@ -444,7 +451,7 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
       actorId: req.user.id,
       type: 'payment',
       from: previousStatus,
-      to: 'PAID',
+      to: 'ödendi',
       metadata: { method: 'admin', amount: updatedOrder.total || updatedOrder.totalPrice || 0 },
     });
 
@@ -488,7 +495,7 @@ router.put('/orders/:id/pay', auth, requireRole('admin'), async (req, res, next)
  * PUT /api/admin/orders/:id/cancel
  * Sipariş iptal et (admin)
  */
-router.put('/orders/:id/cancel', auth, requireRole('admin'), async (req, res, next) => {
+router.put('/orders/:id/cancel', auth, requireRole('admin', 'kasa'), async (req, res, next) => {
   try {
     const { reason } = req.body;
     const order = await Order.findOne({
@@ -1256,7 +1263,19 @@ router.post('/qr', auth, requireRole('admin'), async (req, res, next) => {
     }
     
     // QR URL'ine hem masa numarası hem de branchId bilgisini koy
-    const qrUrl = `${frontendOrigin}/order?table=${tableNum}&branch=${req.user.branchId}`;
+    // branchId'yi string'e çevir ve null/undefined kontrolü yap
+    const branchIdStr = req.user.branchId ? String(req.user.branchId) : null;
+    const qrUrl = branchIdStr 
+      ? `${frontendOrigin}/order?table=${tableNum}&branch=${branchIdStr}`
+      : `${frontendOrigin}/order?table=${tableNum}`;
+    
+    console.log('🔗 [QR CREATE] QR URL oluşturuldu:', {
+      frontendOrigin,
+      tableNum,
+      branchId: req.user.branchId,
+      branchIdStr,
+      qrUrl
+    });
 
     // QR kod oluştur (base64 data URL)
     const qrCodeDataURL = await QRCodeLib.toDataURL(qrUrl, {

@@ -14,10 +14,16 @@ router.get('/queue', auth, requireRole('mutfak', 'admin', 'yetkili'), async (req
   try {
     const { station } = req.query;
 
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    const branchFilter = {};
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      branchFilter.branchId = req.user.branchId;
+    }
+
     // Tüm aktif siparişleri bul (eski ve yeni status'ları dahil)
     // Önce tüm siparişleri çek, sonra filtrele (debug için)
     // NOT: .lean() kullanmıyoruz çünkü items field'ı populate edilmesi gerekiyor
-    const allOrders = await Order.find({})
+    const allOrders = await Order.find(branchFilter)
       .populate('table', 'name capacity')
       .populate('tableId', 'name capacity')
       .populate('waiter', 'name email')
@@ -709,10 +715,17 @@ router.get('/orders/history', auth, requireRole('mutfak', 'admin', 'yetkili'), a
       dateFilter = { createdAt: { $gte: start, $lte: end } };
     }
     
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    const branchFilter = {};
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      branchFilter.branchId = req.user.branchId;
+    }
+    
     // Tamamlanmış siparişleri getir
     const query = {
       status: { $in: ['tamamlandi', 'PAID', 'SERVED', 'CANCELED'] },
-      ...dateFilter
+      ...dateFilter,
+      ...branchFilter
     };
     
     const orders = await Order.find(query)
@@ -746,6 +759,13 @@ router.patch('/orders/:id/status', auth, requireRole('mutfak', 'admin', 'yetkili
 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
+
+    // BranchId kontrolü: Süper admin değilse sadece kendi şubesini güncelleyebilir
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      if (String(order.branchId) !== String(req.user.branchId)) {
+        return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
+      }
+    }
 
     const previousStatus = order.status;
     order.status = status;

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CircularProgress, Alert } from '@mui/material';
+import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import './WaiterDashboard.css';
 
 export default function WaiterDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     activeTables: 0,
     pendingOrders: 0,
@@ -194,13 +196,13 @@ export default function WaiterDashboard() {
       <header className="waiter-dashboard-header">
         <div>
           <h1>Garson Paneli</h1>
-          <p>Mevcut masa ve siparişlerinize hızlı bir genel bakış.</p>
+          <p>Masa ve sipariş durumlarınızı buradan takip edebilirsiniz.</p>
         </div>
       </header>
 
       {/* İstatistik Kartları */}
       <section className="summary-cards">
-        <div className="summary-card">
+        <div className={`summary-card ${stats.activeTables === 0 ? 'inactive' : ''}`}>
           <div className="summary-card-title">Aktif Masalarım</div>
           <div className="summary-card-value">{stats.activeTables}</div>
           <button className="summary-card-link" onClick={() => navigate('/waiter/tables')}>
@@ -208,27 +210,32 @@ export default function WaiterDashboard() {
           </button>
         </div>
 
-        <div className="summary-card">
+        <div className={`summary-card pending ${stats.pendingOrders === 0 ? 'inactive' : ''}`}>
           <div className="summary-card-title">Bekleyen Siparişler</div>
           <div className="summary-card-value">{stats.pendingOrders}</div>
         </div>
 
-        <div className="summary-card">
+        <div className={`summary-card ready ${stats.readyOrders === 0 ? 'inactive' : ''}`}>
           <div className="summary-card-title">Hazır Siparişler</div>
           <div className="summary-card-value">{stats.readyOrders}</div>
+          {stats.readyOrders > 0 && (
+            <div className="summary-card-badge">
+              <span>🔔</span> Servise hazır!
+            </div>
+          )}
           <button className="summary-card-link" onClick={() => navigate('/waiter/orders?status=READY,serviste')}>
             Görüntüle
           </button>
         </div>
 
-        <div className="summary-card">
+        <div className={`summary-card ${stats.todayServed === 0 ? 'inactive' : ''}`}>
           <div className="summary-card-title">Bugünkü Servis</div>
           <div className="summary-card-value">{stats.todayServed}</div>
         </div>
       </section>
 
-      {/* Hızlı Erişim Butonları */}
-      <section className="quick-access">
+      {/* Hızlı Erişim Butonları - Desktop */}
+      <section className="quick-access quick-access-desktop">
         <button className="quick-access-btn blue" onClick={() => navigate('/waiter/tables')}>
           <i className="fas fa-map-marked-alt"></i>
           <span>Masa Haritası</span>
@@ -242,6 +249,18 @@ export default function WaiterDashboard() {
           <span>Tüm Siparişler</span>
         </button>
       </section>
+
+      {/* Sticky Bottom Bar - Mobile */}
+      <div className="sticky-action-bar">
+        <button className="sticky-btn sticky-btn-primary" onClick={() => navigate('/waiter/tables')}>
+          <i className="fas fa-map-marked-alt"></i>
+          <span>Masa Haritası</span>
+        </button>
+        <button className="sticky-btn sticky-btn-secondary" onClick={() => navigate('/waiter/tables')}>
+          <i className="fas fa-plus-circle"></i>
+          <span>Yeni Sipariş</span>
+        </button>
+      </div>
 
 
 

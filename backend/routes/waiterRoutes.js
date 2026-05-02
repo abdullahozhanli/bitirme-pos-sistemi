@@ -16,7 +16,13 @@ const StockMovement = require('../models/StockMovement');
  */
 router.get('/tables', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
-    const tables = await Table.find().sort({ name: 1 }).lean();
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    const branchFilter = {};
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      branchFilter.branchId = req.user.branchId;
+    }
+    
+    const tables = await Table.find(branchFilter).sort({ name: 1 }).lean();
     
     // Her masa için aktif siparişleri kontrol et ve durumları güncelle
     const updatedTables = await Promise.all(
@@ -73,6 +79,11 @@ router.get('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (re
     const { tableId, status, limit = 100, page = 1 } = req.query;
     const filter = {};
     
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      filter.branchId = req.user.branchId;
+    }
+    
     if (tableId) {
       filter.table = tableId;
     }
@@ -125,8 +136,15 @@ router.get('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (re
  */
 router.get('/orders/ready', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
+    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
+    const branchFilter = {};
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      branchFilter.branchId = req.user.branchId;
+    }
+    
     const orders = await Order.find({
-      status: { $in: ['READY', 'Hazır', 'hazir'] }
+      status: { $in: ['READY', 'Hazır', 'hazir'] },
+      ...branchFilter
     })
       .populate('table', 'name capacity')
       .populate('waiter', 'name email')
@@ -215,6 +233,17 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
       return res.status(400).json({ message: 'Geçersiz masa ID formatı' });
     }
 
+    // BranchId kontrolü: Süper admin değilse sadece kendi şubesindeki masaları kullanabilir
+    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
+      const table = await Table.findById(finalTableId);
+      if (!table) {
+        return res.status(404).json({ message: 'Masa bulunamadı' });
+      }
+      if (String(table.branchId) !== String(req.user.branchId)) {
+        return res.status(403).json({ message: 'Bu masaya erişim yetkiniz yok' });
+      }
+    }
+    
     let created;
     await session.withTransaction(async () => {
       // Ürünleri çek
@@ -282,6 +311,18 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
         waiterId: waiterId ? String(waiterId) : 'NULL'
       });
 
+      // BranchId'yi al: Kullanıcının branchId'si veya masanın branchId'si
+      let orderBranchId = null;
+      if (req.user && req.user.branchId) {
+        orderBranchId = req.user.branchId;
+      } else {
+        // Masa branchId'sini kontrol et
+        const table = await Table.findById(finalTableId).session(session);
+        if (table && table.branchId) {
+          orderBranchId = table.branchId;
+        }
+      }
+      
       // Order oluştur - Garson siparişleri direkt mutfağa gönderilir
       const orderData = {
         orderItems,
@@ -293,6 +334,7 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
         total: totalPrice, // Eski model için required field
         totalPrice: totalPrice, // Yeni model için
         status: 'SENT_TO_KITCHEN', // Garson siparişleri direkt mutfağa gönderilir
+        branchId: orderBranchId, // Şube ID'si
       };
       
       console.log('🔍 [DEBUG] Order data:', {

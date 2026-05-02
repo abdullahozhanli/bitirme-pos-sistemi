@@ -2,7 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const { authMiddleware } = require('../middleware/authMiddleware');
+const User = require('../models/User');
+const { authMiddleware, optionalAuthMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -55,7 +56,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
  * Body: { tableNumber, items: [{menuItemId, qty, note}], notes }
  * - Yeni Order modeline göre sipariş oluştur
  */
-router.post('/', async (req, res, next) => {
+router.post('/', optionalAuthMiddleware, async (req, res, next) => {
   try {
     const { tableNumber, items, notes } = req.body;
     
@@ -63,16 +64,57 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'Eksik veri' });
     }
 
-    // Table kontrolü - tableNumber'a göre bul veya oluştur
+    // BranchId'yi al (request body'den veya query'den)
+    const { branchId: requestBranchId } = req.body;
+    
+    // Table kontrolü - tableNumber ve branchId'ye göre bul veya oluştur
     const Table = require('../models/Table');
-    let table = await Table.findOne({ name: String(tableNumber) });
+    
+    // Masa arama kriteri: branchId varsa hem name hem branchId ile ara, yoksa sadece name ile ara
+    const tableQuery = { name: String(tableNumber) };
+    if (requestBranchId) {
+      tableQuery.branchId = requestBranchId;
+    }
+    
+    let table = await Table.findOne(tableQuery);
+    
     if (!table) {
-      // Table yoksa oluştur
-      table = await Table.create({
+      // Table yoksa oluştur - branchId varsa ekle
+      const tableData = {
         name: String(tableNumber),
         capacity: 4,
         status: 'bos'
-      });
+      };
+      if (requestBranchId) {
+        tableData.branchId = requestBranchId;
+      }
+      
+      try {
+        table = await Table.create(tableData);
+      } catch (createError) {
+        // Duplicate key hatası - masa zaten var, tekrar bul
+        if (createError.code === 11000) {
+          console.warn(`⚠️ Masa oluşturulurken duplicate key hatası, tekrar aranıyor: ${tableNumber}, branchId: ${requestBranchId}`);
+          table = await Table.findOne(tableQuery);
+          if (!table) {
+            // Hala bulunamadıysa, branchId olmadan ara (eski masalar için)
+            table = await Table.findOne({ name: String(tableNumber) });
+            if (table && requestBranchId) {
+              // Eski masayı bulduk, branchId ekle
+              table.branchId = requestBranchId;
+              await table.save();
+            }
+          }
+        } else {
+          throw createError;
+        }
+      }
+    } else {
+      // Masa varsa ama branchId yoksa ve request'te branchId varsa güncelle
+      if (!table.branchId && requestBranchId) {
+        table.branchId = requestBranchId;
+        await table.save();
+      }
     }
 
     // MenuItem veya Product kontrolü - hem MenuItem hem Product ID'lerini kabul et
@@ -101,6 +143,65 @@ router.post('/', async (req, res, next) => {
     if (menuItems.length === 0 && products.length === 0) {
       return res.status(400).json({ message: 'Menü öğeleri veya ürünler bulunamadı' });
     }
+
+    // Stok kontrolü ve düşürme için Product'ları session ile güncelle
+    const StockMovement = require('../models/StockMovement');
+    const mongoose = require('mongoose');
+    const session = await mongoose.startSession();
+    
+    try {
+      await session.withTransaction(async () => {
+        // Product'ları tekrar çek (stok kontrolü için)
+        const productIdsForStock = items
+          .map(i => i.menuItemId || i.productId)
+          .filter(id => productsMap[String(id)]);
+        
+        if (productIdsForStock.length > 0) {
+          const productsForStock = await Product.find({ 
+            _id: { $in: productIdsForStock } 
+          }).session(session);
+          
+          // Stok kontrolü ve düşürme
+          for (const item of items) {
+            const itemId = item.menuItemId || item.productId;
+            const product = productsForStock.find(p => String(p._id) === String(itemId));
+            
+            if (product) {
+              const qty = Number(item.qty) || 1;
+              
+              // Stok kontrolü
+              if (product.countInStock < qty) {
+                throw new Error(`Yetersiz stok: ${product.name} (Stok: ${product.countInStock}, İstenen: ${qty})`);
+              }
+              
+              // Stok düşür
+              const updateResult = await Product.updateOne(
+                { _id: product._id, countInStock: { $gte: qty } },
+                { $inc: { countInStock: -qty } }
+              ).session(session);
+              
+              if (updateResult.modifiedCount === 0) {
+                throw new Error(`Yetersiz stok: ${product.name}`);
+              }
+              
+              // StockMovement kaydı
+              await StockMovement.create([{
+                productId: product._id,
+                delta: -qty,
+                reason: 'order',
+                refId: null, // Order ID henüz yok, sonra güncellenecek
+                actorId: null, // Müşteri siparişi
+              }], { session });
+            }
+          }
+        }
+      });
+    } catch (stockError) {
+      await session.endSession();
+      return res.status(400).json({ message: stockError.message || 'Stok kontrolü başarısız' });
+    }
+    
+    await session.endSession();
 
     // Order items oluştur - önce MenuItem'da ara, yoksa Product'ta ara
     const orderItemsPromises = items.map(async (i) => {
@@ -179,6 +280,15 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'Sipariş kalemleri boş' });
     }
 
+    // BranchId'yi belirle: Önce request'ten, yoksa masadan, yoksa null
+    const finalBranchId = requestBranchId || table.branchId || null;
+
+    let customerId = null;
+    if (req.user && req.user.id) {
+      const u = await User.findById(req.user.id).select('role');
+      if (u && u.role === 'musteri') customerId = u._id;
+    }
+
     // Sipariş oluştur
     const order = await Order.create({
       table: table._id,
@@ -186,8 +296,54 @@ router.post('/', async (req, res, next) => {
       total: Number(total),
       notes: notes || '', // Genel sipariş notu
       status: 'hazirlaniyor',
-      branchId: table.branchId || null,
+      branchId: finalBranchId,
+      ...(customerId ? { customer: customerId } : {}),
     });
+
+    let pointsEarned = 0;
+    let customerLoyaltyPoints = null;
+    if (customerId) {
+      pointsEarned = Math.max(1, Math.floor(Number(total) / 10));
+      const updatedUser = await User.findByIdAndUpdate(
+        customerId,
+        { $inc: { loyaltyPoints: pointsEarned } },
+        { new: true }
+      ).select('loyaltyPoints');
+      if (updatedUser) customerLoyaltyPoints = updatedUser.loyaltyPoints;
+    }
+    
+    // StockMovement kayıtlarını order ID ile güncelle
+    const productIdsForStock = items
+      .map(i => i.menuItemId || i.productId)
+      .filter(id => productsMap[String(id)]);
+    
+    if (productIdsForStock.length > 0) {
+      await StockMovement.updateMany(
+        { 
+          productId: { $in: productIdsForStock },
+          reason: 'order',
+          refId: null
+        },
+        { $set: { refId: order._id } }
+      );
+      
+      // Real-time stok güncellemesi için socket emit
+      const io = req.app.get('io');
+      if (io) {
+        // Güncellenmiş ürünleri çek ve gönder
+        const updatedProducts = await Product.find({ 
+          _id: { $in: productIdsForStock } 
+        }).lean();
+        
+        updatedProducts.forEach(product => {
+          io.emit('product:stock:updated', {
+            productId: product._id,
+            countInStock: product.countInStock,
+            branchId: finalBranchId
+          });
+        });
+      }
+    }
 
     // Table status'unu güncelle
     const updatedTable = await Table.findByIdAndUpdate(table._id, { status: 'dolu' }, { new: true });
@@ -217,8 +373,8 @@ router.post('/', async (req, res, next) => {
           table: updatedTable.toObject()
         });
         
-        // Mutfağa bildir (QR siparişi için)
-        const branchId = 'default';
+        // Mutfağa bildir (QR siparişi için) - siparişin branchId'sini kullan
+        const branchId = finalBranchId || 'default';
         // QR siparişleri eski model kullanıyor (items array'i)
         const itemsToNotify = order.items || orderItems || [];
         
@@ -282,7 +438,12 @@ router.post('/', async (req, res, next) => {
       console.error('❌ [BACKEND] Socket.io emit hatası:', err);
     }
 
-    res.status(201).json(populated);
+    const orderJson = populated.toObject ? populated.toObject() : populated;
+    if (pointsEarned > 0 && customerLoyaltyPoints != null) {
+      orderJson.pointsEarned = pointsEarned;
+      orderJson.customerLoyaltyPoints = customerLoyaltyPoints;
+    }
+    res.status(201).json(orderJson);
   } catch (e) {
     console.error('Sipariş oluşturma hatası:', e);
     next(e);

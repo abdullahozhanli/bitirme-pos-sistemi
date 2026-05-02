@@ -7,12 +7,8 @@ module.exports = function requireRole(...allowedRoles) {
     // Debug log'ları kaldırıldı (production için)
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Bu işlem için yetkin yok',
-        debug: {
-          userRole: req.user.role,
-          allowedRoles: allowedRoles
-        }
       });
     }
 

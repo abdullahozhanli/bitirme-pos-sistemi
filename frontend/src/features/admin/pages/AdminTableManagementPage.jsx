@@ -35,6 +35,10 @@ export default function AdminTableManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrTableNumber, setQrTableNumber] = useState('');
+  const [qrCapacity, setQrCapacity] = useState('');
+  const [generatingQR, setGeneratingQR] = useState(false);
   const socketRef = useRef(null);
 
   // Durum mapping
@@ -91,10 +95,7 @@ export default function AdminTableManagementPage() {
     fetchTables();
     
     // Socket.io bağlantısı
-    const hostname = window.location.hostname;
-    const baseURL = hostname === 'localhost' || hostname === '127.0.0.1' 
-      ? 'http://localhost:5001' 
-      : `http://${hostname}:5001`;
+    const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
     socketRef.current = io(baseURL, {
       transports: ['websocket', 'polling'],
@@ -413,7 +414,6 @@ export default function AdminTableManagementPage() {
           </Paper>
         )}
       </Box>
-
 
       {/* Toast Bildirimleri */}
       <Snackbar

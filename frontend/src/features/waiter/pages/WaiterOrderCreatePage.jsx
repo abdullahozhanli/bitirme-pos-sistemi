@@ -23,6 +23,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
 import axios from 'axios';
+import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import './WaiterOrderCreatePage.css';
 
 // Kategori bazlı fallback görseller
@@ -41,6 +42,7 @@ const PLACEHOLDER_IMAGE = '/img/placeholder.webp';
 export default function WaiterOrderCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -74,9 +76,16 @@ export default function WaiterOrderCreatePage() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
+      // Kullanıcının branchId'sini al
+      const branchId = user?.branchId || user?.branch?._id || null;
+      
+      // branchId varsa query parametresi olarak ekle
+      const productParams = branchId ? { branchId } : {};
+      const categoryParams = branchId ? { branchId } : {};
+
       const [productsRes, categoriesRes, tablesRes] = await Promise.all([
-        axios.get('/api/products', { headers }),
-        axios.get('/api/categories', { headers }),
+        axios.get('/api/products', { headers, params: productParams }),
+        axios.get('/api/categories', { headers, params: categoryParams }),
         axios.get('/api/waiter/tables', { headers }),
       ]);
 
@@ -318,10 +327,10 @@ export default function WaiterOrderCreatePage() {
                   <Box className="product-card-content">
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                       <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, fontSize: '1rem', color: '#000' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, fontSize: '1rem', color: '#111827' }}>
                           {product.name}
                         </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#000', fontSize: '0.9375rem' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#111827', fontSize: '0.9375rem' }}>
                           {product.price?.toFixed(2) || '0.00'} TL
                         </Typography>
                       </Box>

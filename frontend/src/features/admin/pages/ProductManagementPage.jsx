@@ -166,9 +166,26 @@ export default function ProductManagementPage() {
       field: 'price', 
       headerName: 'Fiyatı', 
       width: 100,
+      align: 'right',
+      headerAlign: 'right',
       renderCell: (params) => `${params.value} TL`
     },
-    { field: 'countInStock', headerName: 'Stok', width: 80 },
+    { 
+      field: 'countInStock', 
+      headerName: 'Stok', 
+      width: 100,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => {
+        const stock = params.value || 0;
+        if (stock === 0) {
+          return <span className="stock-badge stock-zero">{stock}</span>;
+        } else if (stock < 10) {
+          return <span className="stock-badge stock-low">{stock}</span>;
+        }
+        return <span className="stock-text">{stock}</span>;
+      }
+    },
     { 
       field: 'category', 
       headerName: 'Kategori', 
@@ -204,7 +221,22 @@ export default function ProductManagementPage() {
         return <span>{categoryName}</span>;
       }
     },
-    { field: 'description', headerName: 'Açıklama', width: 250 },
+    { 
+      field: 'description', 
+      headerName: 'Açıklama', 
+      width: 250,
+      renderCell: (params) => (
+        <span style={{ 
+          whiteSpace: 'nowrap', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis',
+          display: 'block',
+          maxWidth: '100%'
+        }}>
+          {params.value || ''}
+        </span>
+      )
+    },
     {
       field: 'actions',
       headerName: 'İşlemler',

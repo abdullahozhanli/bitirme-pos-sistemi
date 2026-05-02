@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  /** Müşteri parapuanı (siparişlerle artar) */
+  loyaltyPoints: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
 });
 
 // --- ŞİFRE HASHLEME (ŞİFRELEME) ---

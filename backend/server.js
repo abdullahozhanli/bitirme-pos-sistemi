@@ -24,49 +24,111 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 
 dotenv.config();
 
+// Başlangıç log'u
+console.log('\n🔧 Backend başlatılıyor...');
+console.log(`📁 Çalışma Dizini: ${process.cwd()}`);
+console.log(`🌍 NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔑 PORT: ${process.env.PORT || 5001}`);
+
 const app = express();
 
-// CORS whitelist
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+// Production güvenlik middleware'leri
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
-// Development'ta tüm local network'e izin ver, production'da sadece belirtilen origin'e
-const corsOptions = isDevelopment
-  ? {
-      origin: function (origin, callback) {
-        // Development: localhost ve local network IP'lerine izin ver
-        if (!origin || 
-            origin.includes('localhost') || 
-            origin.includes('127.0.0.1') ||
-            origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/) || // 192.168.x.x
-            origin.match(/^http:\/\/10\.\d+\.\d+\.\d+:\d+$/) || // 10.x.x.x
-            origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/) || // 172.16-31.x.x
-            origin.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:\d+$/)) { // Herhangi bir IP (development için)
-          callback(null, true);
-        } else {
-          callback(null, false);
-        }
-      },
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      credentials: true,
-    }
-  : {
-      origin: [FRONTEND_ORIGIN],
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    };
+// Helmet.js - HTTP header güvenliği
+if (!isDevelopment) {
+  const helmet = require('helmet');
+  app.use(helmet({
+    contentSecurityPolicy: false, // Socket.io için gerekli
+    crossOriginEmbedderPolicy: false
+  }));
+}
 
-app.use(cors(corsOptions));
+// Rate limiting - API abuse koruması
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 dakika
+  max: isDevelopment ? 1000 : 100, // Development'ta daha yüksek limit
+  message: 'Çok fazla istek gönderdiniz, lütfen daha sonra tekrar deneyin.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', limiter);
+
+// Auth endpoint'leri için daha sıkı rate limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 15 dakikada 5 deneme
+  message: 'Çok fazla giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.',
+  skipSuccessfulRequests: true,
+});
+
+// --- YENİ CORS AYARI BAŞLANGIÇ ---
+app.use(cors({
+  origin: (origin, callback) => {
+    // Production origin'ler
+    const allowedOrigins = [
+      'https://selfkasa.site',
+      'https://www.selfkasa.site',
+      'https://api.selfkasa.site',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.FRONTEND_ORIGIN
+    ].filter(Boolean); // undefined değerleri temizle
+
+    // Origin yoksa (Postman, curl, mobile app gibi) kabul et
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allowed list'te varsa kabul et
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Local network IP'lerini kabul et (10.x.x.x, 192.168.x.x, 172.16-31.x.x)
+    // Port numarası da dahil (5173, 3000 gibi development portları)
+    const isLocalNetwork = /^http:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin);
+    if (isLocalNetwork) {
+      return callback(null, true);
+    }
+
+    // Diğer durumlarda reddet
+    callback(new Error('CORS policy tarafından izin verilmedi'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
+}));
+// --- YENİ CORS AYARI BİTİŞ ---
 
 // body parser
 app.use(express.json());
 
+// Request logging middleware (tüm istekleri logla - route'lardan ÖNCE)
+app.use((req, res, next) => {
+  const timestamp = new Date().toLocaleString('tr-TR');
+  console.log(`[${timestamp}] ${req.method} ${req.path} - IP: ${req.ip || req.connection.remoteAddress}`);
+  next();
+});
+
 // MongoDB connect
+console.log('\n📦 MongoDB bağlantısı kuruluyor...');
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB bağlantısı başarılı.');
+    console.log('✅ MongoDB bağlantısı başarılı!');
+    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/bitirme';
+    // URI'yi gizle (sadece host göster)
+    const uriParts = mongoUri.split('@');
+    if (uriParts.length > 1) {
+      console.log(`   Host: ${uriParts[1]}`);
+    } else {
+      console.log(`   URI: ${mongoUri}`);
+    }
   } catch (err) {
-    console.error('MongoDB bağlantı hatası:', err.message);
+    console.error('❌ MongoDB bağlantı hatası:', err.message);
+    console.error('   Lütfen .env dosyasındaki MONGO_URI değerini kontrol edin');
     process.exit(1);
   }
 };
@@ -82,7 +144,7 @@ try {
   const { Server } = require('socket.io');
   io = new Server(server, {
     cors: {
-      origin: FRONTEND_ORIGIN,
+      origin: "*",
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -175,7 +237,7 @@ app.get('/', (req, res) => {
 });
 
 // api routes - Yeni role-based routing
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/waiter', waiterRoutes);
 app.use('/api/waiter', waiter);
@@ -222,20 +284,32 @@ app.use((req, res, next) => {
 
 // global error handler (tek tip cevap)
 app.use((err, req, res, next) => {
-  console.error(err);
+  // Production'da detaylı error bilgisi gösterme
+  if (isDevelopment) {
+    console.error('Error:', err);
+  } else {
+    console.error('Error:', err.message);
+  }
+  
   const status = err.statusCode || 500;
   res.status(status).json({
     message: err.message || 'Sunucu hatası',
-    details: err.details || undefined,
+    // Production'da details gösterme
+    ...(isDevelopment && { details: err.details }),
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Sunucu http://localhost:${PORT} üzerinde.`);
-  console.log(`Network: http://0.0.0.0:${PORT} (tüm network interface'lerinden erişilebilir)`);
+  console.log('\n========================================');
+  console.log('🚀 BACKEND SERVER BAŞLATILDI');
+  console.log('========================================');
+  console.log(`📡 Sunucu http://localhost:${PORT} üzerinde çalışıyor`);
+  console.log(`🌐 Network: http://0.0.0.0:${PORT} (tüm network interface'lerinden erişilebilir)`);
+  console.log(`📅 Başlangıç Zamanı: ${new Date().toLocaleString('tr-TR')}`);
   if (io) {
-    console.log(`Socket.io aktif.`);
+    console.log(`✅ Socket.io aktif`);
   } else {
-    console.log(`Socket.io devre dışı (npm install socket.io ile yükleyebilirsiniz).`);
+    console.log(`⚠️  Socket.io devre dışı (npm install socket.io ile yükleyebilirsiniz)`);
   }
+  console.log('========================================\n');
 });

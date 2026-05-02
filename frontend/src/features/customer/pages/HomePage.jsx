@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import { useCart } from '../../../shared/context/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -8,8 +9,9 @@ import {
   useTheme,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ShoppingCartOutlinedIcon from '@mui/icons-material/ShoppingCartOutlined';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import AddIcon from '@mui/icons-material/Add';
 import './HomePage.css';
 
 // Kategori bazlı fallback görseller
@@ -37,14 +39,28 @@ export default function HomePage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [flippedCards, setFlippedCards] = useState(new Set());
   const { addToCart, cartItems, branchId } = useCart();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const sentinelRef = useRef(null);
   const categoryScrollRef = useRef(null);
+  const socketRef = useRef(null);
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
+
+  // Flip kart toggle - sadece tıklanan kartı flip et, diğerlerini sıfırla
+  const toggleFlip = (productId) => {
+    setFlippedCards(prev => {
+      const newSet = new Set();
+      // Eğer tıklanan kart zaten flipped ise sıfırla, değilse sadece onu flip et
+      if (!prev.has(productId)) {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
 
   // Görsel yükleme hatası
   const handleImageError = (e) => {
@@ -57,21 +73,12 @@ export default function HomePage() {
       setLoading(true);
       setError('');
       try {
-        // Axios baseURL'i her zaman güncelle (telefon IP değişebilir)
-        const hostname = window.location.hostname;
-        console.log('🔍 HomePage - window.location.hostname:', hostname);
-        console.log('🔍 HomePage - window.location:', window.location.href);
-        let baseURL;
-        if (hostname === 'localhost' || hostname === '127.0.0.1') {
-          baseURL = 'http://localhost:5001';
-        } else {
-          baseURL = `http://${hostname}:5001`;
-        }
+        // Axios baseURL'i VITE_API_URL'den al
+        const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
         axios.defaults.baseURL = baseURL;
-        console.log('🔧 HomePage - Axios baseURL ayarlandı:', baseURL);
         
         // Public endpoint'leri kullan (authentication gerektirmez)
-        const productParams = { page: 1, limit: 12 };
+        const productParams = { page: 1, limit: 500 }; 
         if (branchId) {
           productParams.branchId = branchId;
         }
@@ -88,7 +95,6 @@ export default function HomePage() {
         
         setAllProducts(prodList);
         setTotalProducts(total);
-        console.info('products length:', prodList.length);
 
         const catList = Array.isArray(catRes.data) ? catRes.data : catRes.data?.items || [];
         setCategories(catList);
@@ -111,6 +117,40 @@ export default function HomePage() {
       }
     };
     fetchData();
+    
+    // Socket.io bağlantısı - Real-time stok güncellemeleri için
+    const socketBaseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
+
+    const socket = io(socketBaseURL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
+
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      // Socket bağlantısı başarılı
+    });
+
+    // Stok güncellemesi geldiğinde
+    socket.on('product:stock:updated', (data) => {
+      // Aynı branch'teki ürünse güncelle
+      if (!branchId || String(data.branchId) === String(branchId)) {
+        setAllProducts(prev => 
+          prev.map(product => 
+            String(product._id) === String(data.productId)
+              ? { ...product, countInStock: data.countInStock }
+              : product
+          )
+        );
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [branchId]);
 
   // Daha fazla ürün yükle
@@ -119,13 +159,9 @@ export default function HomePage() {
     
     setLoadingMore(true);
     try {
-      // Axios baseURL'i güncelle
-      const hostname = window.location.hostname;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        axios.defaults.baseURL = 'http://localhost:5001';
-      } else {
-        axios.defaults.baseURL = `http://${hostname}:5001`;
-      }
+      // Axios baseURL'i VITE_API_URL'den al
+      const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
+      axios.defaults.baseURL = baseURL;
       
       const nextPage = page + 1;
       const params = { page: nextPage, limit: 12 };
@@ -141,7 +177,6 @@ export default function HomePage() {
       if (prodList.length > 0) {
         setAllProducts(prev => {
           const newList = [...prev, ...prodList];
-          console.info('products length after loadMore:', newList.length);
           return newList;
         });
         setTotalProducts(total);
@@ -267,7 +302,7 @@ export default function HomePage() {
           }}
         >
           {/* Başlık */}
-          <h2 style={{ marginBottom: '16px', color: '#000', fontSize: '24px', fontWeight: 700, margin: '0 0 16px 0' }}>
+          <h2 style={{ marginBottom: '16px', color: '#111827', fontSize: '24px', fontWeight: 700, margin: '0 0 16px 0' }}>
             Menümüz
           </h2>
           
@@ -299,7 +334,7 @@ export default function HomePage() {
                 aria-label="Sepet"
                 className="cart-btn"
               >
-                <ShoppingCartIcon className="cart-btn-icon" />
+                <ShoppingCartOutlinedIcon className="cart-btn-icon" />
                 {isDesktop && <span>Sepet</span>}
               </button>
               {cartCount > 0 && (
@@ -362,10 +397,11 @@ export default function HomePage() {
             <span style={{
               display: 'inline-block',
               padding: '4px 12px',
-              borderRadius: '16px',
-              backgroundColor: '#333',
-              color: '#fff',
-              fontWeight: 600,
+              borderRadius: '999px',
+              backgroundColor: '#f3f4f6',
+              color: '#4b5563',
+              border: '1px solid #e5e7eb',
+              fontWeight: 500,
               fontSize: '0.875rem',
             }}>
               {products.length} ürün
@@ -382,78 +418,135 @@ export default function HomePage() {
           <div className="products-container">
             {products.map((product) => {
               const imageUrl = product.imageUrl || PLACEHOLDER_IMAGE;
-              console.log('image url:', product.imageUrl);
               const isOutOfStock = (product.countInStock ?? 0) <= 0;
               const price = Number(product.price) || 0;
+              const isFlipped = flippedCards.has(product._id);
+
+              // Kategori bazlı etiket belirleme
+              const getProductBadge = () => {
+                if (!product.category) return null;
+                const categoryName = product.category.name || '';
+                
+                const badgeMap = {
+                  'Ana Yemek': 'Özel',
+                  'Tatlılar': 'Lezzetli',
+                  'İçecekler': 'Taze',
+                  'Salatalar': 'Sağlıklı',
+                  'Kahveler': 'Özel',
+                  'Ara Sıcak': 'Sıcak',
+                  'Çerez': 'Çıtır'
+                };
+                
+                return badgeMap[categoryName] || null;
+              };
+
+              const productBadge = getProductBadge();
 
               return (
-                <div key={product._id} className="product-card">
-                  <div className="product-image-wrapper">
-                    <img
-                      src={imageUrl}
-                      alt={product.name}
-                      className="product-image"
-                      loading="lazy"
-                      onError={handleImageError}
-                    />
-                    {isOutOfStock && (
-                      <div className="product-out-of-stock">
-                        TÜKENDİ
+                <div 
+                  key={product._id} 
+                  className={`product-card ${isFlipped ? 'flipped' : ''}`}
+                  onClick={() => toggleFlip(product._id)}
+                >
+                  <div className="product-card-inner">
+                    {/* Ön Yüz */}
+                    <div className="product-card-front">
+                      <div className="product-image-wrapper">
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="product-image"
+                          loading="lazy"
+                          onError={handleImageError}
+                        />
+                        {productBadge && (
+                          <div className="product-popular-badge">{productBadge}</div>
+                        )}
+                        {isOutOfStock && (
+                          <div className="product-out-of-stock">
+                            TÜKENDİ
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="product-card-content">
-                    <div className="product-header">
-                      <h3 className="product-name">{product.name}</h3>
-                      <p className="product-price">₺{price.toFixed(0)}</p>
+                      <div className="product-card-content">
+                        <h3 className="product-name">{product.name}</h3>
+
+                        <div className="product-front-footer">
+                          <p className="product-price-green">₺{price.toFixed(0)}</p>
+                          <button
+                            className="add-to-cart-btn-green"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddToCart(product);
+                            }}
+                            disabled={isOutOfStock}
+                          >
+                          <AddIcon className="add-to-cart-btn-icon" />
+                          <span className="add-to-cart-btn-text">Sepete Ekle</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <p className="product-description">
-                      {product.description || 'Açıklama bulunmuyor.'}
-                    </p>
+                    {/* Arka Yüz */}
+                    <div className="product-card-back">
+                      <div className="product-card-back-content">
+                        <h3 className="product-back-name">{product.name}</h3>
 
-                    {/* Tags */}
-                    <div className="product-tags">
-                      {product.category && (
-                        <span className="product-tag category">{product.category.name}</span>
-                      )}
-                      {isOutOfStock && (
-                        <span className="product-tag out-of-stock">Tükendi</span>
-                      )}
+                        <div className="product-back-section">
+                          <h4 className="product-back-section-title">Açıklama</h4>
+                          <p className="product-back-description">
+                            {product.description || 'Açıklama bulunmuyor.'}
+                          </p>
+                        </div>
+
+                        <div className="product-back-section">
+                          <div className="product-back-time-wrapper">
+                            <AccessTimeIcon className="product-back-time-icon" />
+                            <span className="product-back-time-text">
+                              <span className="product-back-time-label-mobile">Hazırlanma: </span>
+                              <span className="product-back-time-value">15-20 dk</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="product-back-tap-hint">
+                          Tekrar dokunun
+                        </div>
+                      </div>
                     </div>
-
-                    {/* Item Info */}
-                    <div className="product-info">
-                      <AccessTimeIcon className="product-info-icon" />
-                      <span>5 dk</span>
-                    </div>
-
-                    {/* Add to Cart Button */}
-                    <button
-                      className="add-to-cart-btn"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={isOutOfStock}
-                    >
-                      <ShoppingCartIcon className="add-to-cart-btn-icon" />
-                      Sepete Ekle
-                    </button>
                   </div>
                 </div>
               );
             })}
             
             {/* Sentinel - Sonsuz scroll için */}
-            {hasMore && !loadingMore && (
+            {/* Sonsuz Scroll Tetikleyicisi - Her zaman render edilmeli (hasMore varsa) */}
+            {hasMore && (
               <div
                 id="sentinel"
                 ref={sentinelRef}
                 style={{
                   width: '100%',
-                  height: '1px',
+                  height: '20px', // Biraz yükseklik verelim ki kolay algılansın
                   gridColumn: '1 / -1',
+                  marginTop: '20px',
+                  pointerEvents: 'none', // Tıklamaları engelle
                 }}
               />
+            )}
+
+            {/* Yükleniyor İkonu - Sentinel'den bağımsız gösterilmeli */}
+            {loadingMore && (
+              <div style={{ 
+                gridColumn: '1 / -1', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                padding: '20px' 
+              }}>
+                <CircularProgress size={30} />
+              </div>
             )}
           </div>
         )}

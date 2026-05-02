@@ -18,9 +18,10 @@ export interface Order {
 
 export async function getOrders(): Promise<Order[]> {
   const token = localStorage.getItem('token');
+  const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
   const headers: HeadersInit = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
   
-  const response = await fetch('/api/admin/orders', { headers });
+  const response = await fetch(`${baseURL}/api/admin/orders`, { headers });
   if (!response.ok) {
     throw new Error('Siparişler yüklenemedi');
   }

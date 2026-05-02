@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Self Kasa",
+    "slug": "self-kasa-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.selfkasa.mobile"
+    },
+    "android": {
+      "package": "com.selfkasa.mobile",
+      "usesCleartextTraffic": true
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Masadaki QR kodu okutmak için kamera erişimi gerekir."
+        }
+      ]
+    ]
+  }
+}

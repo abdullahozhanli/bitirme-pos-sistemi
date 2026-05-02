@@ -7,16 +7,19 @@ module.exports = function requireSuperAdmin(req, res, next) {
   }
 
   if (req.user.role !== 'superadmin') {
-    return res.status(403).json({ 
+    return res.status(403).json({
       message: 'Bu işlem için süper admin yetkisi gereklidir',
-      debug: {
-        userRole: req.user.role
-      }
     });
   }
 
   next();
 };
+
+
+
+
+
+
 
 
 

@@ -21,7 +21,12 @@ export type Kpis = {
 export async function getKpis(): Promise<Kpis> {
   try {
     console.log('📊 getKpis() çağrıldı - /api/admin/stats/today endpoint\'ine istek gönderiliyor...');
-    const response = await axios.get('/api/admin/stats/today');
+    const token = localStorage.getItem('token');
+    const headers = token ? { 
+      Authorization: `Bearer ${token}`, 
+      'x-auth-token': token 
+    } : {};
+    const response = await axios.get('/api/admin/stats/today', { headers });
     console.log('📊 getKpis() yanıtı:', response.data);
     const data = response.data;
     
@@ -48,8 +53,15 @@ export async function getKpis(): Promise<Kpis> {
     return result;
   } catch (error) {
     console.error('❌ KPI verileri alınamadı:', error);
-    throw new Error('KPI verileri alınamadı.');
+    const errorMessage = error?.response?.data?.message || error?.message || 'KPI verileri alınamadı.';
+    throw new Error(errorMessage);
   }
 }
+
+
+
+
+
+
 
 

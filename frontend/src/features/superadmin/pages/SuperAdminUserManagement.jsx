@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Box,
@@ -30,6 +30,14 @@ import {
   Tooltip,
   alpha,
   Divider,
+  Avatar,
+  Checkbox,
+  ToggleButton,
+  ToggleButtonGroup,
+  Menu,
+  Stack,
+  Badge,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -41,7 +49,14 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import SearchIcon from '@mui/icons-material/Search';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import SettingsIcon from '@mui/icons-material/Settings';
+import PersonIcon from '@mui/icons-material/Person';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import PageHeader from '../../../shared/components/layout/PageHeader.jsx';
+import './SuperAdminUserManagement.css';
 
 const ROLES = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
 
@@ -71,10 +86,27 @@ const generateSecurePassword = (length = 12) => {
 };
 
 export default function SuperAdminUserManagement() {
+  // Mode: 'assignment' (default) or 'management'
+  const [mode, setMode] = useState('assignment');
+  
+  // Data
   const [users, setUsers] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Filters & Search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Selection
+  const [selectedUsers, setSelectedUsers] = useState(new Set());
+  const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [bulkAssignBranchId, setBulkAssignBranchId] = useState('');
+  
+  // Dialogs
   const [dialogOpen, setDialogOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [passwordShowDialogOpen, setPasswordShowDialogOpen] = useState(false);
@@ -84,6 +116,12 @@ export default function SuperAdminUserManagement() {
   const [copied, setCopied] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [passwordUserId, setPasswordUserId] = useState(null);
+  
+  // Menu anchor
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuUser, setMenuUser] = useState(null);
+  
+  // Form data
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -100,6 +138,80 @@ export default function SuperAdminUserManagement() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Filtered and sorted users
+  const filteredAndSortedUsers = useMemo(() => {
+    let filtered = [...users];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(user => 
+        (user.name || '').toLowerCase().includes(term) ||
+        (user.email || '').toLowerCase().includes(term)
+      );
+    }
+
+    // Role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(user => user.role === roleFilter);
+    }
+
+    // Branch filter (süper adminler hariç)
+    if (branchFilter !== 'all') {
+      if (branchFilter === 'unassigned') {
+        filtered = filtered.filter(user => {
+          // Süper adminler şubeye atanamaz, bu filtreye dahil edilmez
+          if (user.role === 'superadmin') return false;
+          return !user.branchId || (typeof user.branchId === 'object' && !user.branchId._id);
+        });
+      } else {
+        filtered = filtered.filter(user => {
+          // Süper adminler şubeye atanamaz
+          if (user.role === 'superadmin') return false;
+          const userBranchId = typeof user.branchId === 'object' ? user.branchId?._id : user.branchId;
+          return String(userBranchId) === String(branchFilter);
+        });
+      }
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(user => {
+        if (statusFilter === 'active') return user.isActive !== false;
+        if (statusFilter === 'inactive') return user.isActive === false;
+        return true;
+      });
+    }
+
+    // Sort: superadmins first, then unassigned users, then by name
+    filtered.sort((a, b) => {
+      // Süper adminler en üstte
+      if (a.role === 'superadmin' && b.role !== 'superadmin') return -1;
+      if (a.role !== 'superadmin' && b.role === 'superadmin') return 1;
+      
+      // Süper adminler arasında isme göre sırala
+      if (a.role === 'superadmin' && b.role === 'superadmin') {
+        const aName = (a.name || a.email || '').toLowerCase();
+        const bName = (b.name || b.email || '').toLowerCase();
+        return aName.localeCompare(bName);
+      }
+      
+      // Diğer kullanıcılar: atanmamışlar önce
+      const aHasBranch = a.branchId && (typeof a.branchId === 'object' ? a.branchId._id : a.branchId);
+      const bHasBranch = b.branchId && (typeof b.branchId === 'object' ? b.branchId._id : b.branchId);
+      
+      if (!aHasBranch && bHasBranch) return -1;
+      if (aHasBranch && !bHasBranch) return 1;
+      
+      // Aynı durumdaysa isme göre sırala
+      const aName = (a.name || a.email || '').toLowerCase();
+      const bName = (b.name || b.email || '').toLowerCase();
+      return aName.localeCompare(bName);
+    });
+
+    return filtered;
+  }, [users, searchTerm, roleFilter, branchFilter, statusFilter]);
 
   const fetchData = async () => {
     try {
@@ -286,6 +398,92 @@ export default function SuperAdminUserManagement() {
     }
   };
 
+  // Selection handlers
+  const handleSelectUser = (userId) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    // Süper adminleri hariç tut (şubeye atanamazlar)
+    const assignableUsers = filteredAndSortedUsers.filter(u => u.role !== 'superadmin');
+    
+    if (selectedUsers.size === assignableUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(assignableUsers.map(u => u._id)));
+    }
+  };
+
+  // Branch assignment handler
+  const handleBranchChange = async (userId, newBranchId) => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+
+      const updateData = { branchId: newBranchId || null };
+      await axios.put(`/api/superadmin/users/${userId}`, updateData, { headers });
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Şube ataması başarısız');
+    }
+  };
+
+  // Bulk assign handler
+  const handleBulkAssign = async () => {
+    if (!bulkAssignBranchId || selectedUsers.size === 0) return;
+
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+
+      const branchId = bulkAssignBranchId === 'unassign' ? null : bulkAssignBranchId;
+      
+      // Filter out superadmins (they can't be assigned to branches)
+      const assignableUserIds = Array.from(selectedUsers).filter(userId => {
+        const user = users.find(u => u._id === userId);
+        return user && user.role !== 'superadmin';
+      });
+      
+      if (assignableUserIds.length === 0) {
+        setError('Seçili kullanıcılar arasında şubeye atanabilir kullanıcı bulunamadı');
+        return;
+      }
+      
+      // Update all selected users (excluding superadmins)
+      await Promise.all(
+        assignableUserIds.map(userId =>
+          axios.put(`/api/superadmin/users/${userId}`, { branchId }, { headers })
+        )
+      );
+
+      setSelectedUsers(new Set());
+      setBulkAssignDialogOpen(false);
+      setBulkAssignBranchId('');
+      fetchData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Toplu atama başarısız');
+    }
+  };
+
+  // Menu handlers
+  const handleMenuOpen = (event, user) => {
+    setMenuAnchor(event.currentTarget);
+    setMenuUser(user);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setMenuUser(null);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -295,10 +493,10 @@ export default function SuperAdminUserManagement() {
   }
 
   return (
-    <Box>
+    <Box className="superadmin-user-management">
       <PageHeader 
         title="Kullanıcı Yönetimi"
-        subtitle="Sistemdeki tüm kullanıcıları yönetin"
+        subtitle="Sistemdeki tüm kullanıcıları yönetin ve şubelere atayın"
         action={
           <Button
             variant="contained"
@@ -316,82 +514,395 @@ export default function SuperAdminUserManagement() {
         </Alert>
       )}
 
-      <TableContainer component={Paper} sx={{ mt: 3 }}>
+      {/* Mode Toggle */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(e, newMode) => newMode && setMode(newMode)}
+          size="small"
+        >
+          <ToggleButton value="assignment">
+            <AssignmentIcon sx={{ mr: 1 }} />
+            Atama Modu
+          </ToggleButton>
+          <ToggleButton value="management">
+            <SettingsIcon sx={{ mr: 1 }} />
+            Yönetim Modu
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        {selectedUsers.size > 0 && (
+          <Badge badgeContent={selectedUsers.size} color="primary">
+            <Button
+              variant="outlined"
+              startIcon={<AssignmentIcon />}
+              onClick={() => setBulkAssignDialogOpen(true)}
+            >
+              Toplu Ata ({selectedUsers.size})
+            </Button>
+          </Badge>
+        )}
+      </Box>
+
+      {/* Toolbar */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+          {/* Search */}
+          <TextField
+            size="small"
+            placeholder="Kullanıcı ara..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ minWidth: 250, flex: 1 }}
+          />
+
+          {/* Role Filter */}
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Rol</InputLabel>
+            <Select
+              value={roleFilter}
+              label="Rol"
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <MenuItem value="all">Tüm Roller</MenuItem>
+              {ROLES.map(role => (
+                <MenuItem key={role} value={role}>{role}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Branch Filter */}
+          <FormControl size="small" sx={{ minWidth: 180 }}>
+            <InputLabel>Şube</InputLabel>
+            <Select
+              value={branchFilter}
+              label="Şube"
+              onChange={(e) => setBranchFilter(e.target.value)}
+            >
+              <MenuItem value="all">Tüm Şubeler</MenuItem>
+              <MenuItem value="unassigned">Atanmamış</MenuItem>
+              {branches.filter(b => b.isActive).map(branch => (
+                <MenuItem key={branch._id} value={branch._id}>{branch.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Status Filter */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Durum</InputLabel>
+            <Select
+              value={statusFilter}
+              label="Durum"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">Tümü</MenuItem>
+              <MenuItem value="active">Aktif</MenuItem>
+              <MenuItem value="inactive">Pasif</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      </Paper>
+
+      {/* Table */}
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell><strong>Ad</strong></TableCell>
-              <TableCell><strong>E-posta</strong></TableCell>
+              {mode === 'assignment' && (
+                <TableCell padding="checkbox" width={50}>
+                  <Checkbox
+                    indeterminate={
+                      (() => {
+                        const assignableUsers = filteredAndSortedUsers.filter(u => u.role !== 'superadmin');
+                        return selectedUsers.size > 0 && selectedUsers.size < assignableUsers.length;
+                      })()
+                    }
+                    checked={
+                      (() => {
+                        const assignableUsers = filteredAndSortedUsers.filter(u => u.role !== 'superadmin');
+                        return assignableUsers.length > 0 && selectedUsers.size === assignableUsers.length;
+                      })()
+                    }
+                    onChange={handleSelectAll}
+                  />
+                </TableCell>
+              )}
+              <TableCell><strong>Kullanıcı</strong></TableCell>
               <TableCell><strong>Rol</strong></TableCell>
               <TableCell><strong>Şube</strong></TableCell>
-              <TableCell><strong>Durum</strong></TableCell>
-              <TableCell align="right"><strong>İşlemler</strong></TableCell>
+              {mode === 'management' && (
+                <>
+                  <TableCell><strong>Durum</strong></TableCell>
+                  <TableCell align="right" width={100}><strong>İşlemler</strong></TableCell>
+                </>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.length === 0 ? (
+            {filteredAndSortedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={mode === 'assignment' ? 4 : 5} align="center">
                   <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
-                    Henüz kullanıcı eklenmemiş
+                    {searchTerm || roleFilter !== 'all' || branchFilter !== 'all' || statusFilter !== 'all'
+                      ? 'Filtrelere uygun kullanıcı bulunamadı'
+                      : 'Henüz kullanıcı eklenmemiş'}
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell>{user.name || '-'}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Chip label={user.role} color="primary" size="small" />
-                  </TableCell>
-                  <TableCell>{user.branchId?.name || '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.isActive ? 'Aktif' : 'Pasif'}
-                      color={user.isActive ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(user)}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenPasswordDialog(user._id)}
-                      color="warning"
-                      title="Şifre Sıfırla"
-                    >
-                      <LockResetIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(user._id)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredAndSortedUsers.map((user) => {
+                const userBranchId = typeof user.branchId === 'object' ? user.branchId?._id : user.branchId;
+                const userBranchName = typeof user.branchId === 'object' ? user.branchId?.name : null;
+                const isUnassigned = !userBranchId;
+
+                return (
+                  <TableRow key={user._id} hover>
+                    {mode === 'assignment' && (
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedUsers.has(user._id)}
+                          onChange={() => handleSelectUser(user._id)}
+                          disabled={user.role === 'superadmin'}
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}>
+                          {(user.name || user.email || 'U')[0].toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {user.name || user.email || '-'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {user.email}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={user.role} 
+                        color="primary" 
+                        size="small"
+                        sx={{ textTransform: 'capitalize' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {user.role === 'superadmin' ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                          Şubeye atanamaz
+                        </Typography>
+                      ) : mode === 'assignment' ? (
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                          <Select
+                            value={userBranchId || ''}
+                            onChange={(e) => handleBranchChange(user._id, e.target.value)}
+                            displayEmpty
+                            sx={{ 
+                              '& .MuiSelect-select': { 
+                                py: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                              }
+                            }}
+                          >
+                            <MenuItem value="">
+                              <Chip 
+                                label="Atanmamış" 
+                                size="small" 
+                                color="warning" 
+                                variant="outlined"
+                              />
+                            </MenuItem>
+                            {branches.filter(b => b.isActive).map(branch => (
+                              <MenuItem key={branch._id} value={branch._id}>
+                                {branch.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <Box>
+                          {isUnassigned ? (
+                            <Chip 
+                              label="Atanmamış" 
+                              size="small" 
+                              color="warning" 
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Typography variant="body2">{userBranchName || '-'}</Typography>
+                          )}
+                        </Box>
+                      )}
+                    </TableCell>
+                    {mode === 'management' && (
+                      <>
+                        <TableCell>
+                          <Chip
+                            label={user.isActive ? 'Aktif' : 'Pasif'}
+                            color={user.isActive ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleMenuOpen(e, user)}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
+      {/* User Menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={Boolean(menuAnchor)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => {
+          if (menuUser) handleOpenDialog(menuUser);
+          handleMenuClose();
+        }}>
+          <EditIcon sx={{ mr: 1, fontSize: 20 }} />
+          Düzenle
+        </MenuItem>
+        <MenuItem onClick={() => {
+          if (menuUser) handleOpenPasswordDialog(menuUser._id);
+          handleMenuClose();
+        }}>
+          <LockResetIcon sx={{ mr: 1, fontSize: 20 }} />
+          Şifre Sıfırla
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => {
+          if (menuUser) handleDelete(menuUser._id);
+          handleMenuClose();
+        }} sx={{ color: 'error.main' }}>
+          <DeleteIcon sx={{ mr: 1, fontSize: 20 }} />
+          Sil
+        </MenuItem>
+      </Menu>
+
+      {/* Bulk Assign Dialog */}
+      <Dialog open={bulkAssignDialogOpen} onClose={() => setBulkAssignDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Toplu Şube Atama</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {selectedUsers.size} kullanıcıya şube atanacak
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel>Şube Seçin</InputLabel>
+              <Select
+                value={bulkAssignBranchId}
+                label="Şube Seçin"
+                onChange={(e) => setBulkAssignBranchId(e.target.value)}
+              >
+                <MenuItem value="unassign">Atanmamış (Şube Kaldır)</MenuItem>
+                {branches.filter(b => b.isActive).map(branch => (
+                  <MenuItem key={branch._id} value={branch._id}>{branch.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkAssignDialogOpen(false)}>İptal</Button>
+          <Button 
+            onClick={handleBulkAssign} 
+            variant="contained"
+            disabled={!bulkAssignBranchId}
+          >
+            Ata
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Kullanıcı Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth={false}
+        PaperProps={{
+          sx: {
+            maxWidth: '720px',
+            width: '100%',
+            borderRadius: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{ p: '20px', pb: '16px', borderBottom: '1px solid', borderColor: 'divider', fontWeight: 600 }}>
           {editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'}
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+        <DialogContent 
+          className="dialog-content-form" 
+          sx={{ 
+            p: '20px !important',
+            display: 'block !important',
+            '& > *': {
+              width: '100% !important',
+              maxWidth: '100% !important'
+            }
+          }}
+        >
+          <Box 
+            className="form-stack"
+            sx={{ 
+              display: 'flex !important',
+              flexDirection: 'column !important',
+              gap: '16px !important',
+              width: '100% !important',
+              maxWidth: '100% !important',
+              '& > *': {
+                width: '100% !important',
+                maxWidth: '100% !important',
+                flexShrink: 0
+              }
+            }}
+          >
+            {/* Ad Soyad */}
             <TextField
+              id="user-name"
+              name="name"
+              label="Ad Soyad"
+              fullWidth
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              helperText="Kullanıcının tam adı"
+              FormHelperTextProps={{ sx: { fontSize: '12px', m: '4px 0 0 0', color: '#666' } }}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { 
+                  height: '44px',
+                  borderRadius: '12px'
+                }
+              }}
+            />
+
+            {/* E-posta */}
+            <TextField
+              id="user-email"
+              name="email"
               label="E-posta"
               fullWidth
               required
@@ -399,89 +910,29 @@ export default function SuperAdminUserManagement() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               disabled={!!editingUser}
+              helperText={editingUser ? "E-posta değiştirilemez" : "Giriş için kullanılacak"}
+              FormHelperTextProps={{ sx: { fontSize: '12px', m: '4px 0 0 0', color: '#666' } }}
+              sx={{ 
+                '& .MuiOutlinedInput-root': { 
+                  height: '44px',
+                  borderRadius: '12px'
+                }
+              }}
             />
-            {!editingUser && (
-              <Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={autoGeneratePassword}
-                      onChange={(e) => {
-                        setAutoGeneratePassword(e.target.checked);
-                        if (e.target.checked) {
-                          setFormData({ ...formData, password: generateSecurePassword() });
-                        } else {
-                          setFormData({ ...formData, password: '' });
-                        }
-                      }}
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        Otomatik Güvenli Şifre Oluştur
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Güçlü ve güvenli bir şifre otomatik oluşturulacak
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <TextField
-                  label="Şifre"
-                  fullWidth
-                  required
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  disabled={autoGeneratePassword}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                          {autoGeneratePassword && (
-                            <Tooltip title="Yeni Şifre Oluştur">
-                              <IconButton
-                                size="small"
-                                onClick={handleGeneratePassword}
-                                sx={{ color: 'primary.main' }}
-                              >
-                                <RefreshIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          <Tooltip title={showPassword ? 'Gizle' : 'Göster'}>
-                            <IconButton
-                              size="small"
-                              onClick={() => setShowPassword(!showPassword)}
-                              edge="end"
-                            >
-                              {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ mt: 1 }}
-                  helperText={
-                    autoGeneratePassword 
-                      ? 'Bu şifre kullanıcı oluşturulduktan sonra size gösterilecek'
-                      : 'Manuel olarak şifre girin veya otomatik oluşturmayı açın'
-                  }
-                />
-              </Box>
-            )}
-            <TextField
-              label="Ad"
+
+            {/* Rol */}
+            <FormControl 
               fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <FormControl fullWidth>
-              <InputLabel>Rol</InputLabel>
+              sx={{ 
+                width: '100% !important',
+                maxWidth: '100% !important'
+              }}
+            >
+              <InputLabel id="user-role-label">Rol</InputLabel>
               <Select
+                id="user-role"
+                name="role"
+                labelId="user-role-label"
                 value={formData.role}
                 label="Rol"
                 onChange={(e) => {
@@ -492,6 +943,15 @@ export default function SuperAdminUserManagement() {
                     branchId: newRole === 'superadmin' ? '' : formData.branchId
                   });
                 }}
+                sx={{ 
+                  height: '44px',
+                  borderRadius: '12px',
+                  '& .MuiSelect-select': {
+                    height: '44px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }
+                }}
               >
                 {ROLES.map((role) => (
                   <MenuItem key={role} value={role}>
@@ -500,13 +960,33 @@ export default function SuperAdminUserManagement() {
                 ))}
               </Select>
             </FormControl>
+
+            {/* Şube */}
             {formData.role !== 'superadmin' && (
-              <FormControl fullWidth>
-                <InputLabel>Şube</InputLabel>
+              <FormControl 
+                fullWidth
+                sx={{ 
+                  width: '100% !important',
+                  maxWidth: '100% !important'
+                }}
+              >
+                <InputLabel id="user-branch-label">Şube</InputLabel>
                 <Select
+                  id="user-branch"
+                  name="branchId"
+                  labelId="user-branch-label"
                   value={formData.branchId}
                   label="Şube"
                   onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                  sx={{ 
+                    height: '44px',
+                    borderRadius: '12px',
+                    '& .MuiSelect-select': {
+                      height: '44px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }
+                  }}
                 >
                   <MenuItem value="">Şube Seçin</MenuItem>
                   {branches
@@ -519,23 +999,119 @@ export default function SuperAdminUserManagement() {
                 </Select>
               </FormControl>
             )}
+
+            {/* Password Section */}
+            {!editingUser && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                  <Typography variant="caption" sx={{ fontSize: '12px', color: '#666', flex: 1 }}>
+                    {autoGeneratePassword ? 'Güvenli şifre otomatik oluşturulacak' : 'En az 6 karakter olmalıdır'}
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={autoGeneratePassword}
+                        onChange={(e) => {
+                          setAutoGeneratePassword(e.target.checked);
+                          if (e.target.checked) {
+                            setFormData({ ...formData, password: generateSecurePassword() });
+                          } else {
+                            setFormData({ ...formData, password: '' });
+                          }
+                        }}
+                        color="primary"
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" sx={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
+                        Otomatik şifre oluştur
+                      </Typography>
+                    }
+                    sx={{ margin: 0 }}
+                  />
+                </Box>
+                
+                {autoGeneratePassword ? (
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={handleGeneratePassword}
+                    startIcon={<RefreshIcon />}
+                    sx={{ 
+                      height: '44px',
+                      borderRadius: '12px'
+                    }}
+                  >
+                    Şifre Üret
+                  </Button>
+                ) : (
+                  <TextField
+                    id="user-password"
+                    name="password"
+                    label="Şifre"
+                    fullWidth
+                    required
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Şifre girin"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            aria-label="Şifreyi göster/gizle"
+                          >
+                            {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{ 
+                      '& .MuiOutlinedInput-root': { 
+                        height: '44px',
+                        borderRadius: '12px'
+                      }
+                    }}
+                  />
+                )}
+              </Box>
+            )}
+
+            {/* Aktif Switch */}
             <FormControlLabel
               control={
                 <Switch
                   checked={formData.isActive}
                   onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  color="primary"
                 />
               }
-              label="Aktif"
+              label={
+                <Typography variant="body2" fontWeight={500}>
+                  Aktif kullanıcı
+                </Typography>
+              }
+              sx={{ margin: 0, width: 'fit-content' }}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
+        <DialogActions className="dialog-footer">
+          <Button 
+            onClick={handleCloseDialog}
+            variant="text"
+            className="footer-button-cancel"
+          >
+            İptal
+          </Button>
           <Button 
             onClick={handleSubmit} 
-            variant="contained" 
+            variant="contained"
             disabled={!formData.email || (!editingUser && !autoGeneratePassword && !formData.password)}
+            className="footer-button-submit"
           >
             {editingUser ? 'Güncelle' : 'Oluştur'}
           </Button>

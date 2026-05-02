@@ -3,7 +3,7 @@
 .table-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: var(--spacing-lg);
 }
 
 @media (max-width: 1024px) {
@@ -18,6 +18,137 @@
     grid-template-columns: 1fr;
     gap: 16px;
   }
+}
+
+/* KPI Pills - Compact KPI Chip Style */
+/* Target chips in summary stats (chips with TableRestaurantIcon or status colors) */
+.MuiChip-root.MuiChip-outlined {
+  background-color: #F9FAFB !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: var(--radius-medium) !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  font-family: var(--font-main) !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiChip-root.MuiChip-outlined .MuiChip-label {
+  font-size: 0.875rem !important;
+  color: var(--color-text-muted) !important;
+  font-weight: 400 !important;
+}
+
+.MuiChip-root.MuiChip-outlined .MuiChip-icon {
+  color: var(--color-text-muted) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Filter Chips - Soft Pastel Tones */
+/* Target small buttons in horizontal Stack (filter buttons: Tümü, Müsait, Dolu, Rezerve) */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall {
+  border-radius: var(--radius-pill) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  padding: 6px 16px !important;
+  min-height: 32px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Inactive filter chips - outline with muted text */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-outlined {
+  border: 1px solid #E5E7EB !important;
+  background-color: transparent !important;
+  color: var(--color-text-muted) !important;
+}
+
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-outlined:hover {
+  background-color: #F9FAFB !important;
+  border-color: #D1D5DB !important;
+}
+
+/* Active filter chips - soft pastel backgrounds */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained {
+  background-color: #F3F4F6 !important;
+  border: 1px solid #E5E7EB !important;
+  color: var(--color-text) !important;
+  box-shadow: none !important;
+}
+
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained:hover {
+  background-color: #E5E7EB !important;
+}
+
+/* Success (Müsait) - soft green */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorSuccess {
+  background-color: #ECFDF5 !important;
+  border-color: #D1FAE5 !important;
+  color: #059669 !important;
+}
+
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorSuccess:hover {
+  background-color: #D1FAE5 !important;
+}
+
+/* Error (Dolu) - soft red */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorError {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #DC2626 !important;
+}
+
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorError:hover {
+  background-color: #FECACA !important;
+}
+
+/* Warning (Rezerve) - soft orange */
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorWarning {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #D97706 !important;
+}
+
+.MuiStack-root[style*="row"] .MuiButton-root.MuiButton-sizeSmall.MuiButton-contained.MuiButton-colorWarning:hover {
+  background-color: #FDE68A !important;
+}
+
+/* QR Kod Button - Outline with green border */
+/* Target outlined button with startIcon (QR button after filter Stack) */
+.MuiButton-root.MuiButton-outlined:not(.MuiButton-sizeSmall) {
+  border: 1px solid var(--color-brand-green) !important;
+  background-color: #FFFFFF !important;
+  color: var(--color-brand-green) !important;
+  border-radius: var(--radius-medium) !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease !important;
+}
+
+.MuiButton-root.MuiButton-outlined:not(.MuiButton-sizeSmall):hover {
+  background-color: #F0FDF4 !important;
+  border-color: #86EFAC !important;
+}
+
+/* Empty State Panel - Dashed border + muted */
+/* Target Paper in right panel that only contains centered Box (empty state, no buttons) */
+.MuiPaper-root[style*="textAlign: center"] {
+  background-color: #FAFAFA !important;
+  border: 2px dashed #E5E7EB !important;
+  border-radius: var(--radius-large) !important;
+  padding: 48px 24px !important;
+}
+
+.MuiPaper-root[style*="textAlign: center"] .MuiSvgIcon-root {
+  color: var(--color-text-muted) !important;
+  opacity: 0.4 !important;
+  margin-bottom: 16px !important;
+}
+
+.MuiPaper-root[style*="textAlign: center"] .MuiTypography-root {
+  color: var(--color-text-muted) !important;
+  font-size: 0.9375rem !important;
 }
 
 

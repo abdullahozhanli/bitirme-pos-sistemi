@@ -2,21 +2,142 @@
 
 .waiter-table-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  width: 100%;
+  gap: 16px;
 }
 
-@media (max-width: 1024px) {
+/* Mobile: 2 cards per row */
+@media (max-width: 768px) {
   .waiter-table-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Tablet: 3 cards per row */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .waiter-table-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Desktop: 4 cards per row */
+@media (min-width: 1025px) {
+  .waiter-table-grid {
+    grid-template-columns: repeat(4, 1fr);
     gap: 20px;
   }
 }
 
+/* Ensure cards fit within grid */
+.waiter-table-grid > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Mobile-specific overrides */
 @media (max-width: 768px) {
-  .waiter-table-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  /* Header area - compact */
+  .waiter-table-management-header {
+    padding: 12px 0 !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Stats pills - small inline in one row */
+  .waiter-table-stats {
+    display: flex !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 12px !important;
+  }
+
+  .waiter-table-stats .MuiChip-root {
+    height: 28px !important;
+    font-size: 11px !important;
+    padding: 0 8px !important;
+    border-radius: 999px !important;
+    border: 1px solid #E5E7EB !important;
+    background-color: #F9FAFB !important;
+    font-weight: 500 !important;
+  }
+
+  .waiter-table-stats .MuiChip-label {
+    padding: 0 4px !important;
+    font-size: 11px !important;
+  }
+
+  .waiter-table-stats .MuiChip-icon {
+    width: 14px !important;
+    height: 14px !important;
+    margin-left: 4px !important;
+    margin-right: 0 !important;
+  }
+
+  /* Refresh button - small outline */
+  .waiter-table-refresh-btn {
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    border-radius: 12px !important;
+    border: 1px solid #E5E7EB !important;
+    background: transparent !important;
+    color: #111827 !important;
+  }
+
+  /* Search bar */
+  .waiter-table-search .MuiInputBase-root {
+    height: 40px !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    border: 1px solid #E5E7EB !important;
+  }
+
+  /* Filter container - remove big white card */
+  .waiter-table-filters {
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Filter chips - small and compact */
+  .waiter-table-filter-chips {
+    display: flex !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+    margin-top: 12px !important;
+  }
+
+  .waiter-table-filter-chips .MuiButton-root {
+    height: 34px !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    border-radius: 12px !important;
+    border: 1px solid #E5E7EB !important;
+    text-transform: none !important;
+    font-weight: 500 !important;
+    min-width: auto !important;
+  }
+
+  /* Active filter - NOT pure black */
+  .waiter-table-filter-chips .MuiButton-contained {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+    border-color: #111827 !important;
+  }
+
+  /* Inactive filter */
+  .waiter-table-filter-chips .MuiButton-outlined {
+    background-color: transparent !important;
+    color: #6B7280 !important;
+    border-color: #E5E7EB !important;
+  }
+
+  .waiter-table-filter-chips .MuiButton-outlined:hover {
+    background-color: #F9FAFB !important;
+    border-color: #D1D5DB !important;
   }
 }
 
@@ -42,13 +163,3 @@
     transform: scale(1.02);
   }
 }
-
-
-
-
-
-
-
-
-
-
