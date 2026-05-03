@@ -16,4 +16,7 @@ npm-debug.log*
 # OS/IDE dosyaları
 .DS_Store
 .vscode/
-.cursor/
+.cursor/.idea/
+__MACOSX/
+backend/__MACOSX/
+frontend/__MACOSX/
