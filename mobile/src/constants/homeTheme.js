@@ -71,6 +71,7 @@ export const homeFonts = {
   sans: 'Inter_400Regular',
   sansMedium: 'Inter_500Medium',
   sansSemi: 'Inter_600SemiBold',
+  sansBold: 'Inter_700Bold',
 };
 
 export const pressScale = (pressed) => ({

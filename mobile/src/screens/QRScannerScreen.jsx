@@ -215,14 +215,7 @@ export default function QRScannerScreen({ navigation }) {
           {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
         </View>
 
-        <SafeAreaView edges={['bottom']} style={styles.bottomSafe}>
-          <Pressable
-            style={({ pressed }) => [styles.manualLink, pressed && styles.btnPressed]}
-            onPress={() => setManualOpen(true)}
-          >
-            <Text style={styles.manualLinkText}>QR yok mu?</Text>
-          </Pressable>
-        </SafeAreaView>
+        <SafeAreaView edges={['bottom']} style={styles.bottomSafe} />
       </View>
 
       {processing ? (

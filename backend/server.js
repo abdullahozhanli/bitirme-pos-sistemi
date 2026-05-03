@@ -73,6 +73,8 @@ app.use(cors({
       'https://api.selfkasa.site',
       'http://localhost:5173',
       'http://localhost:3000',
+      'http://localhost:8081',
+      'http://127.0.0.1:8081',
       process.env.FRONTEND_ORIGIN
     ].filter(Boolean); // undefined değerleri temizle
 
