@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const Branch = require('../models/Branch');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -38,17 +39,19 @@ router.get('/', async (req, res, next) => {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [items, total] = await Promise.all([
+    const [items, total, branch] = await Promise.all([
       Product.find(filter)
         .populate('category', 'name')
         .sort(sort)
         .skip(skip)
         .limit(Number(limit)),
       Product.countDocuments(filter),
+      branchId ? Branch.findById(branchId).select('name').lean() : Promise.resolve(null),
     ]);
 
     res.json({
       items,
+      branchName: branch?.name || null,
       page: Number(page),
       limit: Number(limit),
       total,

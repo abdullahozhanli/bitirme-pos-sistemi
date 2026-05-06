@@ -11,6 +11,7 @@ import { useAuth } from './AuthContext';
 
 const TABLE_KEY = 'tableNumber';
 const BRANCH_KEY = 'branchId';
+const BRANCH_NAME_KEY = 'branchName';
 
 const TableSessionContext = createContext(null);
 
@@ -18,14 +19,17 @@ export function TableSessionProvider({ children }) {
   const { token, ready } = useAuth();
   const [tableNumber, setTableNumberState] = useState(null);
   const [branchId, setBranchIdState] = useState(null);
+  const [branchName, setBranchNameState] = useState(null);
 
   useEffect(() => {
     if (!ready) return;
     if (!token) {
       setTableNumberState(null);
       setBranchIdState(null);
+      setBranchNameState(null);
       AsyncStorage.removeItem(TABLE_KEY).catch(() => {});
       AsyncStorage.removeItem(BRANCH_KEY).catch(() => {});
+      AsyncStorage.removeItem(BRANCH_NAME_KEY).catch(() => {});
       return;
     }
     let cancelled = false;
@@ -33,9 +37,11 @@ export function TableSessionProvider({ children }) {
       try {
         const t = await AsyncStorage.getItem(TABLE_KEY);
         const b = await AsyncStorage.getItem(BRANCH_KEY);
+        const bn = await AsyncStorage.getItem(BRANCH_NAME_KEY);
         if (cancelled) return;
         setTableNumberState(t ? JSON.parse(t) : null);
         setBranchIdState(b ? JSON.parse(b) : null);
+        setBranchNameState(bn ? JSON.parse(bn) : null);
       } catch {
         /* ignore */
       }
@@ -71,11 +77,25 @@ export function TableSessionProvider({ children }) {
     }
   }, []);
 
+  const setBranchName = useCallback(async (value) => {
+    setBranchNameState(value);
+    try {
+      if (value != null && String(value).trim() !== '') {
+        await AsyncStorage.setItem(BRANCH_NAME_KEY, JSON.stringify(String(value).trim()));
+      } else {
+        await AsyncStorage.removeItem(BRANCH_NAME_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const clearTableSession = useCallback(async () => {
     setTableNumberState(null);
     setBranchIdState(null);
+    setBranchNameState(null);
     try {
-      await AsyncStorage.multiRemove([TABLE_KEY, BRANCH_KEY]);
+      await AsyncStorage.multiRemove([TABLE_KEY, BRANCH_KEY, BRANCH_NAME_KEY]);
     } catch {
       /* ignore */
     }
@@ -85,11 +105,21 @@ export function TableSessionProvider({ children }) {
     () => ({
       tableNumber,
       branchId,
+      branchName,
       setTableNumber,
       setBranchId,
+      setBranchName,
       clearTableSession,
     }),
-    [tableNumber, branchId, setTableNumber, setBranchId, clearTableSession]
+    [
+      tableNumber,
+      branchId,
+      branchName,
+      setTableNumber,
+      setBranchId,
+      setBranchName,
+      clearTableSession,
+    ]
   );
 
   return (

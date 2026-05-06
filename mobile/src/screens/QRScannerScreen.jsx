@@ -23,7 +23,7 @@ const BUTTON_GRADIENT = ['#3FA34D', '#66BB6A'];
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function QRScannerScreen({ navigation }) {
-  const { setTableNumber, setBranchId } = useTableSession();
+  const { setTableNumber, setBranchId, setBranchName } = useTableSession();
   const [permission, requestPermission] = useCameraPermissions();
   const [error, setError] = useState('');
   const [manual, setManual] = useState('');
@@ -91,11 +91,12 @@ export default function QRScannerScreen({ navigation }) {
       await sleep(500);
       await setTableNumber(data.tableNumber);
       await setBranchId(data.branchId || null);
+      await setBranchName(data.branchName || null);
       setProcessing(false);
       navigation.replace('Menu');
       return true;
     },
-    [navigation, setTableNumber, setBranchId]
+    [navigation, setTableNumber, setBranchId, setBranchName]
   );
 
   const onBarcodeScanned = useCallback(

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   homeFonts,
   pressScale,
@@ -24,22 +25,25 @@ import { useCart } from '../context/CartContext';
 import client from '../api/client';
 
 const PALETTE = {
-  pageBg: '#F8F7F4',
+  pageBg: '#FFFFFF',
   cardBg: '#FFFFFF',
-  textPrimary: '#111827',
-  textSecondary: '#6B7280',
-  textBody: '#4B5563',
-  border: '#E5E7EB',
-  accent: '#2563EB',
-  success: '#16A34A',
-  successDark: '#065F46',
-  campaign: '#D97706',
-  softGreen: '#ECFDF3',
-  softAmber: '#FEF3C7',
-  softNeutral: '#F3F4F6',
-  btnPrimary: '#111827',
+  textPrimary: '#1F2933',
+  textSecondary: '#7A7168',
+  textBody: '#7A7168',
+  border: '#E8E0D6',
+  accent: '#FFC107',
+  success: '#2E7D32',
+  successDark: '#2E7D32',
+  campaign: '#4CAF50',
+  softGreen: '#F4F9F5',
+  softAmber: '#E8F5E9',
+  softNeutral: '#FFFEFB',
+  btnPrimary: '#4CAF50',
+  btnPrimarySoft: '#43A047',
   btnPrimaryText: '#FFFFFF',
-  tagText: '#92400E',
+  cartBarBg: '#171717',
+  cartBarBgPressed: '#000000',
+  tagText: '#2E7D32',
 };
 
 const FALLBACK_IMG =
@@ -79,14 +83,15 @@ export default function MenuScreen({ navigation }) {
   const { width: windowWidth } = useWindowDimensions();
   const popularCardWidth = Math.round(windowWidth * 0.445);
   const insets = useSafeAreaInsets();
-  const { tableNumber, branchId } = useTableSession();
-  const { addToCart, totals } = useCart();
+  const { tableNumber, branchId, branchName, setBranchName } = useTableSession();
+  const { addToCart, totals, lines, incrementQty, decrementQty } = useCart();
   const [activeCat, setActiveCat] = useState('Tum');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showCartPreview, setShowCartPreview] = useState(false);
   const [extraSauce, setExtraSauce] = useState(false);
   const [extraCheese, setExtraCheese] = useState(false);
 
@@ -106,6 +111,10 @@ export default function MenuScreen({ navigation }) {
           params: { branchId, inStock: true, limit: 200 },
         });
         const items = Array.isArray(res.data?.items) ? res.data.items : [];
+        const nextBranchName = String(res.data?.branchName || '').trim();
+        if (nextBranchName) {
+          setBranchName(nextBranchName);
+        }
         if (!cancelled) setProducts(items);
       } catch (e) {
         if (!cancelled) {
@@ -120,7 +129,7 @@ export default function MenuScreen({ navigation }) {
     return () => {
       cancelled = true;
     };
-  }, [branchId]);
+  }, [branchId, setBranchName]);
 
   const categories = useMemo(() => {
     const names = products
@@ -187,6 +196,18 @@ export default function MenuScreen({ navigation }) {
   const showPopular =
     !loading && !loadError && popularProducts.length > 0 && !search;
   const activeCatLabel = activeCat === 'Tum' ? 'Tüm Ürünler' : activeCat;
+  const branchDisplayName = useMemo(() => {
+    const name = String(branchName || '').trim();
+    if (name) return name;
+
+    const rawBranch = String(branchId || '').trim();
+    if (!rawBranch) return '';
+    if (tableNumber) return '';
+    if (rawBranch.length <= 20 && /[a-zA-Z]/.test(rawBranch)) {
+      return rawBranch.toUpperCase();
+    }
+    return '';
+  }, [branchId, branchName, tableNumber]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -201,21 +222,15 @@ export default function MenuScreen({ navigation }) {
           <Ionicons name="chevron-back" size={20} color={PALETTE.textPrimary} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            Self Kasa
-          </Text>
-          <View style={styles.headerStatusRow}>
-            <Text style={styles.headerSubtitle} numberOfLines={1}>
-              Masa {tableNumber || '—'}
-            </Text>
-            <Text style={styles.headerDivider}>•</Text>
-            <View style={styles.statusDot} />
-            <Text style={styles.headerSubtitle} numberOfLines={1}>
-              QR ile bağlı
-            </Text>
+          <View style={styles.headerLogoFrame}>
+            <Image
+              source={require('../görsel/logo.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
           </View>
         </View>
-        <View style={styles.iconBtnPlaceholder} />
+        <View style={styles.headerRightSpacer} />
       </View>
 
       <ScrollView
@@ -231,38 +246,68 @@ export default function MenuScreen({ navigation }) {
         stickyHeaderIndices={[1]}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Welcome + Search */}
+        {/* Hero + Search */}
         <View style={styles.welcomeCard}>
-          <Text style={styles.welcomeTitle}>
-            Bugün ne sipariş etmek istersiniz?
-          </Text>
-          <Text style={styles.welcomeDesc}>
-            Menüden favori ürünlerinizi seçin.
-          </Text>
-          <View style={styles.searchWrap}>
-            <Ionicons
-              name="search"
-              size={18}
-              color={PALETTE.textSecondary}
-              style={styles.searchIcon}
+          {branchDisplayName ? (
+            <Text style={styles.branchSubtitle}>{branchDisplayName}</Text>
+          ) : null}
+          <View style={styles.heroStatusChip}>
+            <Text style={styles.heroStatusText}>Masa {tableNumber || '—'}</Text>
+            <Text style={styles.heroStatusDivider}>•</Text>
+            <View style={styles.statusDot} />
+            <Text style={styles.heroStatusText}>QR ile bağlı</Text>
+          </View>
+
+          <View style={styles.assistantCard}>
+            <Image
+              source={require('../görsel/dal.png')}
+              style={styles.assistantBgLeaf}
+              resizeMode="contain"
+              blurRadius={0.8}
             />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Menüde ara..."
-              placeholderTextColor={PALETTE.textSecondary}
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-            {search ? (
-              <Pressable
-                onPress={() => setSearch('')}
-                hitSlop={8}
-                style={styles.searchClear}
-              >
-                <Ionicons name="close-circle" size={18} color={PALETTE.textSecondary} />
-              </Pressable>
-            ) : null}
+            <View style={styles.assistantTopRow}>
+              <View style={styles.assistantTextCol}>
+                <Text style={styles.assistantTitle}>Bugün ne sipariş etmek istersiniz?</Text>
+                <View style={styles.assistantDescSpacer} />
+              </View>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.assistantBtn,
+                pressed && { opacity: 0.92 },
+              ]}
+              onPress={() => navigation.navigate('CalorieEstimate')}
+            >
+              <LinearGradient
+                colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
+              <Text style={styles.assistantBtnText}>AI  Menü Asistanı</Text>
+              <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
+            </Pressable>
+
+            <View style={styles.searchWrap}>
+              <View style={styles.searchIconWrap}>
+                <Ionicons
+                  name="search"
+                  size={18}
+                  color="#3F8F4E"
+                  style={styles.searchIcon}
+                />
+              </View>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Menüde ara..."
+                placeholderTextColor={PALETTE.textSecondary}
+                style={styles.searchInput}
+                returnKeyType="search"
+              />
+            </View>
           </View>
         </View>
 
@@ -275,20 +320,52 @@ export default function MenuScreen({ navigation }) {
           >
             {categories.map((cat) => {
               const active = activeCat === cat;
+              if (active) {
+                return (
+                  <LinearGradient
+                    key={cat}
+                    colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={styles.catChipActiveGradient}
+                  >
+                    <Pressable
+                      onPressIn={() => {
+                        if (activeCat !== cat) setActiveCat(cat);
+                      }}
+                      android_ripple={{
+                        ...androidRipple,
+                        borderless: false,
+                      }}
+                      style={({ pressed }) => [
+                        styles.catChip,
+                        styles.catChipActive,
+                        pressed && { opacity: 0.92 },
+                      ]}
+                    >
+                      <Text style={[styles.catText, styles.catTextActive]}>
+                        {catLabel(cat)}
+                      </Text>
+                    </Pressable>
+                  </LinearGradient>
+                );
+              }
               return (
                 <Pressable
                   key={cat}
-                  onPress={() => setActiveCat(cat)}
-                  android_ripple={androidRipple}
+                  onPressIn={() => {
+                    if (activeCat !== cat) setActiveCat(cat);
+                  }}
+                  android_ripple={{
+                    ...androidRipple,
+                    borderless: false,
+                  }}
                   style={({ pressed }) => [
                     styles.catChip,
-                    active && styles.catChipActive,
                     pressed && { opacity: 0.92 },
                   ]}
                 >
-                  <Text
-                    style={[styles.catText, active && styles.catTextActive]}
-                  >
+                  <Text style={styles.catText}>
                     {catLabel(cat)}
                   </Text>
                 </Pressable>
@@ -296,21 +373,6 @@ export default function MenuScreen({ navigation }) {
             })}
           </ScrollView>
         </View>
-
-        {/* Kampanya kartı */}
-        {!loading && !loadError ? (
-          <View style={styles.campaignCard}>
-            <View style={styles.campaignBadge}>
-              <Text style={styles.campaignBadgeText}>
-                MOBİL UYGULAMAYA ÖZEL
-              </Text>
-            </View>
-            <Text style={styles.campaignTitle}>İlk siparişe %20 indirim</Text>
-            <Text style={styles.campaignDesc} numberOfLines={2}>
-              QR ile bağlandıktan sonra uygulamaya özel fırsatları keşfedin.
-            </Text>
-          </View>
-        ) : null}
 
         {/* Popüler Ürünler */}
         {showPopular ? (
@@ -324,6 +386,7 @@ export default function MenuScreen({ navigation }) {
               {popularProducts.map((item) => {
                 const pid = String(item._id || item.id || item.name);
                 const uri = item.imageUrl || item.image || FALLBACK_IMG;
+                const meta = productCardMeta(item);
                 return (
                   <Pressable
                     key={`pop-${pid}`}
@@ -341,11 +404,50 @@ export default function MenuScreen({ navigation }) {
                         style={styles.popularImage}
                         resizeMode="cover"
                       />
+                    <Pressable style={styles.popularFavBtn} hitSlop={6}>
+                      <Ionicons
+                        name="heart-outline"
+                        size={18}
+                        color={PALETTE.textSecondary}
+                      />
+                    </Pressable>
+                      {meta.showBadge ? (
+                        <View style={styles.popularBadge}>
+                          <Ionicons
+                            name="leaf-outline"
+                            size={12}
+                            color="#FFFFFF"
+                          />
+                        </View>
+                      ) : null}
                     </View>
                     <View style={styles.popularBody}>
                       <Text style={styles.popularName} numberOfLines={2}>
                         {item.name}
                       </Text>
+                      <View style={styles.popularStatsRow}>
+                        <View style={styles.popularStat}>
+                          <Ionicons
+                            name="star"
+                            size={13}
+                            color={PALETTE.accent}
+                          />
+                          <Text style={styles.popularStatText}>
+                            {meta.rating.toFixed(1)}{' '}
+                            <Text style={styles.popularStatCount}>
+                              ({meta.count})
+                            </Text>
+                          </Text>
+                        </View>
+                        <View style={styles.popularStat}>
+                          <Ionicons
+                            name="time-outline"
+                            size={13}
+                            color={PALETTE.textSecondary}
+                          />
+                          <Text style={styles.popularStatText}>{meta.prep} dk</Text>
+                        </View>
+                      </View>
                       <View style={styles.popularFooter}>
                         <Text
                           style={styles.popularPrice}
@@ -353,16 +455,6 @@ export default function MenuScreen({ navigation }) {
                         >
                           {formatPrice(item.price)}
                         </Text>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.popularAddBtn,
-                            pressed && { backgroundColor: '#1F2937' },
-                          ]}
-                          onPress={() => quickAdd(item)}
-                          hitSlop={6}
-                        >
-                          <Ionicons name="add" size={22} color="#FFFFFF" />
-                        </Pressable>
                       </View>
                     </View>
                   </Pressable>
@@ -433,21 +525,33 @@ export default function MenuScreen({ navigation }) {
                     style={styles.itemThumb}
                     resizeMode="cover"
                   />
+                  {meta.showBadge ? (
+                    <View style={styles.itemBadge}>
+                      <Ionicons name="leaf-outline" size={11} color="#FFFFFF" />
+                    </View>
+                  ) : null}
                 </View>
                 <View style={styles.itemBody}>
                   <View style={styles.itemTopRow}>
                     <Text style={styles.itemName} numberOfLines={1}>
                       {item.name}
                     </Text>
-                    {meta.showBadge ? (
-                      <View style={styles.itemTag}>
-                        <Text style={styles.itemTagText}>Popüler</Text>
-                      </View>
-                    ) : null}
+                    <Pressable style={styles.itemFavBtn} hitSlop={6}>
+                      <Ionicons name="heart-outline" size={18} color={PALETTE.textSecondary} />
+                    </Pressable>
                   </View>
-                  <Text style={styles.itemDesc} numberOfLines={2}>
-                    {item.description || item.desc || 'Lezzetli seçim'}
-                  </Text>
+                  <View style={styles.itemStatsRow}>
+                    <View style={styles.itemStat}>
+                      <Ionicons name="star" size={13} color={PALETTE.accent} />
+                      <Text style={styles.itemStatText}>
+                        {meta.rating.toFixed(1)} <Text style={styles.itemStatCount}>({meta.count})</Text>
+                      </Text>
+                    </View>
+                    <View style={styles.itemStat}>
+                      <Ionicons name="time-outline" size={13} color={PALETTE.textSecondary} />
+                      <Text style={styles.itemStatText}>{meta.prep} dk</Text>
+                    </View>
+                  </View>
                   <View style={styles.itemFooterBlock}>
                     <View style={styles.itemPriceAddRow}>
                       <Text style={styles.itemPrice} numberOfLines={1}>
@@ -456,21 +560,13 @@ export default function MenuScreen({ navigation }) {
                       <Pressable
                         style={({ pressed }) => [
                           styles.itemAddBtn,
-                          pressed && { backgroundColor: '#1F2937' },
+                          pressed && { backgroundColor: '#DCEEDC' },
                         ]}
                         onPress={() => quickAdd(item)}
                         hitSlop={6}
                       >
-                        <Ionicons name="add" size={22} color="#FFFFFF" />
+                        <Text style={styles.itemAddBtnText}>Sepete Ekle</Text>
                       </Pressable>
-                    </View>
-                    <View style={styles.itemMetaRow}>
-                      <Ionicons
-                        name="time-outline"
-                        size={12}
-                        color={PALETTE.textSecondary}
-                      />
-                      <Text style={styles.itemMetaText}>{meta.prep} dk</Text>
                     </View>
                   </View>
                 </View>
@@ -486,35 +582,149 @@ export default function MenuScreen({ navigation }) {
           style={[styles.cartBarWrap, { bottom: 12 + insets.bottom }]}
           pointerEvents="box-none"
         >
-          <Pressable
-            style={({ pressed }) => [
-              styles.cartBar,
-              pressed && { backgroundColor: '#1F2937' },
-            ]}
-            onPress={() => navigation.navigate('Cart')}
-            android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
+          <LinearGradient
+            colors={['#2E3238', '#4A515C', '#6A7382']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.cartBarGradient}
           >
-            <View style={styles.cartBarLeft}>
-              <View style={styles.cartBarIconWrap}>
-                <Ionicons name="bag-handle-outline" size={18} color="#FFFFFF" />
-                <View style={styles.cartBarCount}>
-                  <Text style={styles.cartBarCountText}>{totals.count}</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.cartBar,
+                pressed && { opacity: 0.92 },
+              ]}
+              onPress={() => setShowCartPreview(true)}
+              android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
+            >
+              <View style={styles.cartBarLeft}>
+                <View style={styles.cartBarIconWrap}>
+                  <Ionicons name="bag-handle-outline" size={16} color="#FFFFFF" />
+                  <View style={styles.cartBarCount}>
+                    <Text style={styles.cartBarCountText}>{totals.count}</Text>
+                  </View>
+                </View>
+                <View>
+                  <Text style={styles.cartBarLabel}>Sepetim</Text>
+                  <Text style={styles.cartBarPrice} numberOfLines={1}>
+                    {formatPrice(totals.sum)}
+                  </Text>
                 </View>
               </View>
-              <View>
-                <Text style={styles.cartBarLabel}>Sepetim</Text>
-                <Text style={styles.cartBarPrice}>
-                  {totals.count} ürün • {formatPrice(totals.sum)}
-                </Text>
+              <View style={styles.cartBarRight}>
+                <Text style={styles.cartBarCta}>Sepeti görüntüle</Text>
+                <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
               </View>
-            </View>
-            <View style={styles.cartBarRight}>
-              <Text style={styles.cartBarCta}>Sepete git</Text>
-              <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
-            </View>
-          </Pressable>
+            </Pressable>
+          </LinearGradient>
         </View>
       ) : null}
+
+      <Modal
+        visible={showCartPreview}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCartPreview(false)}
+      >
+        <View style={styles.cartPreviewBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setShowCartPreview(false)}
+          />
+          <LinearGradient
+            style={[styles.sheet, styles.cartPreviewSheet, { paddingBottom: 20 + insets.bottom }]}
+            colors={['#768292', '#59626F', '#3F454D']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+          >
+            <View style={styles.sheetHeaderRow}>
+              <View style={styles.sheetHandle} />
+              <Pressable
+                style={styles.sheetClose}
+                onPress={() => setShowCartPreview(false)}
+                hitSlop={10}
+                android_ripple={androidRipple}
+              >
+                <Ionicons name="close" size={20} color="#C7D4F2" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.cartPreviewTitle}>Sepet Önizleme</Text>
+            <Text style={styles.cartPreviewHint}>{totals.count} ürün seçildi</Text>
+
+            <ScrollView
+              style={styles.cartPreviewList}
+              contentContainerStyle={styles.cartPreviewListContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {lines.map((line, idx) => (
+                <View key={`${line._id}-${line.note}-${line.sizeKey}-${idx}`} style={styles.cartPreviewItem}>
+                  <View style={styles.cartPreviewItemLeft}>
+                    <Text style={styles.cartPreviewItemName} numberOfLines={1}>
+                      {line.name}
+                    </Text>
+                    <Text style={styles.cartPreviewItemMeta}>
+                      {line.qty} adet
+                      {line.note ? ` • ${line.note}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.cartPreviewItemPrice}>
+                    {formatPrice((line.unitPrice ?? line.price ?? 0) * line.qty)}
+                  </Text>
+                  <View style={styles.cartPreviewItemActions}>
+                    <Pressable
+                      onPress={() => decrementQty(line)}
+                      style={({ pressed }) => [
+                        styles.cartQtyBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      hitSlop={6}
+                    >
+                      <Ionicons name="remove" size={14} color="#FFFFFF" />
+                    </Pressable>
+                    <Text style={styles.cartQtyText}>{line.qty}</Text>
+                    <Pressable
+                      onPress={() => incrementQty(line)}
+                      style={({ pressed }) => [
+                        styles.cartQtyBtn,
+                        pressed && { opacity: 0.85 },
+                      ]}
+                      hitSlop={6}
+                    >
+                      <Ionicons name="add" size={14} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.cartPreviewFooter}>
+              <Text style={styles.cartPreviewTotalLabel}>Toplam</Text>
+              <Text style={styles.cartPreviewTotalValue}>{formatPrice(totals.sum)}</Text>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.cartPreviewActionBtn,
+                pressed && { opacity: 0.9 },
+              ]}
+              onPress={() => {
+                setShowCartPreview(false);
+                navigation.navigate('Cart');
+              }}
+              android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
+            >
+              <LinearGradient
+                colors={['#d1d5db', '#ffffff', '#d1d5db']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="bag-handle-outline" size={18} color="#1f2937" />
+              <Text style={styles.cartPreviewActionText}>Sepete Git</Text>
+            </Pressable>
+          </LinearGradient>
+        </View>
+      </Modal>
 
       {/* Ürün detay modal */}
       <Modal
@@ -592,7 +802,7 @@ export default function MenuScreen({ navigation }) {
               <Pressable
                 style={({ pressed }) => [
                   styles.sheetAddBtn,
-                  pressed && { backgroundColor: '#1F2937' },
+                  pressed && { backgroundColor: PALETTE.btnPrimarySoft },
                 ]}
                 onPress={confirmAddFromSheet}
                 android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
@@ -609,19 +819,19 @@ export default function MenuScreen({ navigation }) {
 }
 
 const SOFT_SHADOW = {
-  shadowColor: '#0F172A',
+  shadowColor: '#000000',
   shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.04,
-  shadowRadius: 12,
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
   elevation: 2,
 };
 
 const LIST_CARD_SHADOW = {
-  shadowColor: '#0F172A',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.03,
-  shadowRadius: 8,
-  elevation: 1,
+  shadowColor: '#000000',
+  shadowOffset: { width: 0, height: 3 },
+  shadowOpacity: 0.045,
+  shadowRadius: 9,
+  elevation: 2,
 };
 
 const styles = StyleSheet.create({
@@ -634,8 +844,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 6,
     gap: 12,
   },
   iconBtn: {
@@ -648,9 +858,32 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: PALETTE.border,
   },
-  iconBtnPlaceholder: {
-    width: 36,
-    height: 36,
+  qrIconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8ECE6',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  qrGlyphWrap: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrGlyphSparkle: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
   },
   cartBadge: {
     position: 'absolute',
@@ -679,13 +912,27 @@ const styles = StyleSheet.create({
     fontFamily: homeFonts.sansSemi,
     fontSize: 17,
     color: PALETTE.textPrimary,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
-  headerStatusRow: {
-    flexDirection: 'row',
+  headerLogoFrame: {
+    width: 146,
+    height: 34,
+    overflow: 'hidden',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 3,
+    justifyContent: 'flex-start',
+    backgroundColor: PALETTE.pageBg,
+    borderBottomWidth: 1,
+    borderBottomColor: '#CFCFCF',
+  },
+  headerLogo: {
+    width: 146,
+    height: 44,
+    opacity: 0.98,
+    marginTop: -4,
+  },
+  headerRightSpacer: {
+    width: 40,
+    height: 40,
   },
   statusDot: {
     width: 6,
@@ -693,64 +940,159 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: PALETTE.success,
   },
-  headerSubtitle: {
-    fontFamily: homeFonts.sans,
-    fontSize: 12,
-    color: PALETTE.textSecondary,
-  },
-  headerDivider: {
-    fontFamily: homeFonts.sans,
-    fontSize: 12,
-    color: PALETTE.textSecondary,
-    opacity: 0.6,
-    marginHorizontal: 1,
-  },
-
   scroll: { flex: 1 },
   scrollContent: {},
 
   welcomeCard: {
     marginHorizontal: 16,
-    marginTop: 4,
+    marginTop: 6,
     marginBottom: 14,
-    backgroundColor: PALETTE.cardBg,
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    ...SOFT_SHADOW,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
-  welcomeTitle: {
+  brandTitle: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 16,
-    color: PALETTE.textPrimary,
-    letterSpacing: -0.2,
+    fontSize: 34,
+    color: '#1F6B38',
+    textAlign: 'center',
+    letterSpacing: -0.35,
     marginBottom: 2,
   },
-  welcomeDesc: {
+  branchSubtitle: {
     fontFamily: homeFonts.sans,
-    fontSize: 13,
-    color: PALETTE.textSecondary,
+    fontSize: 20,
+    color: '#2E3238',
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    lineHeight: 24,
+    marginBottom: 6,
+  },
+  heroStatusChip: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     marginBottom: 12,
+  },
+  heroStatusText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 15,
+    color: '#2E3238',
+  },
+  heroStatusDivider: {
+    fontFamily: homeFonts.sans,
+    fontSize: 15,
+    color: '#2E3238',
+    opacity: 0.7,
+  },
+  assistantCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#DDE9DC',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 10,
+    ...SOFT_SHADOW,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  assistantBgLeaf: {
+    position: 'absolute',
+    right: -6,
+    top: 8,
+    width: 164,
+    height: 114,
+    opacity: 0.9,
+    transform: [{ scaleX: 1 }],
+  },
+  assistantTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  assistantTextCol: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 116,
+  },
+  assistantTitle: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 19,
+    lineHeight: 27,
+    color: '#1F6B38',
+    marginBottom: 4,
+    letterSpacing: -0.25,
+  },
+  assistantDesc: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 14,
+    color: PALETTE.textSecondary,
+    lineHeight: 18,
+  },
+  assistantDescSpacer: {
+    height: 35,
+  },
+  assistantBtn: {
+    alignSelf: 'flex-start',
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  assistantBtnText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: '#FFFFFF',
   },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PALETTE.softNeutral,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    backgroundColor: '#F9FBF8',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D7E7D8',
+    paddingHorizontal: 10,
+    height: 35,
+    shadowColor: '#1F2933',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  searchIcon: { marginRight: 8 },
+  searchIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  searchIcon: { marginTop: 1 },
   searchInput: {
     flex: 1,
     fontFamily: homeFonts.sans,
     fontSize: 14,
-    color: PALETTE.textPrimary,
+    color: '#1F2933',
     paddingVertical: 0,
   },
-  searchClear: { paddingLeft: 8 },
+  searchFilterBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   stickyCategoriesWrap: {
     backgroundColor: PALETTE.pageBg,
@@ -770,15 +1112,22 @@ const styles = StyleSheet.create({
     borderColor: PALETTE.border,
     backgroundColor: PALETTE.cardBg,
     flexShrink: 0,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   catChipActive: {
-    backgroundColor: PALETTE.btnPrimary,
-    borderColor: PALETTE.btnPrimary,
+    backgroundColor: 'transparent',
+    borderColor: PALETTE.btnPrimarySoft,
+  },
+  catChipActiveGradient: {
+    borderRadius: 999,
+    overflow: 'hidden',
   },
   catText: {
     fontFamily: homeFonts.sansMedium,
     fontSize: 13,
-    color: PALETTE.textBody,
+    color: '#363636',
     includeFontPadding: false,
   },
   catTextActive: {
@@ -789,7 +1138,7 @@ const styles = StyleSheet.create({
   campaignCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: PALETTE.cardBg,
+    backgroundColor: '#F1FAF1',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: PALETTE.border,
@@ -842,7 +1191,7 @@ const styles = StyleSheet.create({
     paddingRight: 28,
   },
   popularCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFEFB',
     borderRadius: 18,
     borderWidth: 1,
     borderColor: PALETTE.border,
@@ -865,42 +1214,81 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 11,
     flexGrow: 1,
-    justifyContent: 'space-between',
-    minHeight: 72,
+    justifyContent: 'flex-start',
+    minHeight: 82,
+  },
+  popularFavBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    zIndex: 2,
   },
   popularName: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 14,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 13,
     lineHeight: 18,
     color: PALETTE.textPrimary,
     marginBottom: 8,
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
+  },
+  popularStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  popularStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  popularStatText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: '#333333',
+    fontWeight: '600',
+  },
+  popularStatCount: {
+    color: PALETTE.textSecondary,
+    fontWeight: '500',
   },
   popularFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
+    justifyContent: 'flex-start',
+    gap: 8,
   },
   popularPrice: {
     flex: 1,
     minWidth: 0,
-    fontFamily: homeFonts.sansBold,
-    fontSize: 15,
-    fontWeight: '800',
-    color: PALETTE.textPrimary,
-    letterSpacing: -0.25,
+    flexShrink: 1,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E7D32',
+    letterSpacing: -0.1,
   },
-  popularAddBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: PALETTE.btnPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-
   listHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -945,111 +1333,130 @@ const styles = StyleSheet.create({
 
   itemCard: {
     marginHorizontal: 16,
-    marginBottom: 11,
+    marginBottom: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 19,
+    borderRadius: 14,
+    padding: 8,
     borderWidth: 1,
-    borderColor: PALETTE.border,
-    ...LIST_CARD_SHADOW,
+    borderColor: '#ECE6DC',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   itemPress: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 108,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    gap: 12,
+    minHeight: 86,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    gap: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   itemThumbWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 15,
+    width: 82,
+    height: 82,
+    borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: PALETTE.softNeutral,
+    position: 'relative',
   },
   itemThumb: {
-    width: 80,
-    height: 80,
+    width: 82,
+    height: 82,
     backgroundColor: PALETTE.softNeutral,
+  },
+  itemBadge: {
+    position: 'absolute',
+    left: 6,
+    top: 6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   itemBody: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'space-between',
-    minHeight: 80,
-    paddingVertical: 0,
+    minHeight: 82,
+    paddingVertical: 2,
   },
   itemTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
   itemName: {
     flex: 1,
-    fontFamily: homeFonts.sansBold,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    letterSpacing: -0.28,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#2E7D32',
+    letterSpacing: -0.1,
+    paddingRight: 8,
   },
-  itemTag: {
-    backgroundColor: PALETTE.softGreen,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+  itemFavBtn: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  itemTagText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 10,
-    color: PALETTE.successDark,
-    letterSpacing: 0.2,
+  itemStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
-  itemDesc: {
+  itemStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  itemStatText: {
     fontFamily: homeFonts.sans,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#6B7280',
-    marginTop: 3,
+    fontSize: 12,
+    color: '#333333',
+    fontWeight: '600',
   },
-  itemFooterRow: {
+  itemStatCount: {
+    color: '#777777',
+  },
+  itemFooterBlock: {
+    marginTop: 6,
+  },
+  itemPriceAddRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    marginTop: 6,
-  },
-  itemFooterLeft: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
-    gap: 2,
+    minHeight: 32,
   },
   itemPrice: {
-    fontFamily: homeFonts.sansBold,
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.3,
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 1,
-  },
-  itemMetaText: {
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: PALETTE.textSecondary,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#3A7F3D',
+    letterSpacing: 0,
   },
   itemAddBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#111827',
+    minHeight: 28,
+    borderRadius: 14,
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 11,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  itemAddBtnText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 11,
+    color: '#2E7D32',
   },
 
   cartBarWrap: {
@@ -1057,20 +1464,24 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
   },
-  cartBar: {
-    backgroundColor: PALETTE.btnPrimary,
+  cartBarGradient: {
     borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     overflow: 'hidden',
-    shadowColor: '#0F172A',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
     elevation: 8,
+  },
+  cartBar: {
+    backgroundColor: 'transparent',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    overflow: 'hidden',
   },
   cartBarLeft: {
     flexDirection: 'row',
@@ -1080,9 +1491,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   cartBarIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1090,22 +1501,22 @@ const styles = StyleSheet.create({
   },
   cartBarCount: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -5,
+    right: -6,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: PALETTE.success,
+    backgroundColor: '#8D9299',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: PALETTE.btnPrimary,
+    borderColor: '#2A2A2A',
   },
   cartBarCountText: {
     fontFamily: homeFonts.sansSemi,
     fontSize: 10,
-    color: '#FFFFFF',
+    color: '#7CFF9A',
   },
   cartBarLabel: {
     fontFamily: homeFonts.sans,
@@ -1115,7 +1526,7 @@ const styles = StyleSheet.create({
   },
   cartBarPrice: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 15,
+    fontSize: 13,
     color: '#FFFFFF',
     letterSpacing: -0.1,
   },
@@ -1129,11 +1540,131 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#FFFFFF',
   },
+  cartPreviewTitle: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 18,
+    color: '#F1F5FF',
+    marginBottom: 2,
+  },
+  cartPreviewHint: {
+    fontFamily: homeFonts.sans,
+    fontSize: 13,
+    color: '#AFC0E8',
+    marginBottom: 10,
+  },
+  cartPreviewList: {
+    maxHeight: 240,
+  },
+  cartPreviewListContent: {
+    gap: 10,
+    paddingBottom: 6,
+  },
+  cartPreviewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#3C507A',
+    gap: 10,
+  },
+  cartPreviewItemLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cartPreviewItemName: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: '#E8EEFF',
+  },
+  cartPreviewItemMeta: {
+    marginTop: 2,
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: '#AFC0E8',
+  },
+  cartPreviewItemPrice: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: '#D8E4FF',
+  },
+  cartPreviewItemActions: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cartQtyBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartQtyText: {
+    minWidth: 16,
+    textAlign: 'center',
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 13,
+    color: '#FFFFFF',
+  },
+  cartPreviewFooter: {
+    marginTop: 6,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cartPreviewTotalLabel: {
+    fontFamily: homeFonts.sans,
+    fontSize: 13,
+    color: '#B9C9EC',
+  },
+  cartPreviewTotalValue: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 17,
+    color: '#FFFFFF',
+  },
+  cartPreviewActionBtn: {
+    marginTop: 2,
+    backgroundColor: 'transparent',
+    borderRadius: 999,
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    overflow: 'hidden',
+  },
+  cartPreviewActionText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 16,
+    color: '#1f2937',
+    letterSpacing: 0.1,
+  },
 
   modalBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
+  },
+  cartPreviewBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'transparent',
+  },
+  cartPreviewSheet: {
+    backgroundColor: '#1F2A44',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1,
+    borderTopColor: '#30456D',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.26,
+    shadowRadius: 26,
+    elevation: 24,
   },
   sheet: {
     backgroundColor: PALETTE.cardBg,

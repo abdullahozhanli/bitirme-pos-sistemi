@@ -101,6 +101,7 @@ export function CartProvider({ children }) {
         {
           _id: id,
           name: product.name || 'Urun',
+          imageUrl: product.imageUrl || product.image || '',
           unitPrice,
           price: unitPrice,
           qty: addQty,

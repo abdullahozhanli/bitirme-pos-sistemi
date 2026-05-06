@@ -11,6 +11,7 @@ import QRScannerScreen from '../screens/QRScannerScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
+import CalorieEstimateScreen from '../screens/CalorieEstimateScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -47,6 +48,14 @@ export default function RootNavigator() {
             <Stack.Screen
               name="Cart"
               component={CartScreen}
+              options={{
+                animation: 'slide_from_right',
+                animationDuration: 260,
+              }}
+            />
+            <Stack.Screen
+              name="CalorieEstimate"
+              component={CalorieEstimateScreen}
               options={{
                 animation: 'slide_from_right',
                 animationDuration: 260,

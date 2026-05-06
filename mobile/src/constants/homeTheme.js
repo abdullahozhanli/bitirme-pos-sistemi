@@ -66,12 +66,12 @@ export const uiShadow = {
 };
 
 export const homeFonts = {
-  serifBold: 'PlayfairDisplay_700Bold',
-  serifSemi: 'PlayfairDisplay_600SemiBold',
-  sans: 'Inter_400Regular',
-  sansMedium: 'Inter_500Medium',
-  sansSemi: 'Inter_600SemiBold',
-  sansBold: 'Inter_700Bold',
+  serifBold: 'ComicNeue_700Bold',
+  serifSemi: 'ComicNeue_700Bold',
+  sans: 'ComicNeue_400Regular',
+  sansMedium: 'ComicNeue_400Regular',
+  sansSemi: 'ComicNeue_700Bold',
+  sansBold: 'ComicNeue_700Bold',
 };
 
 export const pressScale = (pressed) => ({
