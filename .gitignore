@@ -1,22 +1,48 @@
-# Bağımlılıklar (Her iki klasör için de)
+# Bağımlılıklar
 node_modules/
+backend/node_modules/
+frontend/node_modules/
 
-# Gizli Şifre Dosyaları (ÇOK ÖNEMLİ)
+# Gizli şifre / ortam dosyaları
 .env
+.env.*
 backend/.env
+backend/.env.*
 frontend/.env
+frontend/.env.*
 
-# Build/Cache Dosyaları
-frontend/dist
+# Build / Cache
+dist/
+build/
+frontend/dist/
+frontend/build/
 frontend/.vite/
+.vite/
+.cache/
 
 # Loglar
+logs/
+*.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# OS/IDE dosyaları
+# OS dosyaları
 .DS_Store
-.vscode/
-.cursor/.idea/
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
 __MACOSX/
 backend/__MACOSX/
 frontend/__MACOSX/
+
+# IDE / Editor
+.idea/
+*.iml
+.vscode/
+.cursor/
