@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,10 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import {
-  menuColors,
   homeFonts,
   uiShadow,
   pressScale,
@@ -22,6 +21,7 @@ import {
 import { useAuth, showComingSoon } from '../context/AuthContext';
 import { useTableSession } from '../context/TableSessionContext';
 import { getLoyaltyPoints } from '../utils/loyaltyPoints';
+import LottieView from 'lottie-react-native';
 
 /** Ana ekran — soft shadow */
 const homeShadowCard = {
@@ -32,13 +32,59 @@ const homeShadowCard = {
   elevation: 2,
 };
 const DEFAULT_CAMPAIGNS = 3;
-const GRADIENT = ['#3FA34D', '#2E7D32'];
-const QR_CARD_GRADIENT = ['#FFFFFF', '#EFF6FF'];
-const BUTTON_GRADIENT = ['#F7F8F2', '#E8ECD9'];
-const OBSIDIAN = '#111827';
+/** QR CTA — MenuScreen AI butonu ile aynı renk ve yatay geçiş */
+const GRADIENT = ['#2F8F39', '#4CAF50', '#67C96B'];
+const QR_CARD_GRADIENT = ['#FFFFFF', '#F3FAF5'];
+
+const WELCOME_TITLE = 'Self kasaya hoş geldiniz!';
+
+function hexToRgb(hex) {
+  const h = String(hex).replace('#', '');
+  if (h.length !== 6) return { r: 0, g: 0, b: 0 };
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  const c = (n) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${c(r)}${c(g)}${c(b)}`;
+}
+
+function lerpRgb(t, a, b) {
+  return {
+    r: a.r + (b.r - a.r) * t,
+    g: a.g + (b.g - a.g) * t,
+    b: a.b + (b.b - a.b) * t,
+  };
+}
+
+/** `GRADIENT` durakları boyunca t ∈ [0, 1] */
+function welcomeTitleGreenAt(t) {
+  const stops = GRADIENT;
+  if (!stops.length) return '#2F8F39';
+  if (stops.length === 1) return stops[0];
+  const u = Math.max(0, Math.min(1, t)) * (stops.length - 1);
+  const seg = Math.min(Math.floor(u), stops.length - 2);
+  const k = u - seg;
+  const A = hexToRgb(stops[seg]);
+  const B = hexToRgb(stops[seg + 1]);
+  return rgbToHex(lerpRgb(k, A, B));
+}
+
+function welcomeTitleCharColor(charIndex, totalLength) {
+  if (totalLength <= 1) return welcomeTitleGreenAt(0);
+  return welcomeTitleGreenAt(charIndex / (totalLength - 1));
+}
+
 /** Yeni renk paleti */
 const PALETTE = {
-  pageBg: '#F8F7F4',
+  pageBg: '#FFFFFF',
   cardBg: '#FFFFFF',
   textPrimary: '#111827',
   textSecondary: '#6B7280',
@@ -55,10 +101,22 @@ const PALETTE = {
   tagText: '#92400E',
 };
 
-function displayName(user) {
-  if (user?.name?.trim()) return user.name.trim();
-  if (user?.email) return user.email.split('@')[0];
-  return 'Misafir';
+/** Ad / soyad: API'de ayrı alan varsa öncelik; yoksa `name` içindeki ilk kelime + kalan */
+function namePartsFromUser(user) {
+  if (!user) return { first: 'Misafir', last: '' };
+  const apiLast = String(user.surname ?? user.lastName ?? user.soyad ?? '').trim();
+  const rawName = String(user.name ?? '').trim();
+  if (apiLast && rawName) return { first: rawName, last: apiLast };
+  if (rawName) {
+    const i = rawName.indexOf(' ');
+    if (i === -1) return { first: rawName, last: '' };
+    return {
+      first: rawName.slice(0, i).trim(),
+      last: rawName.slice(i + 1).trim() || '',
+    };
+  }
+  if (user.email) return { first: user.email.split('@')[0], last: '' };
+  return { first: 'Misafir', last: '' };
 }
 
 export default function HomeScreen() {
@@ -67,7 +125,7 @@ export default function HomeScreen() {
   const { user, refreshUser } = useAuth();
   const { tableNumber, clearTableSession } = useTableSession();
 
-  const name = displayName(user);
+  const { first: firstName, last: lastName } = namePartsFromUser(user);
   const points = getLoyaltyPoints(user);
   const campaignCount = user?.campaignsCount ?? user?.campaignCount ?? DEFAULT_CAMPAIGNS;
 
@@ -86,6 +144,16 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.brandLogoRow}>
+          <View style={styles.brandLogoFrame}>
+            <Image
+              source={require('../görsel/logo.png')}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+
         <View style={[styles.profileCard, homeShadowCard]}>
           <Pressable
             style={({ pressed }) => [
@@ -93,28 +161,48 @@ export default function HomeScreen() {
               pressScale(pressed),
             ]}
             onPress={() => navigation.navigate('Profile')}
-            android_ripple={androidRipple}
           >
             <View style={styles.avatar}>
-              <Ionicons
-                name="person-outline"
-                size={22}
-                color={PALETTE.success}
-              />
+              {user?.avatarUrl?.trim() ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons
+                  name="person-outline"
+                  size={19}
+                  color={PALETTE.success}
+                />
+              )}
             </View>
             <View style={styles.headerTextCol}>
               <Text
-                style={styles.profileGreeting}
+                style={styles.profileFullNameLine}
                 numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.75}
+                ellipsizeMode="tail"
               >
-                Merhaba, {name}
+                <Text style={styles.profileFirstName}>{firstName}</Text>
+                {lastName ? (
+                  <Text style={styles.profileLastName}>{` ${lastName}`}</Text>
+                ) : null}
               </Text>
               <Text style={styles.profileMeta}>
-                {points} puan • {campaignCount} kampanya
+                <Text style={styles.profileMetaLabel}>Parapuan </Text>
+                <Text style={styles.profileMetaPoints}>{points}</Text>
+                <Text style={styles.profileMetaMuted}>
+                  {' '}
+                  · {campaignCount} kampanya
+                </Text>
               </Text>
             </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={PALETTE.textSecondary}
+              style={styles.profileChevron}
+            />
           </Pressable>
         </View>
 
@@ -162,32 +250,55 @@ export default function HomeScreen() {
               </View>
             ) : null}
             <View style={styles.featuredCenter}>
-              <View style={styles.featuredQrStack}>
+              <View style={styles.featuredQrFrame}>
                 <View style={styles.featuredQrIconWrap}>
-                  <MaterialCommunityIcons
-                    name="qrcode-scan"
-                    size={48}
-                    color={PALETTE.success}
+                  <LottieView
+                    source={require('../görsel/qr-scan.json')}
+                    autoPlay
+                    loop
+                    style={styles.featuredQrLottie}
+                    resizeMode="contain"
                   />
                 </View>
               </View>
-              <Text style={styles.featuredTitle}>Siparişe Başla</Text>
-              <Text style={styles.featuredDesc}>
-                Masadaki QR kodunu taratarak menüye anında ulaşın.
-              </Text>
+              <View style={styles.featuredTitleRow}>
+                {Array.from(WELCOME_TITLE).map((ch, i) => (
+                  <Text
+                    key={`${i}-${ch}`}
+                    style={[
+                      styles.featuredTitleChar,
+                      {
+                        color:
+                          ch === ' '
+                            ? 'rgba(255,255,255,0)'
+                            : welcomeTitleCharColor(i, WELCOME_TITLE.length),
+                      },
+                    ]}
+                  >
+                    {ch}
+                  </Text>
+                ))}
+              </View>
               <Pressable
                 style={({ pressed }) => [
-                  styles.ctaPill,
-                  pressed && styles.ctaPillPressed,
+                  styles.ctaPillPressable,
+                  pressed && styles.ctaPillPressablePressed,
                 ]}
                 onPress={() => navigation.navigate('QRScanner')}
-                android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
+                android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
               >
-                <Ionicons name="scan-outline" size={18} color={PALETTE.btnPrimaryText} />
-                <Text style={styles.ctaPillText}>Hemen Tara</Text>
+                <LinearGradient
+                  colors={GRADIENT}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={styles.ctaPillGradient}
+                >
+                  <Ionicons name="scan-outline" size={19} color={PALETTE.btnPrimaryText} />
+                  <Text style={styles.ctaPillText}>QR Kodu Tara</Text>
+                </LinearGradient>
               </Pressable>
               <Text style={styles.featuredHint}>
-                QR kodu okutmadan menüye erişemezsiniz
+                Menüye erişmek için masadaki kodu okutmanız gerekir
               </Text>
             </View>
           </LinearGradient>
@@ -257,13 +368,31 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 120,
   },
+  brandLogoRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  brandLogoFrame: {
+    width: 146,
+    height: 34,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  brandLogo: {
+    width: 146,
+    height: 44,
+    opacity: 0.98,
+    marginTop: -4,
+  },
   profileCard: {
     alignSelf: 'stretch',
     width: '100%',
     backgroundColor: PALETTE.cardBg,
-    borderRadius: 22,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 18,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: PALETTE.border,
@@ -275,31 +404,60 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: PALETTE.softGreen,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   headerTextCol: {
-    marginLeft: 12,
+    marginLeft: 10,
     flex: 1,
     justifyContent: 'center',
     minWidth: 0,
   },
-  profileGreeting: {
+  profileFullNameLine: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  profileFirstName: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 17,
+    fontSize: 16,
     color: PALETTE.textPrimary,
-    lineHeight: 22,
+  },
+  profileLastName: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 16,
+    color: PALETTE.textPrimary,
   },
   profileMeta: {
     fontFamily: homeFonts.sans,
-    fontSize: 13,
+    fontSize: 12,
     color: PALETTE.textSecondary,
-    marginTop: 2,
-    lineHeight: 18,
+    marginTop: 3,
+    lineHeight: 16,
+  },
+  profileMetaLabel: {
+    fontFamily: homeFonts.sans,
+    color: PALETTE.textSecondary,
+  },
+  profileMetaPoints: {
+    fontFamily: homeFonts.sans,
+    color: PALETTE.textSecondary,
+  },
+  profileMetaMuted: {
+    fontFamily: homeFonts.sans,
+    color: PALETTE.textSecondary,
+  },
+  profileChevron: {
+    marginLeft: 4,
+    alignSelf: 'center',
   },
   tableStatusRow: {
     flexDirection: 'row',
@@ -368,14 +526,13 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     marginBottom: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: PALETTE.border,
+    borderWidth: 0,
     backgroundColor: PALETTE.cardBg,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
+    elevation: 4,
   },
   featuredCard: {
     borderRadius: 28,
@@ -383,33 +540,43 @@ const styles = StyleSheet.create({
   featuredCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 22,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 24,
   },
-  featuredTitle: {
+  featuredQrFrame: {
+    padding: 12,
+    borderRadius: 26,
+    borderWidth: 0,
+    marginBottom: 18,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  featuredTitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    maxWidth: '92%',
+    marginBottom: 22,
+  },
+  featuredTitleChar: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 30,
-    color: PALETTE.textPrimary,
-    marginBottom: 8,
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  featuredDesc: {
-    fontFamily: homeFonts.sans,
-    fontSize: 15,
-    color: PALETTE.textSecondary,
-    lineHeight: 22,
-    marginBottom: 20,
-    textAlign: 'center',
-    maxWidth: 260,
+    fontSize: 23,
+    lineHeight: 29,
   },
   featuredHint: {
-    marginTop: 16,
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 13,
+    marginTop: 14,
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
     color: PALETTE.textSecondary,
     textAlign: 'center',
+    lineHeight: 17,
+    maxWidth: 280,
   },
   featuredSecondaryAction: {
     marginTop: 10,
@@ -428,47 +595,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#374151',
   },
-  featuredQrStack: {
-    width: 96,
-    height: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
-  },
   featuredQrIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: PALETTE.softGreen,
+    width: 100,
+    height: 100,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  ctaPill: {
-    alignSelf: 'center',
+  featuredQrLottie: {
+    width: 100,
+    height: 100,
+  },
+  ctaPillPressable: {
+    alignSelf: 'stretch',
+    marginHorizontal: 2,
+    borderRadius: 999,
+    overflow: 'hidden',
+    shadowColor: '#2F9A4A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 11,
+    elevation: 5,
+  },
+  ctaPillPressablePressed: {
+    opacity: 0.9,
+  },
+  ctaPillGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    height: 56,
-    borderRadius: 999,
-    paddingHorizontal: 24,
-    backgroundColor: PALETTE.btnPrimary,
-    width: '90%',
-    overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  ctaPillPressed: {
-    backgroundColor: '#1F2937',
+    minHeight: 46,
+    paddingVertical: 10,
+    paddingHorizontal: 26,
   },
   ctaPillText: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 17,
+    fontSize: 16,
     color: PALETTE.btnPrimaryText,
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
   campaignCard: {
     marginBottom: 16,

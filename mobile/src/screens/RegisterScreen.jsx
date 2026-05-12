@@ -13,20 +13,33 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { menuColors } from '../constants/homeTheme';
+import { homeFonts, androidRipple } from '../constants/homeTheme';
 import { useAuth } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
 
-const colors = {
-  background: menuColors.bg,
-  primary: menuColors.primary,
-  text: menuColors.text,
-  textMuted: menuColors.textMuted,
-  inputBorder: menuColors.border,
-  inputBg: menuColors.card,
-  white: menuColors.white,
+const PALETTE = {
+  pageBg: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  textPrimary: '#1F2933',
+  textSecondary: '#7A7168',
+  border: '#E8E0D6',
+  success: '#2E7D32',
+  btnPrimary: '#4CAF50',
+  btnPrimaryText: '#FFFFFF',
 };
-const BUTTON_GRADIENT = ['#3FA34D', '#66BB6A'];
+
+const PRIMARY_GRADIENT = ['#2F8F39', PALETTE.btnPrimary, '#67C96B'];
+
+const colors = {
+  background: PALETTE.pageBg,
+  primary: PALETTE.btnPrimary,
+  text: PALETTE.textPrimary,
+  textMuted: PALETTE.textSecondary,
+  inputBorder: '#D7E7D8',
+  inputBg: '#F9FBF8',
+  white: '#FFFFFF',
+  divider: PALETTE.border,
+};
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -69,11 +82,12 @@ export default function RegisterScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <Pressable
-            style={styles.backRow}
+            style={({ pressed }) => [styles.backRow, pressed && { opacity: 0.85 }]}
             onPress={() => navigation.goBack()}
             hitSlop={12}
+            android_ripple={{ ...androidRipple, borderless: true }}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
+            <Ionicons name="chevron-back" size={22} color={PALETTE.textPrimary} />
             <Text style={styles.backText}>Girişe dön</Text>
           </Pressable>
 
@@ -88,13 +102,13 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="person-outline"
               size={20}
-              color={colors.textMuted}
+              color="#3F8F4E"
               style={styles.fieldIcon}
             />
             <TextInput
               style={styles.input}
               placeholder="Ad Soyad (isteğe bağlı)"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={PALETTE.textSecondary}
               value={name}
               onChangeText={setName}
             />
@@ -104,13 +118,13 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="mail-outline"
               size={20}
-              color={colors.textMuted}
+              color="#3F8F4E"
               style={styles.fieldIcon}
             />
             <TextInput
               style={styles.input}
               placeholder="E-posta adresin"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={PALETTE.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -123,44 +137,62 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="lock-closed-outline"
               size={20}
-              color={colors.textMuted}
+              color="#3F8F4E"
               style={styles.fieldIcon}
             />
             <TextInput
               style={[styles.input, styles.inputFlex]}
               placeholder="Şifre (min. 6 karakter)"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={PALETTE.textSecondary}
               secureTextEntry={secure}
               value={password}
               onChangeText={setPassword}
             />
-            <Pressable onPress={() => setSecure((s) => !s)} hitSlop={12}>
+            <Pressable
+              onPress={() => setSecure((s) => !s)}
+              hitSlop={12}
+              style={styles.eyeBtn}
+            >
               <Ionicons
                 name={secure ? 'eye-outline' : 'eye-off-outline'}
                 size={22}
-                color={colors.textMuted}
+                color={PALETTE.textSecondary}
               />
             </Pressable>
           </View>
 
           <Pressable
-            style={[styles.primaryBtn, loading && styles.btnDisabled]}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              loading && styles.btnDisabled,
+              pressed && !loading && { opacity: 0.92 },
+            ]}
             onPress={handleRegister}
             disabled={loading}
+            android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
           >
             <LinearGradient
-              colors={BUTTON_GRADIENT}
+              colors={PRIMARY_GRADIENT}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              style={styles.primaryBtnGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Kayıt Ol</Text>
-              )}
-            </LinearGradient>
+              style={StyleSheet.absoluteFill}
+            />
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.primaryBtnText}>Kayıt Ol</Text>
+            )}
           </Pressable>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerMuted}>Zaten hesabın var mı? </Text>
+            <Pressable
+              onPress={() => navigation.navigate('Login')}
+              android_ripple={androidRipple}
+            >
+              <Text style={styles.footerLink}>Giriş Yap</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -174,36 +206,50 @@ const styles = StyleSheet.create({
   },
   flex: { flex: 1 },
   scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
     paddingBottom: 32,
+    backgroundColor: PALETTE.pageBg,
   },
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
     alignSelf: 'flex-start',
+    marginBottom: 6,
+    gap: 2,
+    paddingVertical: 4,
+    paddingRight: 8,
   },
   backText: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '500',
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 15,
+    color: PALETTE.textPrimary,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 22,
+    letterSpacing: -0.35,
+    color: '#1F6B38',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
-    lineHeight: 22,
-    marginBottom: 24,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 14,
+    color: PALETTE.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 22,
+    paddingHorizontal: 8,
   },
   error: {
-    color: '#B91C1C',
+    fontFamily: homeFonts.sansMedium,
+    color: '#B42318',
     fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
     marginBottom: 12,
   },
   field: {
@@ -212,40 +258,62 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    minHeight: 52,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    minHeight: 48,
+    shadowColor: '#1F2933',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   fieldIcon: { marginRight: 10 },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: colors.text,
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: PALETTE.textPrimary,
     paddingVertical: 12,
   },
   inputFlex: { flex: 1 },
+  eyeBtn: {
+    padding: 4,
+  },
   primaryBtn: {
-    borderRadius: 26,
+    borderRadius: 999,
     minHeight: 52,
     overflow: 'hidden',
-    marginTop: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  primaryBtnGradient: {
-    minHeight: 52,
+    marginTop: 6,
+    marginBottom: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 26,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 5,
   },
   btnDisabled: { opacity: 0.7 },
   primaryBtnText: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: homeFonts.sansSemi,
+    color: PALETTE.btnPrimaryText,
+    fontSize: 16,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  footerMuted: {
+    fontFamily: homeFonts.sans,
+    fontSize: 15,
+    color: PALETTE.textSecondary,
+  },
+  footerLink: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: PALETTE.success,
   },
 });

@@ -2,12 +2,13 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 function getTokenFromHeaders(req) {
-  // Önce x-auth-token'ı kontrol et
+  const auth = req.headers.authorization || req.headers.Authorization;
+  if (auth && typeof auth === 'string' && auth.startsWith('Bearer ')) {
+    const t = auth.slice(7).trim();
+    if (t) return t;
+  }
   const legacy = req.headers['x-auth-token'];
-  if (legacy) return legacy;
-  // Sonra Authorization Bearer'ı kontrol et
-  const auth = req.headers['authorization'];
-  if (auth && auth.startsWith('Bearer ')) return auth.substring(7);
+  if (legacy != null && String(legacy).trim()) return String(legacy).trim();
   return null;
 }
 

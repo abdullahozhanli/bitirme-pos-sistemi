@@ -56,14 +56,6 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Auth endpoint'leri için daha sıkı rate limiting
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // 15 dakikada 5 deneme
-  message: 'Çok fazla giriş denemesi. Lütfen 15 dakika sonra tekrar deneyin.',
-  skipSuccessfulRequests: true,
-});
-
 // --- YENİ CORS AYARI BAŞLANGIÇ ---
 app.use(cors({
   origin: (origin, callback) => {
@@ -106,7 +98,7 @@ app.use(cors({
 // --- YENİ CORS AYARI BİTİŞ ---
 
 // body parser
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 // Request logging middleware (tüm istekleri logla - route'lardan ÖNCE)
 app.use((req, res, next) => {
@@ -240,7 +232,8 @@ app.get('/', (req, res) => {
 });
 
 // api routes - Yeni role-based routing
-app.use('/api/auth', authLimiter, authRoutes);
+// Sıkı authLimiter burada /me + refresh döngüsünü 401/429'a düşürüyordu; login/register için route içinde limit kullanın
+app.use('/api/auth', authRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/waiter', waiterRoutes);
 app.use('/api/waiter', waiter);

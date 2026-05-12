@@ -1,18 +1,35 @@
-import { useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useAuth, showComingSoon } from '../context/AuthContext';
-import { getLoyaltyPoints } from '../utils/loyaltyPoints';
+import {
+  pickProfileImageUri,
+  uriToProfileAvatarDataUrl,
+} from '../utils/pickProfileAvatar';
+import * as LoyaltyPoints from '../utils/loyaltyPoints';
 
 const PROFILE_GRADIENT = ['#3FA34D', '#66BB6A'];
 const PAGE_BG = '#F3F6F4';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, updateProfile } = useAuth();
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [previewPicked, setPreviewPicked] = useState(null);
+  const preparedUploadRef = useRef({ uri: null, promise: null });
 
   useFocusEffect(
     useCallback(() => {
@@ -21,7 +38,85 @@ export default function ProfileScreen({ navigation }) {
   );
   const displayName = user?.name?.trim() || 'Misafir';
   const orderCount = 12;
-  const loyaltyPoints = getLoyaltyPoints(user);
+  const loyaltyPoints = LoyaltyPoints.getLoyaltyPoints(user);
+  const hasAvatar = Boolean(user?.avatarUrl?.trim());
+
+  useEffect(() => {
+    if (!previewPicked?.uri) {
+      preparedUploadRef.current = { uri: null, promise: null };
+      return;
+    }
+    const { uri, mimeType } = previewPicked;
+    preparedUploadRef.current = {
+      uri,
+      promise: uriToProfileAvatarDataUrl(uri, mimeType),
+    };
+  }, [previewPicked]);
+
+  const pickAvatarFromLibrary = useCallback(async () => {
+    const picked = await pickProfileImageUri();
+    if (picked) setPreviewPicked(picked);
+  }, []);
+
+  const closeAvatarPreview = useCallback(() => {
+    setPreviewPicked(null);
+  }, []);
+
+  const confirmAvatarPreview = useCallback(async () => {
+    if (!previewPicked) return;
+    try {
+      setAvatarBusy(true);
+      let dataUrl = null;
+      const prep = preparedUploadRef.current;
+      if (prep.uri === previewPicked.uri && prep.promise) {
+        dataUrl = await prep.promise;
+      }
+      if (!dataUrl) {
+        dataUrl = await uriToProfileAvatarDataUrl(
+          previewPicked.uri,
+          previewPicked.mimeType
+        );
+      }
+      if (!dataUrl) return;
+      await updateProfile({ avatarUrl: dataUrl });
+      setPreviewPicked(null);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || 'Yüklenemedi';
+      Alert.alert('Hata', msg);
+    } finally {
+      setAvatarBusy(false);
+    }
+  }, [previewPicked, updateProfile]);
+
+  const retryAvatarPick = useCallback(async () => {
+    setPreviewPicked(null);
+    const picked = await pickProfileImageUri();
+    if (picked) setPreviewPicked(picked);
+  }, []);
+
+  const clearAvatar = useCallback(async () => {
+    try {
+      setAvatarBusy(true);
+      await updateProfile({ avatarUrl: '' });
+    } catch (e) {
+      const msg = e?.response?.data?.message || e?.message || 'Kaldırılamadı';
+      Alert.alert('Hata', msg);
+    } finally {
+      setAvatarBusy(false);
+    }
+  }, [updateProfile]);
+
+  const openAvatarOptions = useCallback(() => {
+    if (avatarBusy) return;
+    const buttons = [
+      { text: 'Galeriden seç', onPress: () => void pickAvatarFromLibrary() },
+      ...(hasAvatar
+        ? [{ text: 'Fotoğrafı kaldır', style: 'destructive', onPress: () => void clearAvatar() }]
+        : []),
+      { text: 'İptal', style: 'cancel' },
+    ];
+    Alert.alert('Profil fotoğrafı', 'Görselinizi güncelleyin veya kaldırın.', buttons);
+  }, [avatarBusy, hasAvatar, pickAvatarFromLibrary, clearAvatar]);
 
   function MenuRow({ icon, label, onPress }) {
     return (
@@ -57,7 +152,7 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.topTitle}>Profilim</Text>
         <Pressable
           style={({ pressed }) => [styles.topIconBtn, pressScale(pressed)]}
-          onPress={() => showComingSoon('Profili duzenle')}
+          onPress={openAvatarOptions}
           hitSlop={10}
         >
           <Ionicons name="create-outline" size={18} color={menuColors.text} />
@@ -70,14 +165,38 @@ export default function ProfileScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={[styles.summaryCard, uiShadow.card]}>
-          <LinearGradient
-            colors={PROFILE_GRADIENT}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatar}
+          <Pressable
+            onPress={openAvatarOptions}
+            disabled={avatarBusy}
+            style={({ pressed }) => [styles.avatarPress, pressed && { opacity: 0.92 }]}
           >
-            <Ionicons name="person-outline" size={34} color={menuColors.white} />
-          </LinearGradient>
+            <View style={styles.avatarWrap}>
+              {hasAvatar ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.avatarPhoto}
+                  resizeMode="cover"
+                />
+              ) : (
+                <LinearGradient
+                  colors={PROFILE_GRADIENT}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.avatarPhoto}
+                >
+                  <Ionicons name="person-outline" size={34} color={menuColors.white} />
+                </LinearGradient>
+              )}
+              {avatarBusy ? (
+                <View style={styles.avatarLoading}>
+                  <ActivityIndicator color={menuColors.white} size="small" />
+                </View>
+              ) : null}
+              <View style={styles.avatarEditBadge}>
+                <Ionicons name="camera" size={14} color={menuColors.white} />
+              </View>
+            </View>
+          </Pressable>
           <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.email}>{user?.email || '—'}</Text>
           {user?.role && user.role !== 'musteri' ? (
@@ -186,6 +305,66 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.logoutText}>Cikis Yap</Text>
         </Pressable>
       </ScrollView>
+
+      <Modal
+        visible={Boolean(previewPicked)}
+        transparent
+        animationType="fade"
+        onRequestClose={closeAvatarPreview}
+      >
+        <View style={styles.avatarModalBackdrop}>
+          <View style={styles.avatarModalCard}>
+            <Text style={styles.avatarModalTitle}>Profil fotoğrafı</Text>
+            <Text style={styles.avatarModalHint}>
+              Profilde kare alanın içinde ortalanarak gösterilir. Uygunsa onaylayın.
+            </Text>
+            <View style={styles.avatarModalPreviewWrap}>
+              {previewPicked?.uri ? (
+                <Image
+                  source={{ uri: previewPicked.uri }}
+                  style={styles.avatarModalPreview}
+                  resizeMode="cover"
+                />
+              ) : null}
+            </View>
+            <View style={styles.avatarModalActions}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.avatarModalBtnGhost,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={closeAvatarPreview}
+              >
+                <Text style={styles.avatarModalBtnGhostText}>Vazgeç</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.avatarModalBtnGhost,
+                  pressed && { opacity: 0.85 },
+                ]}
+                onPress={() => void retryAvatarPick()}
+                disabled={avatarBusy}
+              >
+                <Text style={styles.avatarModalBtnGhostText}>Başka foto</Text>
+              </Pressable>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.avatarModalBtnPrimary,
+                (avatarBusy || pressed) && { opacity: avatarBusy ? 0.65 : 0.92 },
+              ]}
+              disabled={avatarBusy}
+              onPress={() => void confirmAvatarPreview()}
+            >
+              {avatarBusy ? (
+                <ActivityIndicator color={menuColors.white} />
+              ) : (
+                <Text style={styles.avatarModalBtnPrimaryText}>Profilde kullan</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -233,13 +412,42 @@ const styles = StyleSheet.create({
     borderColor: menuColors.border,
     marginBottom: 14,
   },
-  avatar: {
+  avatarPress: {
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  avatarWrap: {
+    width: 78,
+    height: 78,
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  avatarPhoto: {
     width: 78,
     height: 78,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+  },
+  avatarLoading: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(17,24,39,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   name: {
     fontFamily: homeFonts.sansSemi,
@@ -363,5 +571,77 @@ const styles = StyleSheet.create({
     fontFamily: homeFonts.sansSemi,
     fontSize: 14,
     color: '#B91C1C',
+  },
+  avatarModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+  },
+  avatarModalCard: {
+    backgroundColor: menuColors.card,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: menuColors.border,
+  },
+  avatarModalTitle: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 18,
+    color: menuColors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  avatarModalHint: {
+    fontFamily: homeFonts.sans,
+    fontSize: 13,
+    color: menuColors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 19,
+  },
+  avatarModalPreviewWrap: {
+    width: 220,
+    height: 220,
+    borderRadius: 20,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    marginBottom: 18,
+    backgroundColor: menuColors.pillMuted,
+  },
+  avatarModalPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  avatarModalBtnGhost: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: menuColors.border,
+    backgroundColor: menuColors.card,
+  },
+  avatarModalBtnGhostText: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 14,
+    color: menuColors.text,
+  },
+  avatarModalBtnPrimary: {
+    backgroundColor: menuColors.primary,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarModalBtnPrimaryText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 16,
+    color: menuColors.white,
   },
 });

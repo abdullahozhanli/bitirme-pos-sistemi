@@ -143,6 +143,17 @@ export function CartProvider({ children }) {
     AsyncStorage.removeItem(CART_STORAGE_KEY).catch(() => {});
   }, []);
 
+  /** Ürün satırı notu — sipariş + AsyncStorage ile kalır */
+  const updateLineNoteAt = useCallback((index, note) => {
+    const text = String(note ?? '');
+    setLines((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const next = [...prev];
+      next[index] = { ...next[index], note: text };
+      return next;
+    });
+  }, []);
+
   const totals = useMemo(() => {
     const count = lines.reduce((s, l) => s + l.qty, 0);
     const sum = lines.reduce(
@@ -160,9 +171,10 @@ export function CartProvider({ children }) {
       decrementQty,
       removeLine,
       clearCart,
+      updateLineNoteAt,
       totals,
     }),
-    [lines, addToCart, incrementQty, decrementQty, removeLine, clearCart, totals]
+    [lines, addToCart, incrementQty, decrementQty, removeLine, clearCart, updateLineNoteAt, totals]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

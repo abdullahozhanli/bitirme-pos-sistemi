@@ -10,6 +10,7 @@ import { Platform, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import client from '../api/client';
+import { API_BASE_URL_CANDIDATES } from '../constants/config';
 import { coerceUserPoints, mergeUserFromMe } from '../utils/loyaltyPoints';
 
 const TOKEN_KEY = 'selfkasa_token';
@@ -27,9 +28,11 @@ async function storeToken(token) {
 
 async function readToken() {
   if (Platform.OS === 'web') {
-    return AsyncStorage.getItem(TOKEN_KEY);
+    const t = await AsyncStorage.getItem(TOKEN_KEY);
+    return t ? String(t).trim() : null;
   }
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  const t = await SecureStore.getItemAsync(TOKEN_KEY);
+  return t ? String(t).trim() : null;
 }
 
 async function removeToken() {
@@ -90,11 +93,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const persistSession = useCallback(async (t, u) => {
+    const raw = typeof t === 'string' ? t.trim() : t;
     const normalized = coerceUserPoints(u);
-    await storeToken(t);
+    await storeToken(raw);
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(normalized));
-    applyAxiosToken(t);
-    setToken(t);
+    applyAxiosToken(raw);
+    setToken(raw);
     setUser(normalized);
   }, []);
 
@@ -138,6 +142,7 @@ export function AuthProvider({ children }) {
     try {
       const t = await readToken();
       if (!t) return;
+      applyAxiosToken(t);
       const res = await client.get('/api/auth/me');
       setUser((prev) => {
         const merged = mergeUserFromMe(prev || {}, res.data);
@@ -149,6 +154,58 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const t = await readToken();
+    if (!t) throw new Error('Oturum bulunamadı');
+    applyAxiosToken(t);
+
+    const bearer = `Bearer ${t}`;
+    const body = JSON.stringify(payload);
+    let lastErr;
+    for (const base of API_BASE_URL_CANDIDATES) {
+      const url = `${String(base).replace(/\/+$/, '')}/api/auth/me`;
+      try {
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: bearer,
+            'x-auth-token': t,
+          },
+          body,
+        });
+        const text = await res.text();
+        let data = {};
+        if (text) {
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = { message: text.slice(0, 200) };
+          }
+        }
+        if (!res.ok) {
+          const err = new Error(data.message || `HTTP ${res.status}`);
+          err.response = { status: res.status, data };
+          lastErr = err;
+          if (res.status === 401 || res.status === 403) throw err;
+          continue;
+        }
+        setUser((prev) => {
+          const merged = mergeUserFromMe(prev || {}, data);
+          AsyncStorage.setItem(USER_KEY, JSON.stringify(merged)).catch(() => {});
+          return merged;
+        });
+        return data;
+      } catch (e) {
+        lastErr = e;
+        if (e?.response?.status === 401 || e?.response?.status === 403) throw e;
+        if (e?.message && !String(e.message).includes('Network')) throw e;
+      }
+    }
+    throw lastErr || new Error('Profil güncellenemedi');
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -158,8 +215,9 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
+      updateProfile,
     }),
-    [user, token, ready, login, register, logout, refreshUser]
+    [user, token, ready, login, register, logout, refreshUser, updateProfile]
   );
 
   return (

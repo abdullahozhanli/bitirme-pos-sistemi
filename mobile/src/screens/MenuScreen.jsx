@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -94,6 +94,20 @@ export default function MenuScreen({ navigation }) {
   const [showCartPreview, setShowCartPreview] = useState(false);
   const [extraSauce, setExtraSauce] = useState(false);
   const [extraCheese, setExtraCheese] = useState(false);
+
+  const categoryScrollRef = useRef(null);
+  const categoryLayoutsRef = useRef({});
+
+  const selectCategory = useCallback((cat) => {
+    setActiveCat(cat);
+    requestAnimationFrame(() => {
+      const layout = categoryLayoutsRef.current[cat];
+      const scroller = categoryScrollRef.current;
+      if (!layout || !scroller?.scrollTo) return;
+      const lead = 12;
+      scroller.scrollTo({ x: Math.max(0, layout.x - lead), animated: true });
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -314,12 +328,17 @@ export default function MenuScreen({ navigation }) {
         {/* Sticky kategori barı */}
         <View style={styles.stickyCategoriesWrap}>
           <ScrollView
+            ref={categoryScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryRow}
+            keyboardShouldPersistTaps="handled"
           >
             {categories.map((cat) => {
               const active = activeCat === cat;
+              const onChipLayout = (e) => {
+                categoryLayoutsRef.current[cat] = e.nativeEvent.layout;
+              };
               if (active) {
                 return (
                   <LinearGradient
@@ -328,11 +347,10 @@ export default function MenuScreen({ navigation }) {
                     start={{ x: 0, y: 0.5 }}
                     end={{ x: 1, y: 0.5 }}
                     style={styles.catChipActiveGradient}
+                    onLayout={onChipLayout}
                   >
                     <Pressable
-                      onPressIn={() => {
-                        if (activeCat !== cat) setActiveCat(cat);
-                      }}
+                      onPress={() => selectCategory(cat)}
                       android_ripple={{
                         ...androidRipple,
                         borderless: false,
@@ -353,9 +371,8 @@ export default function MenuScreen({ navigation }) {
               return (
                 <Pressable
                   key={cat}
-                  onPressIn={() => {
-                    if (activeCat !== cat) setActiveCat(cat);
-                  }}
+                  onLayout={onChipLayout}
+                  onPress={() => selectCategory(cat)}
                   android_ripple={{
                     ...androidRipple,
                     borderless: false,
@@ -1659,12 +1676,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     borderTopWidth: 1,
-    borderTopColor: '#30456D',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.26,
-    shadowRadius: 26,
-    elevation: 24,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   sheet: {
     backgroundColor: PALETTE.cardBg,

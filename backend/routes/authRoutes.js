@@ -16,6 +16,24 @@ function userPayload(doc) {
     role: doc.role,
     points: pts,
     loyaltyPoints: pts,
+    avatarUrl: doc.avatarUrl || '',
+  };
+}
+
+function meResponse(user) {
+  const pts = user.loyaltyPoints != null ? user.loyaltyPoints : 0;
+  return {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    branchId: user.branchId ? user.branchId._id || user.branchId : null,
+    branch: user.branchId
+      ? { _id: user.branchId._id || user.branchId, name: user.branchId.name || null }
+      : null,
+    points: pts,
+    loyaltyPoints: pts,
+    avatarUrl: user.avatarUrl || '',
   };
 }
 
@@ -30,19 +48,54 @@ router.get('/me', authMiddleware, async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
-    const pts = user.loyaltyPoints != null ? user.loyaltyPoints : 0;
-    res.json({
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      name: user.name,
-      branchId: user.branchId ? user.branchId._id || user.branchId : null,
-      branch: user.branchId
-        ? { _id: user.branchId._id || user.branchId, name: user.branchId.name || null }
-        : null,
-      points: pts,
-      loyaltyPoints: pts,
-    });
+    res.json(meResponse(user));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * @route   PATCH /api/auth/me
+ * @desc    Profil güncelle (ör. avatarUrl data URL, isim)
+ */
+router.patch('/me', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId).populate('branchId', 'name');
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+
+    const { name } = req.body || {};
+    if (typeof name === 'string') {
+      const t = name.trim();
+      if (t) user.name = t;
+    }
+
+    if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'avatarUrl')) {
+      const raw = req.body.avatarUrl;
+      if (raw === null || raw === '') {
+        user.avatarUrl = '';
+      } else if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        if (!trimmed) {
+          user.avatarUrl = '';
+        } else {
+          const okPrefix = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed);
+          if (!okPrefix) {
+            return res.status(400).json({ message: 'Geçersiz görsel formatı (jpeg, png veya webp gerekli)' });
+          }
+          if (trimmed.length > 450000) {
+            return res.status(400).json({ message: 'Görsel çok büyük; daha küçük bir fotoğraf seçin' });
+          }
+          user.avatarUrl = trimmed;
+        }
+      }
+    }
+
+    await user.save();
+    const fresh = await User.findById(userId).populate('branchId', 'name').select('-passwordHash');
+    res.json(meResponse(fresh));
   } catch (e) {
     next(e);
   }
@@ -85,7 +138,7 @@ router.post('/register', async (req, res, next) => {
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
-      { expiresIn: '12h' },
+      { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
         res.status(201).json({ token, user: userPayload(user) });
@@ -243,6 +296,7 @@ router.post('/login', async (req, res, next) => {
         } : null,
         points: pts,
         loyaltyPoints: pts,
+        avatarUrl: user.avatarUrl || '',
       }
     });
 

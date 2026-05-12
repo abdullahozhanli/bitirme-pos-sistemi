@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
+  /** Müşteri profil görseli (data URL, jpeg/png/webp base64) */
+  avatarUrl: {
+    type: String,
+    default: '',
+  },
   role: {
     type: String,
     enum: ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'],

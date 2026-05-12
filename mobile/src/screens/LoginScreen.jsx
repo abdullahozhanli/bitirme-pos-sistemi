@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,23 +14,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { menuColors } from '../constants/homeTheme';
+import { homeFonts, androidRipple } from '../constants/homeTheme';
 import { useAuth, showComingSoon } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
 
-const colors = {
-  background: menuColors.bg,
-  primary: menuColors.primary,
-  text: menuColors.text,
-  textMuted: menuColors.textMuted,
-  inputBorder: menuColors.border,
-  inputBg: menuColors.card,
-  white: menuColors.white,
-  black: '#111111',
-  divider: menuColors.border,
-  googleBorder: menuColors.border,
+const PALETTE = {
+  pageBg: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  textPrimary: '#1F2933',
+  textSecondary: '#7A7168',
+  textBody: '#7A7168',
+  border: '#E8E0D6',
+  success: '#2E7D32',
+  btnPrimary: '#4CAF50',
+  btnPrimaryText: '#FFFFFF',
 };
-const BUTTON_GRADIENT = ['#3FA34D', '#66BB6A'];
+
+const PRIMARY_GRADIENT = ['#2F8F39', PALETTE.btnPrimary, '#67C96B'];
+const APPLE_BAR_GRADIENT = ['#2E3238', '#4A515C', '#6A7382'];
+
+const colors = {
+  background: PALETTE.pageBg,
+  primary: PALETTE.btnPrimary,
+  text: PALETTE.textPrimary,
+  textMuted: PALETTE.textSecondary,
+  inputBorder: '#D7E7D8',
+  inputBg: '#F9FBF8',
+  white: '#FFFFFF',
+  divider: PALETTE.border,
+  googleBorder: PALETTE.border,
+};
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -67,12 +81,18 @@ export default function LoginScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoWrap}>
-            <View style={styles.logoBox}>
-              <Ionicons name="cafe" size={36} color={colors.white} />
+            <View style={styles.logoBleed}>
+              <Image
+                source={require('../görsel/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel="Self Kasa logo"
+              />
             </View>
           </View>
 
-          <Text style={styles.title}>Hoş Geldin</Text>
+          <Text style={styles.title}>Hoş Geldiniz!</Text>
           <Text style={styles.subtitle}>
             Favori restoranlarını keşfetmek için giriş yap
           </Text>
@@ -83,13 +103,13 @@ export default function LoginScreen({ navigation }) {
             <Ionicons
               name="mail-outline"
               size={20}
-              color={colors.textMuted}
+              color="#3F8F4E"
               style={styles.fieldIcon}
             />
             <TextInput
               style={styles.input}
               placeholder="E-posta adresin"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={PALETTE.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -102,13 +122,13 @@ export default function LoginScreen({ navigation }) {
             <Ionicons
               name="lock-closed-outline"
               size={20}
-              color={colors.textMuted}
+              color="#3F8F4E"
               style={styles.fieldIcon}
             />
             <TextInput
               style={[styles.input, styles.inputFlex]}
               placeholder="Şifre"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={PALETTE.textSecondary}
               secureTextEntry={secure}
               value={password}
               onChangeText={setPassword}
@@ -121,7 +141,7 @@ export default function LoginScreen({ navigation }) {
               <Ionicons
                 name={secure ? 'eye-outline' : 'eye-off-outline'}
                 size={22}
-                color={colors.textMuted}
+                color={PALETTE.textSecondary}
               />
             </Pressable>
           </View>
@@ -129,27 +149,32 @@ export default function LoginScreen({ navigation }) {
           <Pressable
             style={styles.forgotWrap}
             onPress={() => showComingSoon('Şifremi unuttum')}
+            android_ripple={androidRipple}
           >
             <Text style={styles.forgot}>Şifremi unuttum</Text>
           </Pressable>
 
           <Pressable
-            style={[styles.primaryBtn, loading && styles.btnDisabled]}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              loading && styles.btnDisabled,
+              pressed && !loading && { opacity: 0.92 },
+            ]}
             onPress={handleLogin}
             disabled={loading}
+            android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
           >
             <LinearGradient
-              colors={BUTTON_GRADIENT}
+              colors={PRIMARY_GRADIENT}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              style={styles.primaryBtnGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Giriş Yap</Text>
-              )}
-            </LinearGradient>
+              style={StyleSheet.absoluteFill}
+            />
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.primaryBtnText}>Giriş Yap</Text>
+            )}
           </Pressable>
 
           <View style={styles.orRow}>
@@ -159,24 +184,32 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           <Pressable
-            style={styles.googleBtn}
+            style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.92 }]}
             onPress={() => showComingSoon('Google ile giriş')}
+            android_ripple={{ ...androidRipple, borderless: false }}
           >
             <FontAwesome5 name="google" size={18} color="#4285F4" />
             <Text style={styles.googleBtnText}>Google ile devam et</Text>
           </Pressable>
 
           <Pressable
-            style={styles.appleBtn}
+            style={({ pressed }) => [styles.appleBtnOuter, pressed && { opacity: 0.92 }]}
             onPress={() => showComingSoon('Apple ile giriş')}
+            android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
           >
+            <LinearGradient
+              colors={APPLE_BAR_GRADIENT}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="logo-apple" size={22} color={colors.white} />
             <Text style={styles.appleBtnText}>Apple ile devam et</Text>
           </Pressable>
 
           <View style={styles.footer}>
             <Text style={styles.footerMuted}>Hesabın yok mu? </Text>
-            <Pressable onPress={() => navigation.navigate('Register')}>
+            <Pressable onPress={() => navigation.navigate('Register')} android_ripple={androidRipple}>
               <Text style={styles.footerLink}>Kayıt Ol</Text>
             </Pressable>
           </View>
@@ -195,41 +228,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 4,
     paddingBottom: 32,
+    backgroundColor: PALETTE.pageBg,
   },
   logoWrap: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    marginBottom: 20,
+    marginHorizontal: -16,
+    marginBottom: 2,
+    paddingTop: 2,
+    paddingBottom: 4,
+    backgroundColor: PALETTE.pageBg,
   },
-  logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
+  logoBleed: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 268,
+    backgroundColor: PALETTE.pageBg,
+    overflow: 'hidden',
+    height: 64,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: '100%',
+    height: 56,
+    backgroundColor: PALETTE.pageBg,
   },
   title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.text,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 22,
+    letterSpacing: -0.35,
+    color: '#1F6B38',
     textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 2,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 14,
+    color: PALETTE.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 28,
+    lineHeight: 20,
+    marginBottom: 22,
     paddingHorizontal: 8,
   },
   error: {
-    color: '#B91C1C',
+    fontFamily: homeFonts.sansMedium,
+    color: '#B42318',
     fontSize: 14,
     textAlign: 'center',
+    lineHeight: 20,
     marginBottom: 12,
   },
   field: {
@@ -238,18 +290,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    marginBottom: 14,
-    minHeight: 52,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    minHeight: 48,
+    shadowColor: '#1F2933',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
   fieldIcon: {
     marginRight: 10,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: colors.text,
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: PALETTE.textPrimary,
     paddingVertical: 12,
   },
   inputFlex: {
@@ -263,33 +321,30 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   forgot: {
-    fontSize: 14,
-    color: colors.textMuted,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 13,
+    color: PALETTE.textSecondary,
   },
   primaryBtn: {
-    borderRadius: 26,
+    borderRadius: 999,
     minHeight: 52,
     overflow: 'hidden',
     marginBottom: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  primaryBtnGradient: {
-    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 26,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 5,
   },
   btnDisabled: {
     opacity: 0.7,
   },
   primaryBtnText: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '600',
+    fontFamily: homeFonts.sansSemi,
+    color: PALETTE.btnPrimaryText,
+    fontSize: 16,
   },
   orRow: {
     flexDirection: 'row',
@@ -302,41 +357,48 @@ const styles = StyleSheet.create({
     backgroundColor: colors.divider,
   },
   orText: {
+    fontFamily: homeFonts.sans,
     paddingHorizontal: 14,
-    fontSize: 14,
-    color: colors.textMuted,
+    fontSize: 13,
+    color: PALETTE.textSecondary,
   },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: colors.white,
+    backgroundColor: PALETTE.cardBg,
     borderWidth: 1,
     borderColor: colors.googleBorder,
-    borderRadius: 14,
+    borderRadius: 999,
     minHeight: 52,
     marginBottom: 12,
+    overflow: 'hidden',
   },
   googleBtnText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.text,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: PALETTE.textPrimary,
   },
-  appleBtn: {
+  appleBtnOuter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: colors.black,
-    borderRadius: 14,
+    borderRadius: 999,
     minHeight: 52,
     marginBottom: 28,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 6,
   },
   appleBtnText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.white,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: PALETTE.btnPrimaryText,
   },
   footer: {
     flexDirection: 'row',
@@ -345,12 +407,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   footerMuted: {
+    fontFamily: homeFonts.sans,
     fontSize: 15,
-    color: colors.textMuted,
+    color: PALETTE.textSecondary,
   },
   footerLink: {
+    fontFamily: homeFonts.sansSemi,
     fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
+    color: PALETTE.success,
   },
 });
