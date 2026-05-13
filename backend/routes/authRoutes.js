@@ -3,9 +3,13 @@ const router = express.Router();
 const bcrypt = require('bcryptjs'); // Şifre karşılaştırma için
 const jwt = require('jsonwebtoken'); // Token (Giriş Kartı) oluşturmak için
 
-// Kullanıcı modelimizi import ediyoruz
 const User = require('../models/User');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const {
+  isValidEmail,
+  isStrongPassword,
+  PASSWORD_POLICY_MESSAGE,
+} = require('../utils/authValidation');
 
 function userPayload(doc) {
   const pts = doc.loyaltyPoints != null ? doc.loyaltyPoints : 0;
@@ -17,6 +21,7 @@ function userPayload(doc) {
     points: pts,
     loyaltyPoints: pts,
     avatarUrl: doc.avatarUrl || '',
+    passwordMeetsPolicy: doc.passwordMeetsPolicy === true,
   };
 }
 
@@ -34,6 +39,7 @@ function meResponse(user) {
     points: pts,
     loyaltyPoints: pts,
     avatarUrl: user.avatarUrl || '',
+    passwordMeetsPolicy: user.passwordMeetsPolicy === true,
   };
 }
 
@@ -103,36 +109,50 @@ router.patch('/me', authMiddleware, async (req, res, next) => {
 
 /**
  * @route   POST /api/auth/register
- * @desc    Yeni bir admin kullanıcısı kaydeder
- * @access  Public (İlk admini oluşturmak için şimdilik public)
+ * @desc    Yeni müşteri kaydı (e-posta + güçlü şifre)
+ * @access  Public
  */
 router.post('/register', async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
 
-    let user = await User.findOne({ email });
+    const emailTrim = String(email || '').trim().toLowerCase();
+    if (!emailTrim || !password) {
+      return res.status(400).json({ message: 'E-posta ve şifre gerekli' });
+    }
+    if (!isValidEmail(emailTrim)) {
+      return res.status(400).json({ message: 'Geçerli bir e-posta adresi girin' });
+    }
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
+    }
+
+    let user = await User.findOne({ email: emailTrim });
     if (user) {
       return res.status(400).json({ message: 'Bu e-posta adresi zaten kullanılıyor' });
     }
 
-    // Name yoksa email'den oluştur
-    const userName = name || email.split('@')[0];
-    
-    // passwordHash olarak kaydet (pre-save hook otomatik hashleyecek)
-    user = new User({ 
-      email, 
-      passwordHash: password, // pre-save hook otomatik hashleyecek
-      name: userName, 
-      role: 'musteri'
+    const userName = (name && String(name).trim()) || emailTrim.split('@')[0];
+
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET environment variable bulunamadı!');
+      return res.status(500).json({ message: 'Sunucu yapılandırma hatası.' });
+    }
+
+    user = new User({
+      email: emailTrim,
+      passwordHash: password,
+      name: userName,
+      role: 'musteri',
+      passwordMeetsPolicy: true,
     });
     await user.save();
 
-    // JWT payload'a role, email, name ekle (direkt payload'da, user wrapper olmadan)
-    const payload = { 
+    const payload = {
       id: user.id,
       role: user.role,
       email: user.email,
-      name: user.name
+      name: user.name,
     };
 
     jwt.sign(
@@ -144,8 +164,10 @@ router.post('/register', async (req, res, next) => {
         res.status(201).json({ token, user: userPayload(user) });
       }
     );
-
   } catch (error) {
+    if (error && error.code === 11000) {
+      return res.status(400).json({ message: 'Bu e-posta adresi zaten kullanılıyor' });
+    }
     console.error(error.message);
     next(error);
   }
@@ -153,63 +175,58 @@ router.post('/register', async (req, res, next) => {
 
 /**
  * @route   POST /api/auth/login
- * @desc    Admin kullanıcısının giriş yapmasını sağlar
+ * @desc    E-posta ve şifre ile giriş
  * @access  Public
  */
 router.post('/login', async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const emailRaw = String(req.body.email ?? req.body.identifier ?? '').trim().toLowerCase();
+    const { password } = req.body;
 
-    // JWT_SECRET kontrolü
     if (!process.env.JWT_SECRET) {
       console.error('❌ JWT_SECRET environment variable bulunamadı!');
       return res.status(500).json({ message: 'Sunucu yapılandırma hatası. Lütfen yönetici ile iletişime geçin.' });
     }
 
-    // Email ve password kontrolü
-    if (!email || !password) {
+    if (!emailRaw || !password) {
       return res.status(400).json({ message: 'E-posta ve şifre gerekli' });
     }
 
-    // Email'i lowercase'e çevir (User modelinde lowercase: true var ama yine de kontrol edelim)
-    const emailLower = email.toLowerCase().trim();
-    
-    // Kullanıcıyı bul - passwordHash ve branchId'yi de getir
-    let user = await User.findOne({ email: emailLower }).populate('branchId', 'name');
+    if (!isValidEmail(emailRaw)) {
+      return res.status(400).json({ message: 'Geçerli bir e-posta adresi girin' });
+    }
+
+    const user = await User.findOne({ email: emailRaw }).populate('branchId', 'name');
+
     if (!user) {
-      console.error(`❌ Kullanıcı bulunamadı: ${emailLower}`);
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
-    
-    console.log(`🔍 Kullanıcı bulundu: ${email}, Rol: ${user.role}, Aktif: ${user.isActive}`);
 
-    // passwordHash kontrolü - eğer yoksa hata döndür
+    console.log(`🔍 Kullanıcı bulundu: ${user.email}, Rol: ${user.role}, Aktif: ${user.isActive}`);
+
     if (!user.passwordHash || typeof user.passwordHash !== 'string') {
       console.error('Kullanıcıda passwordHash yok veya geçersiz:', {
         email: user.email,
         passwordHash: !!user.passwordHash,
-        passwordHashType: typeof user.passwordHash
+        passwordHashType: typeof user.passwordHash,
       });
       return res.status(400).json({ message: 'Kullanıcı şifresi bulunamadı. Lütfen yönetici ile iletişime geçin.' });
     }
 
-    // Aktif olmayan kullanıcı kontrolü
     if (!user.isActive) {
       return res.status(403).json({ message: 'Hesap devre dışı' });
     }
 
-    // bcrypt.compare() için parametreleri kontrol et
     if (!password || typeof password !== 'string' || !user.passwordHash || typeof user.passwordHash !== 'string') {
       console.error('bcrypt.compare() için geçersiz parametreler:', {
         password: !!password,
         passwordType: typeof password,
         passwordHash: !!user.passwordHash,
-        passwordHashType: typeof user.passwordHash
+        passwordHashType: typeof user.passwordHash,
       });
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
 
-    // bcrypt.compare() hatasını yakala
     let isMatch;
     try {
       isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -218,62 +235,65 @@ router.post('/login', async (req, res, next) => {
       console.error('bcrypt.compare() hatası:', bcryptError);
       console.error('Parametreler:', {
         password: password ? `${password.substring(0, 3)}...` : 'undefined',
-        passwordHash: user.passwordHash ? `${user.passwordHash.substring(0, 10)}...` : 'undefined'
+        passwordHash: user.passwordHash ? `${user.passwordHash.substring(0, 10)}...` : 'undefined',
       });
       return res.status(500).json({ message: 'Şifre kontrolü sırasında hata oluştu' });
     }
 
     if (!isMatch) {
-      console.error(`❌ Şifre yanlış - Email: ${emailLower}, Kullanıcı bulundu: ${!!user}, passwordHash var: ${!!user.passwordHash}`);
+      console.error(
+        `❌ Şifre yanlış - Giriş: ${emailRaw}, Kullanıcı bulundu: ${!!user}, passwordHash var: ${!!user.passwordHash}`
+      );
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
 
-    // Eski rolleri yeni rollere çevir - SAVE'DEN ÖNCE YAPILMALI
+    if (isStrongPassword(password)) {
+      if (user.passwordMeetsPolicy !== true) {
+        user.passwordMeetsPolicy = true;
+        try {
+          await user.save();
+        } catch (e) {
+          console.error('passwordMeetsPolicy güncellenemedi', e);
+        }
+      }
+    }
+
     const roleMapping = {
-      'waiter': 'garson',
-      'kitchen': 'mutfak'
+      waiter: 'garson',
+      kitchen: 'mutfak',
     };
     if (user.role && roleMapping[user.role]) {
       const oldRole = user.role;
       user.role = roleMapping[user.role];
       console.log(`🔄 ${user.email} rolü güncelleniyor: ${oldRole} → ${user.role}`);
-      // Rol değişikliğini kaydet
       try {
         await user.save();
         console.log(`✅ ${user.email} rolü güncellendi: ${user.role}`);
       } catch (saveError) {
-        console.error(`❌ Rol güncelleme hatası:`, saveError);
-        // Hata olsa bile devam et, token oluştur
+        console.error('❌ Rol güncelleme hatası:', saveError);
       }
     }
 
-    // Admin yoksa ilk giriş yapan kullanıcıyı admin yap
     const adminCount = await User.countDocuments({ role: 'admin' });
     const validRoles = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
-    
-    // Superadmin rolü varsa değiştirme - ÖNCE KONTROL ET
+
     if (user.role === 'superadmin') {
-      // Superadmin rolü değiştirilmemeli
       console.log(`✅ ${user.email} superadmin olarak giriş yapıyor`);
     } else if (adminCount === 0) {
-      // Hiç admin yok ve kullanıcı superadmin değilse, bu kullanıcıyı admin yap
       user.role = 'admin';
       await user.save();
       console.log(`✅ ${user.email} kullanıcısı ilk admin olarak ayarlandı`);
     } else if (!user.role || !validRoles.includes(user.role)) {
-      // Role yoksa veya geçersizse default olarak 'garson' ver
       user.role = 'garson';
       await user.save();
       console.log(`⚠️  ${user.email} kullanıcısına otomatik olarak 'garson' rolü verildi`);
     }
 
-    // Name kontrolü - yoksa email'den oluştur
     if (!user.name) {
       user.name = user.email.split('@')[0];
       await user.save();
     }
 
-    // JWT_SECRET kontrolü (token oluşturmadan önce)
     if (!process.env.JWT_SECRET) {
       console.error('❌ JWT_SECRET environment variable bulunamadı!');
       return res.status(500).json({ message: 'Sunucu yapılandırma hatası. Lütfen yönetici ile iletişime geçin.' });
@@ -290,20 +310,21 @@ router.post('/login', async (req, res, next) => {
         role: user.role,
         name: user.name,
         branchId: user.branchId ? user.branchId._id || user.branchId : null,
-        branch: user.branchId ? {
-          _id: user.branchId._id || user.branchId,
-          name: user.branchId.name || null
-        } : null,
+        branch: user.branchId
+          ? {
+              _id: user.branchId._id || user.branchId,
+              name: user.branchId.name || null,
+            }
+          : null,
         points: pts,
         loyaltyPoints: pts,
         avatarUrl: user.avatarUrl || '',
-      }
+        passwordMeetsPolicy: user.passwordMeetsPolicy === true,
+      },
     });
-
   } catch (error) {
     console.error('❌ Login hatası:', error);
     console.error('Error stack:', error.stack);
-    // Hata detaylarını logla
     if (error.name === 'MongoError' || error.name === 'MongoServerError') {
       console.error('MongoDB hatası:', error.message);
       return res.status(500).json({ message: 'Veritabanı hatası. Lütfen tekrar deneyin.' });
@@ -312,11 +333,40 @@ router.post('/login', async (req, res, next) => {
       console.error('JWT hatası:', error.message);
       return res.status(500).json({ message: 'Token oluşturma hatası. Lütfen tekrar deneyin.' });
     }
-    // Genel hata
     return res.status(500).json({ message: error.message || 'Giriş sırasında bir hata oluştu' });
   }
 });
 
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Mevcut şifre doğrulaması + güçlü yeni şifre (tüm roller)
+ */
+router.post('/change-password', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Mevcut şifre ve yeni şifre gerekli' });
+    }
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
+    }
 
-// Bu rotaları dışa aktarıyoruz
+    const user = await User.findById(userId);
+    if (!user || !user.passwordHash) {
+      return res.status(400).json({ message: 'Bu hesap için şifre değiştirilemiyor' });
+    }
+    const ok = await bcrypt.compare(String(currentPassword), user.passwordHash);
+    if (!ok) {
+      return res.status(400).json({ message: 'Mevcut şifre hatalı' });
+    }
+    user.passwordHash = String(newPassword);
+    user.passwordMeetsPolicy = true;
+    await user.save();
+    res.json({ ok: true, passwordMeetsPolicy: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;

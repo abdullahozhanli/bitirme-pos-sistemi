@@ -60,6 +60,19 @@ import './SuperAdminUserManagement.css';
 
 const ROLES = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
 
+const PASSWORD_POLICY_MESSAGE =
+  'Şifre en az 8 karakter olmalı; en az bir büyük harf, bir küçük harf, bir rakam ve bir sembol içermelidir.';
+
+function isStrongPassword(value) {
+  const s = String(value || '');
+  if (s.length < 8) return false;
+  if (!/[a-z]/.test(s)) return false;
+  if (!/[A-Z]/.test(s)) return false;
+  if (!/[0-9]/.test(s)) return false;
+  if (!/[^A-Za-z0-9]/.test(s)) return false;
+  return true;
+}
+
 // Güvenli şifre üretme fonksiyonu
 const generateSecurePassword = (length = 12) => {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
@@ -335,6 +348,10 @@ export default function SuperAdminUserManagement() {
           setError('Yeni kullanıcı için şifre zorunludur');
           return;
         }
+        if (!isStrongPassword(submitData.password)) {
+          setError(PASSWORD_POLICY_MESSAGE);
+          return;
+        }
         response = await axios.post('/api/superadmin/users', submitData, { headers });
         
         // Yeni kullanıcı oluşturulduğunda şifreyi göster
@@ -358,8 +375,8 @@ export default function SuperAdminUserManagement() {
       return;
     }
 
-    if (passwordData.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır');
+    if (!isStrongPassword(passwordData.password)) {
+      setError(PASSWORD_POLICY_MESSAGE);
       return;
     }
 
@@ -1005,7 +1022,7 @@ export default function SuperAdminUserManagement() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                   <Typography variant="caption" sx={{ fontSize: '12px', color: '#666', flex: 1 }}>
-                    {autoGeneratePassword ? 'Güvenli şifre otomatik oluşturulacak' : 'En az 6 karakter olmalıdır'}
+                    {autoGeneratePassword ? 'Güvenli şifre otomatik oluşturulacak' : PASSWORD_POLICY_MESSAGE}
                   </Typography>
                   <FormControlLabel
                     control={

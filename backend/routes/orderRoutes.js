@@ -3,9 +3,119 @@ const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const Branch = require('../models/Branch');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+/**
+ * GET /api/orders/mine
+ * Giriş yapmış müşterinin siparişleri (customer alanı)
+ */
+router.get('/mine', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const actor = await User.findById(userId).select('role').lean();
+    if (!actor || actor.role !== 'musteri') {
+      return res.json({
+        items: [],
+        page: 1,
+        limit: 20,
+        total: 0,
+        pages: 0,
+      });
+    }
+
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+    const filter = { customer: new mongoose.Types.ObjectId(userId) };
+    const branchQ = req.query.branchId;
+    if (branchQ === '__none__') {
+      filter.$or = [{ branchId: null }, { branchId: { $exists: false } }];
+    } else if (branchQ && mongoose.Types.ObjectId.isValid(String(branchQ))) {
+      filter.branchId = new mongoose.Types.ObjectId(String(branchQ));
+    }
+
+    const [items, total] = await Promise.all([
+      Order.find(filter)
+        .populate('table', 'name capacity')
+        .populate('items.menuItem', 'name price category imageUrl')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
+
+    res.json({
+      items,
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit) || 0,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/orders/mine/branches
+ * Müşteri siparişlerinin şubelere göre özeti
+ */
+router.get('/mine/branches', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const actor = await User.findById(userId).select('role').lean();
+    if (!actor || actor.role !== 'musteri') {
+      return res.json({ branches: [] });
+    }
+
+    const oid = new mongoose.Types.ObjectId(userId);
+    const agg = await Order.aggregate([
+      { $match: { customer: oid } },
+      {
+        $group: {
+          _id: '$branchId',
+          orderCount: { $sum: 1 },
+          lastOrderAt: { $max: '$createdAt' },
+        },
+      },
+      { $sort: { lastOrderAt: -1 } },
+    ]);
+
+    const objectIds = agg.map((r) => r._id).filter((id) => id != null);
+    const nameById = {};
+    if (objectIds.length) {
+      const docs = await Branch.find({ _id: { $in: objectIds } })
+        .select('name isActive')
+        .lean();
+      for (const b of docs) {
+        nameById[String(b._id)] = b.name || 'Şube';
+      }
+    }
+
+    const branches = agg.map((row) => {
+      const id = row._id;
+      const idStr = id == null ? null : String(id);
+      const branchName =
+        id == null
+          ? 'Şube atanmamış'
+          : nameById[idStr] || `Şube (${idStr.slice(-6)})`;
+      return {
+        branchId: idStr,
+        branchName,
+        orderCount: row.orderCount,
+        lastOrderAt: row.lastOrderAt,
+      };
+    });
+
+    res.json({ branches });
+  } catch (e) {
+    next(e);
+  }
+});
 
 /**
  * GET /api/orders

@@ -15,12 +15,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
-import { useAuth, showComingSoon } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import {
   pickProfileImageUri,
   uriToProfileAvatarDataUrl,
 } from '../utils/pickProfileAvatar';
 import * as LoyaltyPoints from '../utils/loyaltyPoints';
+import client from '../api/client';
 
 const PROFILE_GRADIENT = ['#3FA34D', '#66BB6A'];
 const PAGE_BG = '#F3F6F4';
@@ -29,15 +30,27 @@ export default function ProfileScreen({ navigation }) {
   const { user, logout, refreshUser, updateProfile } = useAuth();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [previewPicked, setPreviewPicked] = useState(null);
+  const [orderTotal, setOrderTotal] = useState(0);
   const preparedUploadRef = useRef({ uri: null, promise: null });
 
   useFocusEffect(
     useCallback(() => {
       refreshUser();
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await client.get('/api/orders/mine', { params: { limit: 1, page: 1 } });
+          if (!cancelled) setOrderTotal(Number(res.data?.total) || 0);
+        } catch {
+          if (!cancelled) setOrderTotal(0);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
     }, [refreshUser])
   );
   const displayName = user?.name?.trim() || 'Misafir';
-  const orderCount = 12;
   const loyaltyPoints = LoyaltyPoints.getLoyaltyPoints(user);
   const hasAvatar = Boolean(user?.avatarUrl?.trim());
 
@@ -210,7 +223,7 @@ export default function ProfileScreen({ navigation }) {
               size={16}
               color={menuColors.primaryDark}
             />
-            <Text style={styles.statsText}>Toplam Siparis: {orderCount}</Text>
+            <Text style={styles.statsText}>Toplam sipariş: {orderTotal}</Text>
           </View>
         </View>
 
@@ -221,10 +234,10 @@ export default function ProfileScreen({ navigation }) {
               uiShadow.card,
               pressScale(pressed),
             ]}
-            onPress={() => showComingSoon('Puanlarim')}
+            onPress={() => navigation.navigate('LoyaltyPoints')}
           >
             <Ionicons name="sparkles-outline" size={18} color={menuColors.primaryDark} />
-            <Text style={styles.miniTitle}>Puanlarim</Text>
+            <Text style={styles.miniTitle}>Puanlarım</Text>
             <Text style={styles.miniDesc}>
               {loyaltyPoints} puan biriktirdin
             </Text>
@@ -235,11 +248,11 @@ export default function ProfileScreen({ navigation }) {
               uiShadow.card,
               pressScale(pressed),
             ]}
-            onPress={() => showComingSoon('Kampanyalarim')}
+            onPress={() => navigation.navigate('Campaigns')}
           >
             <Ionicons name="pricetag-outline" size={18} color={menuColors.primaryDark} />
-            <Text style={styles.miniTitle}>Kampanyalarim</Text>
-            <Text style={styles.miniDesc}>Ilk siparise %20 indirim aktif</Text>
+            <Text style={styles.miniTitle}>Kampanyalarım</Text>
+            <Text style={styles.miniDesc}>Sepet tutarına göre indirim seçenekleri</Text>
           </Pressable>
         </View>
 
@@ -247,18 +260,18 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.groupTitle}>Siparislerim</Text>
           <MenuRow
             icon="time-outline"
-            label="Gecmis Siparisler"
-            onPress={() => showComingSoon('Gecmis Siparisler')}
+            label="Geçmiş siparişler"
+            onPress={() => navigation.navigate('BranchList', { intent: 'pastOrders' })}
           />
           <MenuRow
             icon="heart-outline"
             label="Favorilerim"
-            onPress={() => showComingSoon('Favorilerim')}
+            onPress={() => navigation.navigate('BranchList', { intent: 'favorites' })}
           />
           <MenuRow
             icon="refresh-outline"
-            label="Tekrar Siparis Ver"
-            onPress={() => showComingSoon('Tekrar Siparis Ver')}
+            label="Tekrar sipariş ver"
+            onPress={() => navigation.navigate('BranchList', { intent: 'reorder' })}
           />
         </View>
 
@@ -266,18 +279,18 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.groupTitle}>Ayarlar</Text>
           <MenuRow
             icon="key-outline"
-            label="Sifre Degistir"
-            onPress={() => showComingSoon('Sifre Degistir')}
+            label="Şifre değiştir"
+            onPress={() => navigation.navigate('ChangePassword')}
           />
           <MenuRow
             icon="notifications-outline"
-            label="Bildirim Tercihleri"
-            onPress={() => showComingSoon('Bildirim Tercihleri')}
+            label="Bildirim tercihleri"
+            onPress={() => navigation.navigate('NotificationSettings')}
           />
           <MenuRow
             icon="language-outline"
             label="Dil"
-            onPress={() => showComingSoon('Dil')}
+            onPress={() => navigation.navigate('LanguageSettings')}
           />
         </View>
 
@@ -285,13 +298,13 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.groupTitle}>Destek</Text>
           <MenuRow
             icon="help-circle-outline"
-            label="Yardim ve Destek"
-            onPress={() => showComingSoon('Yardim ve Destek')}
+            label="Yardım ve destek"
+            onPress={() => navigation.navigate('HelpFaq')}
           />
           <MenuRow
             icon="chatbubble-ellipses-outline"
-            label="Iletisim"
-            onPress={() => showComingSoon('Iletisim')}
+            label="İletişim"
+            onPress={() => navigation.navigate('Contact')}
           />
         </View>
 

@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: false, // passwordHash kullanıldığı için opsiyonel
-    minlength: 6, // Şifre en az 6 karakter olmalı
+    minlength: 8,
   },
   passwordHash: {
     type: String,
@@ -46,6 +46,14 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0,
+  },
+  /**
+   * Son şifre politikası (8+ büyük/küçük/rakam/sembol) ile uyumlu.
+   * false/eksik: mobilde güçlü şifreye geçiş zorunlu (girişte zayıf şifre yazıldıysa).
+   */
+  passwordMeetsPolicy: {
+    type: Boolean,
+    default: false,
   },
 });
 

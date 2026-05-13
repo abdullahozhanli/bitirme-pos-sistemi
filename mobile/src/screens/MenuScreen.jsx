@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +30,7 @@ import {
 } from '../constants/homeTheme';
 import { useTableSession } from '../context/TableSessionContext';
 import { useCart } from '../context/CartContext';
+import { useFavorites } from '../context/FavoritesContext';
 
 import client from '../api/client';
 
@@ -79,12 +89,101 @@ function formatPrice(value) {
   return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
 }
 
+const MenuProductCard = memo(function MenuProductCard({
+  item,
+  onSelect,
+  onQuickAdd,
+  favorited,
+  onToggleFavorite,
+}) {
+  const pid = String(item._id || item.id || item.name);
+  const meta = productCardMeta(item);
+  const uri = item.imageUrl || item.image || FALLBACK_IMG;
+  return (
+    <View style={styles.itemCard}>
+      <Pressable
+        style={({ pressed }) => [styles.itemPress, pressed && { opacity: 0.96 }]}
+        onPress={() => onSelect(item)}
+        android_ripple={androidRipple}
+      >
+        <View style={styles.itemThumbWrap}>
+          <Image source={{ uri }} style={styles.itemThumb} resizeMode="cover" />
+          {meta.showBadge ? (
+            <View style={styles.itemBadge}>
+              <Ionicons name="leaf-outline" size={11} color="#FFFFFF" />
+            </View>
+          ) : null}
+          <Pressable
+            style={styles.itemThumbFavBtn}
+            onPress={() => onToggleFavorite?.(item)}
+            hitSlop={6}
+          >
+            <Ionicons
+              name={favorited ? 'heart' : 'heart-outline'}
+              size={17}
+              color={favorited ? '#E53935' : PALETTE.textSecondary}
+            />
+          </Pressable>
+        </View>
+        <View style={styles.itemBody}>
+          <View style={styles.itemTopRow}>
+            <Text style={styles.itemName} numberOfLines={1}>
+              {item.name}
+            </Text>
+          </View>
+          <View style={styles.itemStatsRow}>
+            <View style={styles.itemStat}>
+              <Ionicons name="star" size={13} color={PALETTE.accent} />
+              <Text style={styles.itemStatText}>
+                {meta.rating.toFixed(1)}{' '}
+                <Text style={styles.itemStatCount}>({meta.count})</Text>
+              </Text>
+            </View>
+            <View style={styles.itemStat}>
+              <Ionicons name="time-outline" size={13} color={PALETTE.textSecondary} />
+              <Text style={styles.itemStatText}>{meta.prep} dk</Text>
+            </View>
+          </View>
+          <View style={styles.itemFooterBlock}>
+            <View style={styles.itemPriceAddRow}>
+              <Text style={styles.itemPrice} numberOfLines={1}>
+                {formatPrice(item.price)}
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.itemAddBtn,
+                  pressed && { backgroundColor: '#DCEEDC' },
+                ]}
+                onPress={() => onQuickAdd(item)}
+                hitSlop={6}
+              >
+                <Text style={styles.itemAddBtnText}>Sepete Ekle</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    </View>
+  );
+});
+
 export default function MenuScreen({ navigation }) {
   const { width: windowWidth } = useWindowDimensions();
   const popularCardWidth = Math.round(windowWidth * 0.445);
   const insets = useSafeAreaInsets();
   const { tableNumber, branchId, branchName, setBranchName } = useTableSession();
   const { addToCart, totals, lines, incrementQty, decrementQty } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favoriteBranchCtx = useMemo(
+    () => ({ branchId, branchName }),
+    [branchId, branchName]
+  );
+  const handleToggleFavorite = useCallback(
+    (product) => {
+      toggleFavorite(product, favoriteBranchCtx);
+    },
+    [toggleFavorite, favoriteBranchCtx]
+  );
   const [activeCat, setActiveCat] = useState('Tum');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,16 +196,12 @@ export default function MenuScreen({ navigation }) {
 
   const categoryScrollRef = useRef(null);
   const categoryLayoutsRef = useRef({});
+  const categoryViewportWRef = useRef(0);
+  const categoryContentWRef = useRef(0);
+  const categoryScrollXRef = useRef(0);
 
   const selectCategory = useCallback((cat) => {
     setActiveCat(cat);
-    requestAnimationFrame(() => {
-      const layout = categoryLayoutsRef.current[cat];
-      const scroller = categoryScrollRef.current;
-      if (!layout || !scroller?.scrollTo) return;
-      const lead = 12;
-      scroller.scrollTo({ x: Math.max(0, layout.x - lead), animated: true });
-    });
   }, []);
 
   useEffect(() => {
@@ -152,6 +247,38 @@ export default function MenuScreen({ navigation }) {
     return ['Tum', ...Array.from(new Set(names))];
   }, [products]);
 
+  /**
+   * Aktif chip yatayda taşmışsa görünür yap. Tüm chip'ler zaten sığıyorsa scrollTo yok.
+   * `categories` tanımından sonra olmalı (aksi halde length hatası / TDZ).
+   */
+  useLayoutEffect(() => {
+    const layout = categoryLayoutsRef.current[activeCat];
+    const scroller = categoryScrollRef.current;
+    if (!layout || !scroller?.scrollTo) return;
+
+    const viewport = categoryViewportWRef.current;
+    const contentW = categoryContentWRef.current;
+    if (!viewport || contentW <= viewport + 2) return;
+
+    const scrollX = categoryScrollXRef.current;
+    const lead = 12;
+    const chipLeft = layout.x;
+    const chipRight = layout.x + (layout.width ?? 0);
+    const visLeft = scrollX;
+    const visRight = scrollX + viewport;
+
+    let targetX = scrollX;
+    if (chipLeft < visLeft + lead) {
+      targetX = Math.max(0, chipLeft - lead);
+    } else if (chipRight > visRight - lead) {
+      targetX = Math.max(0, Math.min(chipRight - viewport + lead, contentW - viewport));
+    }
+
+    if (Math.abs(targetX - scrollX) > 1) {
+      scroller.scrollTo({ x: targetX, animated: false });
+    }
+  }, [activeCat, categories]);
+
   const filteredProducts = useMemo(() => {
     let list = products;
     if (activeCat !== 'Tum') {
@@ -172,12 +299,19 @@ export default function MenuScreen({ navigation }) {
   }, [activeCat, products, search]);
 
   const popularProducts = useMemo(() => {
-    const flagged = products.filter(
+    let pool = products;
+    if (activeCat !== 'Tum') {
+      pool = products.filter((p) => {
+        const catName = p?.category?.name || p?.categoryName || p?.category;
+        return catName === activeCat;
+      });
+    }
+    const flagged = pool.filter(
       (p) => p?.featured || p?.isPopular || p?.popular
     );
     if (flagged.length >= 2) return flagged.slice(0, 8);
-    return products.slice(0, 8);
-  }, [products]);
+    return pool.slice(0, 8);
+  }, [products, activeCat]);
 
   function extrasNote() {
     const parts = [];
@@ -199,9 +333,9 @@ export default function MenuScreen({ navigation }) {
     setExtraCheese(false);
   }
 
-  function quickAdd(product) {
+  const quickAdd = useCallback((product) => {
     addToCart(product, { unitPrice: Number(product.price || 0) });
-  }
+  }, [addToCart]);
 
   function catLabel(cat) {
     return cat === 'Tum' ? 'Tümü' : cat;
@@ -222,6 +356,175 @@ export default function MenuScreen({ navigation }) {
     }
     return '';
   }, [branchId, branchName, tableNumber]);
+
+  const welcomeSection = useMemo(
+    () => (
+      <View style={styles.welcomeCard}>
+        {branchDisplayName ? (
+          <Text style={styles.branchSubtitle}>{branchDisplayName}</Text>
+        ) : null}
+        <View style={styles.heroStatusChip}>
+          <Text style={styles.heroStatusText}>Masa {tableNumber || '—'}</Text>
+          <Text style={styles.heroStatusDivider}>•</Text>
+          <View style={styles.statusDot} />
+          <Text style={styles.heroStatusText}>QR ile bağlı</Text>
+        </View>
+
+        <View style={styles.assistantCard}>
+          <Image
+            source={require('../görsel/dal.png')}
+            style={styles.assistantBgLeaf}
+            resizeMode="contain"
+            blurRadius={0.8}
+          />
+          <View style={styles.assistantTopRow}>
+            <View style={styles.assistantTextCol}>
+              <Text style={styles.assistantTitle}>Bugün ne sipariş etmek istersiniz?</Text>
+              <View style={styles.assistantDescSpacer} />
+            </View>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.assistantBtn,
+              pressed && { opacity: 0.92 },
+            ]}
+            onPress={() => navigation.navigate('CalorieEstimate')}
+          >
+            <LinearGradient
+              colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
+            <Text style={styles.assistantBtnText}>AI  Menü Asistanı</Text>
+            <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
+          </Pressable>
+
+          <View style={styles.searchWrap}>
+            <View style={styles.searchIconWrap}>
+              <Ionicons
+                name="search"
+                size={18}
+                color="#3F8F4E"
+                style={styles.searchIcon}
+              />
+            </View>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Menüde ara..."
+              placeholderTextColor={PALETTE.textSecondary}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+          </View>
+        </View>
+      </View>
+    ),
+    [branchDisplayName, tableNumber, search, navigation]
+  );
+
+  const popularSectionEl = useMemo(() => {
+    if (!showPopular) return null;
+    return (
+      <View style={styles.popularSection}>
+        <Text style={styles.sectionTitle}>Popüler Ürünler</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.popularRow}
+        >
+          {popularProducts.map((item) => {
+            const pid = String(item._id || item.id || item.name);
+            const uri = item.imageUrl || item.image || FALLBACK_IMG;
+            const meta = productCardMeta(item);
+            return (
+              <Pressable
+                key={`pop-${pid}`}
+                style={({ pressed }) => [
+                  styles.popularCard,
+                  { width: popularCardWidth },
+                  pressScale(pressed),
+                ]}
+                onPress={() => setSelectedProduct(item)}
+                android_ripple={androidRipple}
+              >
+                <View style={styles.popularImageWrap}>
+                  <Image
+                    source={{ uri }}
+                    style={styles.popularImage}
+                    resizeMode="cover"
+                  />
+                  <Pressable
+                    style={styles.popularFavBtn}
+                    hitSlop={6}
+                    onPress={() => handleToggleFavorite(item)}
+                  >
+                    <Ionicons
+                      name={isFavorite(item._id || item.id, branchId) ? 'heart' : 'heart-outline'}
+                      size={18}
+                      color={
+                        isFavorite(item._id || item.id, branchId)
+                          ? '#E53935'
+                          : PALETTE.textSecondary
+                      }
+                    />
+                  </Pressable>
+                  {meta.showBadge ? (
+                    <View style={styles.popularBadge}>
+                      <Ionicons
+                        name="leaf-outline"
+                        size={12}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                  ) : null}
+                </View>
+                <View style={styles.popularBody}>
+                  <Text style={styles.popularName} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  <View style={styles.popularStatsRow}>
+                    <View style={styles.popularStat}>
+                      <Ionicons
+                        name="star"
+                        size={13}
+                        color={PALETTE.accent}
+                      />
+                      <Text style={styles.popularStatText}>
+                        {meta.rating.toFixed(1)}{' '}
+                        <Text style={styles.popularStatCount}>
+                          ({meta.count})
+                        </Text>
+                      </Text>
+                    </View>
+                    <View style={styles.popularStat}>
+                      <Ionicons
+                        name="time-outline"
+                        size={13}
+                        color={PALETTE.textSecondary}
+                      />
+                      <Text style={styles.popularStatText}>{meta.prep} dk</Text>
+                    </View>
+                  </View>
+                  <View style={styles.popularFooter}>
+                    <Text
+                      style={styles.popularPrice}
+                      numberOfLines={1}
+                    >
+                      {formatPrice(item.price)}
+                    </Text>
+                  </View>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -250,6 +553,7 @@ export default function MenuScreen({ navigation }) {
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={Platform.OS === 'android'}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -258,81 +562,29 @@ export default function MenuScreen({ navigation }) {
           },
         ]}
         stickyHeaderIndices={[1]}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
+        {...(Platform.OS === 'ios' ? { delayContentTouches: false } : {})}
       >
-        {/* Hero + Search */}
-        <View style={styles.welcomeCard}>
-          {branchDisplayName ? (
-            <Text style={styles.branchSubtitle}>{branchDisplayName}</Text>
-          ) : null}
-          <View style={styles.heroStatusChip}>
-            <Text style={styles.heroStatusText}>Masa {tableNumber || '—'}</Text>
-            <Text style={styles.heroStatusDivider}>•</Text>
-            <View style={styles.statusDot} />
-            <Text style={styles.heroStatusText}>QR ile bağlı</Text>
-          </View>
+        {welcomeSection}
 
-          <View style={styles.assistantCard}>
-            <Image
-              source={require('../görsel/dal.png')}
-              style={styles.assistantBgLeaf}
-              resizeMode="contain"
-              blurRadius={0.8}
-            />
-            <View style={styles.assistantTopRow}>
-              <View style={styles.assistantTextCol}>
-                <Text style={styles.assistantTitle}>Bugün ne sipariş etmek istersiniz?</Text>
-                <View style={styles.assistantDescSpacer} />
-              </View>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.assistantBtn,
-                pressed && { opacity: 0.92 },
-              ]}
-              onPress={() => navigation.navigate('CalorieEstimate')}
-            >
-              <LinearGradient
-                colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
-              <Text style={styles.assistantBtnText}>AI  Menü Asistanı</Text>
-              <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
-            </Pressable>
-
-            <View style={styles.searchWrap}>
-              <View style={styles.searchIconWrap}>
-                <Ionicons
-                  name="search"
-                  size={18}
-                  color="#3F8F4E"
-                  style={styles.searchIcon}
-                />
-              </View>
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Menüde ara..."
-                placeholderTextColor={PALETTE.textSecondary}
-                style={styles.searchInput}
-                returnKeyType="search"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Sticky kategori barı */}
-        <View style={styles.stickyCategoriesWrap}>
+        <View style={styles.stickyCategoriesWrap} collapsable={false}>
           <ScrollView
             ref={categoryScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryRow}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
+            nestedScrollEnabled={Platform.OS === 'android'}
+            scrollEventThrottle={16}
+            onLayout={(e) => {
+              categoryViewportWRef.current = e.nativeEvent.layout.width;
+            }}
+            onContentSizeChange={(w) => {
+              categoryContentWRef.current = w;
+            }}
+            onScroll={(e) => {
+              categoryScrollXRef.current = e.nativeEvent.contentOffset.x;
+            }}
           >
             {categories.map((cat) => {
               const active = activeCat === cat;
@@ -350,6 +602,7 @@ export default function MenuScreen({ navigation }) {
                     onLayout={onChipLayout}
                   >
                     <Pressable
+                      delayPressIn={0}
                       onPress={() => selectCategory(cat)}
                       android_ripple={{
                         ...androidRipple,
@@ -371,6 +624,7 @@ export default function MenuScreen({ navigation }) {
               return (
                 <Pressable
                   key={cat}
+                  delayPressIn={0}
                   onLayout={onChipLayout}
                   onPress={() => selectCategory(cat)}
                   android_ripple={{
@@ -391,97 +645,8 @@ export default function MenuScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* Popüler Ürünler */}
-        {showPopular ? (
-          <View style={styles.popularSection}>
-            <Text style={styles.sectionTitle}>Popüler Ürünler</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.popularRow}
-            >
-              {popularProducts.map((item) => {
-                const pid = String(item._id || item.id || item.name);
-                const uri = item.imageUrl || item.image || FALLBACK_IMG;
-                const meta = productCardMeta(item);
-                return (
-                  <Pressable
-                    key={`pop-${pid}`}
-                    style={({ pressed }) => [
-                      styles.popularCard,
-                      { width: popularCardWidth },
-                      pressScale(pressed),
-                    ]}
-                    onPress={() => setSelectedProduct(item)}
-                    android_ripple={androidRipple}
-                  >
-                    <View style={styles.popularImageWrap}>
-                      <Image
-                        source={{ uri }}
-                        style={styles.popularImage}
-                        resizeMode="cover"
-                      />
-                    <Pressable style={styles.popularFavBtn} hitSlop={6}>
-                      <Ionicons
-                        name="heart-outline"
-                        size={18}
-                        color={PALETTE.textSecondary}
-                      />
-                    </Pressable>
-                      {meta.showBadge ? (
-                        <View style={styles.popularBadge}>
-                          <Ionicons
-                            name="leaf-outline"
-                            size={12}
-                            color="#FFFFFF"
-                          />
-                        </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.popularBody}>
-                      <Text style={styles.popularName} numberOfLines={2}>
-                        {item.name}
-                      </Text>
-                      <View style={styles.popularStatsRow}>
-                        <View style={styles.popularStat}>
-                          <Ionicons
-                            name="star"
-                            size={13}
-                            color={PALETTE.accent}
-                          />
-                          <Text style={styles.popularStatText}>
-                            {meta.rating.toFixed(1)}{' '}
-                            <Text style={styles.popularStatCount}>
-                              ({meta.count})
-                            </Text>
-                          </Text>
-                        </View>
-                        <View style={styles.popularStat}>
-                          <Ionicons
-                            name="time-outline"
-                            size={13}
-                            color={PALETTE.textSecondary}
-                          />
-                          <Text style={styles.popularStatText}>{meta.prep} dk</Text>
-                        </View>
-                      </View>
-                      <View style={styles.popularFooter}>
-                        <Text
-                          style={styles.popularPrice}
-                          numberOfLines={1}
-                        >
-                          {formatPrice(item.price)}
-                        </Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        ) : null}
+        {popularSectionEl}
 
-        {/* Ana ürün listesi başlığı */}
         {!loading && !loadError && filteredProducts.length > 0 ? (
           <View style={styles.listHeaderRow}>
             <Text style={styles.sectionTitle}>{activeCatLabel}</Text>
@@ -489,7 +654,6 @@ export default function MenuScreen({ navigation }) {
           </View>
         ) : null}
 
-        {/* Loading / error / empty durumları */}
         {loading ? (
           <View style={styles.centerState}>
             <ActivityIndicator size="large" color={PALETTE.textPrimary} />
@@ -521,76 +685,16 @@ export default function MenuScreen({ navigation }) {
           </View>
         ) : null}
 
-        {/* Ürün listesi */}
-        {filteredProducts.map((item) => {
-          const pid = String(item._id || item.id || item.name);
-          const meta = productCardMeta(item);
-          const uri = item.imageUrl || item.image || FALLBACK_IMG;
-          return (
-            <View key={pid} style={styles.itemCard}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.itemPress,
-                  pressed && { opacity: 0.96 },
-                ]}
-                onPress={() => setSelectedProduct(item)}
-                android_ripple={androidRipple}
-              >
-                <View style={styles.itemThumbWrap}>
-                  <Image
-                    source={{ uri }}
-                    style={styles.itemThumb}
-                    resizeMode="cover"
-                  />
-                  {meta.showBadge ? (
-                    <View style={styles.itemBadge}>
-                      <Ionicons name="leaf-outline" size={11} color="#FFFFFF" />
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.itemBody}>
-                  <View style={styles.itemTopRow}>
-                    <Text style={styles.itemName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                    <Pressable style={styles.itemFavBtn} hitSlop={6}>
-                      <Ionicons name="heart-outline" size={18} color={PALETTE.textSecondary} />
-                    </Pressable>
-                  </View>
-                  <View style={styles.itemStatsRow}>
-                    <View style={styles.itemStat}>
-                      <Ionicons name="star" size={13} color={PALETTE.accent} />
-                      <Text style={styles.itemStatText}>
-                        {meta.rating.toFixed(1)} <Text style={styles.itemStatCount}>({meta.count})</Text>
-                      </Text>
-                    </View>
-                    <View style={styles.itemStat}>
-                      <Ionicons name="time-outline" size={13} color={PALETTE.textSecondary} />
-                      <Text style={styles.itemStatText}>{meta.prep} dk</Text>
-                    </View>
-                  </View>
-                  <View style={styles.itemFooterBlock}>
-                    <View style={styles.itemPriceAddRow}>
-                      <Text style={styles.itemPrice} numberOfLines={1}>
-                        {formatPrice(item.price)}
-                      </Text>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.itemAddBtn,
-                          pressed && { backgroundColor: '#DCEEDC' },
-                        ]}
-                        onPress={() => quickAdd(item)}
-                        hitSlop={6}
-                      >
-                        <Text style={styles.itemAddBtnText}>Sepete Ekle</Text>
-                      </Pressable>
-                    </View>
-                  </View>
-                </View>
-              </Pressable>
-            </View>
-          );
-        })}
+        {filteredProducts.map((item) => (
+          <MenuProductCard
+            key={String(item._id || item.id || item.name)}
+            item={item}
+            onSelect={setSelectedProduct}
+            onQuickAdd={quickAdd}
+            favorited={isFavorite(item._id || item.id, branchId)}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        ))}
       </ScrollView>
 
       {/* Sticky cart bar */}
@@ -1397,6 +1501,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
+    zIndex: 2,
+  },
+  itemThumbFavBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
   },
   itemBody: {
     flex: 1,
@@ -1418,12 +1537,6 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     letterSpacing: -0.1,
     paddingRight: 8,
-  },
-  itemFavBtn: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   itemStatsRow: {
     flexDirection: 'row',

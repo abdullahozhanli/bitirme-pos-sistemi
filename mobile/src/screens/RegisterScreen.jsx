@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { homeFonts, androidRipple } from '../constants/homeTheme';
 import { useAuth } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
+import { isValidEmail, isStrongPassword, PASSWORD_POLICY_MESSAGE } from '../utils/authValidation';
 
 const PALETTE = {
   pageBg: '#FFFFFF',
@@ -56,8 +57,12 @@ export default function RegisterScreen({ navigation }) {
       setError('E-posta ve şifre gerekli');
       return;
     }
-    if (password.length < 6) {
-      setError('Şifre en az 6 karakter olmalı');
+    if (!isValidEmail(email.trim())) {
+      setError('Geçerli bir e-posta adresi girin');
+      return;
+    }
+    if (!isStrongPassword(password)) {
+      setError(PASSWORD_POLICY_MESSAGE);
       return;
     }
     setLoading(true);
@@ -142,7 +147,7 @@ export default function RegisterScreen({ navigation }) {
             />
             <TextInput
               style={[styles.input, styles.inputFlex]}
-              placeholder="Şifre (min. 6 karakter)"
+              placeholder="Şifre (8+ karakter, büyük/küçük harf, rakam, sembol)"
               placeholderTextColor={PALETTE.textSecondary}
               secureTextEntry={secure}
               value={password}

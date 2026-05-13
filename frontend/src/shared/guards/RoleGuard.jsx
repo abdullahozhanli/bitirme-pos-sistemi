@@ -26,6 +26,10 @@ export default function RoleGuard({ allowedRoles = [], children, redirectTo = '/
     return <Navigate to="/login" replace />;
   }
 
+  if (user.passwordMeetsPolicy !== true) {
+    return <Navigate to="/password-upgrade" replace />;
+  }
+
   // Role kontrolü
   const userRole = user.role;
   

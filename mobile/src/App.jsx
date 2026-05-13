@@ -14,6 +14,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from './context/AuthContext';
 import { TableSessionProvider } from './context/TableSessionContext';
 import { CartProvider } from './context/CartContext';
+import { FavoritesProvider } from './context/FavoritesContext';
 import RootNavigator from './navigation/RootNavigator';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -57,7 +58,9 @@ export default function App() {
       <AuthProvider>
         <TableSessionProvider>
           <CartProvider>
-            <RootNavigator />
+            <FavoritesProvider>
+              <RootNavigator />
+            </FavoritesProvider>
           </CartProvider>
         </TableSessionProvider>
       </AuthProvider>

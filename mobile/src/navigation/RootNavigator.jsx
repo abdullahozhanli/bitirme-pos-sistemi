@@ -12,11 +12,28 @@ import ProfileScreen from '../screens/ProfileScreen';
 import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
 import CalorieEstimateScreen from '../screens/CalorieEstimateScreen';
+import OrderHistoryScreen from '../screens/OrderHistoryScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+import LoyaltyPointsScreen from '../screens/LoyaltyPointsScreen';
+import CampaignsScreen from '../screens/CampaignsScreen';
+import HelpFaqScreen from '../screens/HelpFaqScreen';
+import ContactScreen from '../screens/ContactScreen';
+import BranchListScreen from '../screens/BranchListScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
-  const { token, ready } = useAuth();
+  const { token, ready, user } = useAuth();
+
+  const needsStrongPassword =
+    Boolean(token) &&
+    Boolean(user) &&
+    user.passwordMeetsPolicy !== true;
+
+  const stackKey = !token ? 'guest' : needsStrongPassword ? 'forcePwd' : 'app';
 
   if (!ready) {
     return (
@@ -29,13 +46,22 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        key={stackKey}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: menuColors.bg },
         }}
       >
         {token ? (
-          <>
+          needsStrongPassword ? (
+            <Stack.Screen
+              name="MandatoryPasswordUpgrade"
+              component={ChangePasswordScreen}
+              initialParams={{ forcePasswordUpgrade: true }}
+              options={{ gestureEnabled: false, animation: 'fade' }}
+            />
+          ) : (
+            <>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen
               name="Menu"
@@ -77,7 +103,58 @@ export default function RootNavigator() {
                 animationDuration: 280,
               }}
             />
+            <Stack.Screen
+              name="BranchList"
+              component={BranchListScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="OrderHistory"
+              component={OrderHistoryScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="Favorites"
+              component={FavoritesScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="ChangePassword"
+              component={ChangePasswordScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="NotificationSettings"
+              component={NotificationSettingsScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="LanguageSettings"
+              component={LanguageSettingsScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="LoyaltyPoints"
+              component={LoyaltyPointsScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="Campaigns"
+              component={CampaignsScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="HelpFaq"
+              component={HelpFaqScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
+            <Stack.Screen
+              name="Contact"
+              component={ContactScreen}
+              options={{ animation: 'slide_from_right', animationDuration: 260 }}
+            />
           </>
+          )
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

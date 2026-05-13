@@ -103,9 +103,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(
-    async (email, password) => {
+    async (identifier, password) => {
       const res = await client.post('/api/auth/login', {
-        email: email.trim().toLowerCase(),
+        email: String(identifier || '').trim().toLowerCase(),
         password,
       });
       const { token: t, user: u } = res.data;
@@ -121,7 +121,6 @@ export function AuthProvider({ children }) {
         email: email.trim().toLowerCase(),
         password,
         name: name?.trim() || undefined,
-        role: 'musteri',
       });
       const { token: t, user: u } = res.data;
       await persistSession(t, u);
@@ -206,6 +205,14 @@ export function AuthProvider({ children }) {
     throw lastErr || new Error('Profil güncellenemedi');
   }, []);
 
+  const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
+    const res = await client.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return res.data;
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -216,8 +223,19 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
       updateProfile,
+      changePassword,
     }),
-    [user, token, ready, login, register, logout, refreshUser, updateProfile]
+    [
+      user,
+      token,
+      ready,
+      login,
+      register,
+      logout,
+      refreshUser,
+      updateProfile,
+      changePassword,
+    ]
   );
 
   return (

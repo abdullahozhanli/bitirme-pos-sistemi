@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { homeFonts, androidRipple } from '../constants/homeTheme';
 import { useAuth, showComingSoon } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
+import { isValidEmail } from '../utils/authValidation';
 
 const PALETTE = {
   pageBg: '#FFFFFF',
@@ -47,7 +48,7 @@ const colors = {
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -55,13 +56,18 @@ export default function LoginScreen({ navigation }) {
 
   async function handleLogin() {
     setError('');
-    if (!email.trim() || !password) {
+    const id = identifier.trim();
+    if (!id || !password) {
       setError('E-posta ve şifre gerekli');
+      return;
+    }
+    if (!isValidEmail(id)) {
+      setError('Geçerli bir e-posta adresi girin');
       return;
     }
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      await login(id, password);
     } catch (e) {
       setError(apiErrorMessage(e, 'Giriş başarısız'));
     } finally {
@@ -101,7 +107,7 @@ export default function LoginScreen({ navigation }) {
 
           <View style={styles.field}>
             <Ionicons
-              name="mail-outline"
+              name="person-outline"
               size={20}
               color="#3F8F4E"
               style={styles.fieldIcon}
@@ -110,11 +116,11 @@ export default function LoginScreen({ navigation }) {
               style={styles.input}
               placeholder="E-posta adresin"
               placeholderTextColor={PALETTE.textSecondary}
-              keyboardType="email-address"
+              keyboardType="default"
               autoCapitalize="none"
               autoCorrect={false}
-              value={email}
-              onChangeText={setEmail}
+              value={identifier}
+              onChangeText={setIdentifier}
             />
           </View>
 

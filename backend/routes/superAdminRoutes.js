@@ -6,6 +6,11 @@ const auth = require('../middleware/auth');
 const requireSuperAdmin = require('../middleware/requireSuperAdmin');
 const Branch = require('../models/Branch');
 const User = require('../models/User');
+const {
+  isValidEmail,
+  isStrongPassword,
+  PASSWORD_POLICY_MESSAGE,
+} = require('../utils/authValidation');
 
 // Tüm route'lar süper admin gerektirir
 router.use(auth, requireSuperAdmin);
@@ -177,12 +182,16 @@ router.post('/users', async (req, res, next) => {
       return res.status(400).json({ message: 'E-posta ve şifre zorunludur' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Şifre en az 6 karakter olmalıdır' });
+    const emailLower = String(email).trim().toLowerCase();
+    if (!isValidEmail(emailLower)) {
+      return res.status(400).json({ message: 'Geçerli bir e-posta adresi girin' });
+    }
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
     }
 
     // Email kontrolü
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: emailLower });
     if (existingUser) {
       return res.status(400).json({ message: 'Bu e-posta adresi zaten kullanılıyor' });
     }
@@ -206,15 +215,16 @@ router.post('/users', async (req, res, next) => {
       }
     }
 
-    const userName = name || email.split('@')[0];
+    const userName = name || emailLower.split('@')[0];
 
     const user = new User({
-      email: email.toLowerCase(),
+      email: emailLower,
       passwordHash: password, // pre-save hook otomatik hashleyecek
       name: userName,
       role: validRole,
       branchId: finalBranchId,
       isActive: true,
+      passwordMeetsPolicy: true,
     });
 
     await user.save();
@@ -329,8 +339,8 @@ router.post('/users/:id/reset-password', async (req, res, next) => {
   try {
     const { password } = req.body;
 
-    if (!password || password.length < 6) {
-      return res.status(400).json({ message: 'Şifre en az 6 karakter olmalıdır' });
+    if (!password || !isStrongPassword(password)) {
+      return res.status(400).json({ message: PASSWORD_POLICY_MESSAGE });
     }
 
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -344,6 +354,7 @@ router.post('/users/:id/reset-password', async (req, res, next) => {
 
     // Şifreyi güncelle (pre-save hook otomatik hashleyecek)
     user.passwordHash = password;
+    user.passwordMeetsPolicy = true;
     await user.save();
 
     res.json({ message: 'Şifre başarıyla güncellendi' });

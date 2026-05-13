@@ -381,8 +381,19 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('userData');
   };
 
+  /** /api/auth/me ile kullanıcıyı güncelle (şifre politikası bayrağı dahil) */
+  const refreshUserFromMe = async () => {
+    const res = await axios.get('/api/auth/me');
+    const me = res.data && typeof res.data === 'object' ? res.data : {};
+    setUser((prev) => {
+      const merged = { ...(prev || {}), ...me };
+      localStorage.setItem('userData', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, refreshUserFromMe }}>
       {children}
     </AuthContext.Provider>
   );

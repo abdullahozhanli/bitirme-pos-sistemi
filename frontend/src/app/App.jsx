@@ -17,6 +17,7 @@ import CustomerLayout from '../features/customer/layouts/CustomerLayout.jsx';
 import HomePage from '../features/customer/pages/HomePage.jsx';
 import MenuPage from '../features/customer/components/MenuPage.jsx';
 import LoginPage from '../features/auth/pages/LoginPage.jsx';
+import PasswordUpgradePage from '../features/auth/pages/PasswordUpgradePage.jsx';
 import AdminDashboard from '../features/admin/pages/AdminDashboard.jsx';
 import CategoryManagementPage from '../features/admin/pages/CategoryManagementPage.jsx';
 import ProductManagementPage from '../features/admin/pages/ProductManagementPage.jsx';
@@ -87,6 +88,7 @@ function App() {
       {/* 2. GİRİŞ ROTASI */}
       {/* (Tek başına, menüsü yok) */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/password-upgrade" element={<PasswordUpgradePage />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* 3. GARSON ROTALARI (KORUMALI) - garson, admin, yetkili */}
