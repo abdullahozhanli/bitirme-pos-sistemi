@@ -16,7 +16,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { homeFonts, androidRipple } from '../constants/homeTheme';
 import { useAuth } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
-import { isValidEmail, isStrongPassword, PASSWORD_POLICY_MESSAGE } from '../utils/authValidation';
+import {
+  getPasswordCriteriaState,
+  isValidEmail,
+  isStrongPassword,
+  PASSWORD_POLICY_MESSAGE,
+} from '../utils/authValidation';
 
 const PALETTE = {
   pageBg: '#FFFFFF',
@@ -36,10 +41,11 @@ const colors = {
   primary: PALETTE.btnPrimary,
   text: PALETTE.textPrimary,
   textMuted: PALETTE.textSecondary,
-  inputBorder: '#D7E7D8',
-  inputBg: '#F9FBF8',
+  inputBorder: '#D8EBDA',
+  inputBg: '#FFFFFF',
   white: '#FFFFFF',
   divider: PALETTE.border,
+  fieldIcon: '#8A847C',
 };
 
 export default function RegisterScreen({ navigation }) {
@@ -75,6 +81,15 @@ export default function RegisterScreen({ navigation }) {
     }
   }
 
+  const pwdRules = getPasswordCriteriaState(password);
+  const passwordHints = [
+    { key: 'minLength', met: pwdRules.minLength, label: '8+ karakter' },
+    { key: 'lower', met: pwdRules.lower, label: 'Küçük harf' },
+    { key: 'upper', met: pwdRules.upper, label: 'Büyük harf' },
+    { key: 'digit', met: pwdRules.digit, label: 'Rakam' },
+    { key: 'symbol', met: pwdRules.symbol, label: 'Sembol' },
+  ];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -107,7 +122,7 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="person-outline"
               size={20}
-              color="#3F8F4E"
+              color={colors.fieldIcon}
               style={styles.fieldIcon}
             />
             <TextInput
@@ -123,7 +138,7 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="mail-outline"
               size={20}
-              color="#3F8F4E"
+              color={colors.fieldIcon}
               style={styles.fieldIcon}
             />
             <TextInput
@@ -142,12 +157,12 @@ export default function RegisterScreen({ navigation }) {
             <Ionicons
               name="lock-closed-outline"
               size={20}
-              color="#3F8F4E"
+              color={colors.fieldIcon}
               style={styles.fieldIcon}
             />
             <TextInput
               style={[styles.input, styles.inputFlex]}
-              placeholder="Şifre (8+ karakter, büyük/küçük harf, rakam, sembol)"
+              placeholder="Şifre"
               placeholderTextColor={PALETTE.textSecondary}
               secureTextEntry={secure}
               value={password}
@@ -165,6 +180,28 @@ export default function RegisterScreen({ navigation }) {
               />
             </Pressable>
           </View>
+
+          {password.length > 0 ? (
+            <View style={styles.passwordCriteria}>
+              {passwordHints.map(({ key, met, label }) => (
+                <View key={key} style={styles.passwordCriteriaRow}>
+                  <Text
+                    style={[
+                      styles.passwordCriteriaBullet,
+                      met && styles.passwordCriteriaBulletMet,
+                    ]}
+                  >
+                    {met ? '✓' : '·'}
+                  </Text>
+                  <Text
+                    style={[styles.passwordCriteriaText, met && styles.passwordCriteriaTextMet]}
+                  >
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           <Pressable
             style={({ pressed }) => [
@@ -235,7 +272,7 @@ const styles = StyleSheet.create({
     fontFamily: homeFonts.sansSemi,
     fontSize: 22,
     letterSpacing: -0.35,
-    color: '#1F6B38',
+    color: PALETTE.textPrimary,
     textAlign: 'center',
     marginTop: 10,
     marginBottom: 6,
@@ -284,6 +321,47 @@ const styles = StyleSheet.create({
   inputFlex: { flex: 1 },
   eyeBtn: {
     padding: 4,
+  },
+  passwordCriteria: {
+    marginTop: 6,
+    marginBottom: 2,
+    marginLeft: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(31, 41, 51, 0.035)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(31, 41, 51, 0.08)',
+    gap: 3,
+  },
+  passwordCriteriaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 16,
+  },
+  passwordCriteriaBullet: {
+    width: 14,
+    fontSize: 11,
+    lineHeight: 14,
+    textAlign: 'center',
+    color: 'rgba(122, 113, 104, 0.4)',
+    marginRight: 6,
+    fontFamily: homeFonts.sans,
+  },
+  passwordCriteriaBulletMet: {
+    color: 'rgba(74, 84, 92, 0.75)',
+    fontFamily: homeFonts.sansMedium,
+  },
+  passwordCriteriaText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.1,
+    color: 'rgba(122, 113, 104, 0.88)',
+    flex: 1,
+  },
+  passwordCriteriaTextMet: {
+    color: 'rgba(55, 65, 75, 0.88)',
   },
   primaryBtn: {
     borderRadius: 999,

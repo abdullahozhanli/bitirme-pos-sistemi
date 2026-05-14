@@ -54,6 +54,8 @@ const PALETTE = {
   cartBarBg: '#171717',
   cartBarBgPressed: '#000000',
   tagText: '#2E7D32',
+  /** Favori dolu kalp — koyu, sıcak, doygun kırmızı (soğuk bordo değil) */
+  favoriteHeart: '#B51D1D',
 };
 
 const FALLBACK_IMG =
@@ -121,7 +123,7 @@ const MenuProductCard = memo(function MenuProductCard({
             <Ionicons
               name={favorited ? 'heart' : 'heart-outline'}
               size={17}
-              color={favorited ? '#E53935' : PALETTE.textSecondary}
+              color={favorited ? PALETTE.favoriteHeart : PALETTE.textSecondary}
             />
           </Pressable>
         </View>
@@ -384,41 +386,45 @@ export default function MenuScreen({ navigation }) {
             </View>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.assistantBtn,
-              pressed && { opacity: 0.92 },
-            ]}
-            onPress={() => navigation.navigate('CalorieEstimate')}
-          >
-            <LinearGradient
-              colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
-            <Text style={styles.assistantBtnText}>AI  Menü Asistanı</Text>
-            <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
-          </Pressable>
+          <View style={styles.assistantFooter}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="AI Kalori Asistanı"
+              style={({ pressed }) => [
+                styles.assistantBtn,
+                pressed && { opacity: 0.92 },
+              ]}
+              onPress={() => navigation.navigate('CalorieEstimate')}
+            >
+              <LinearGradient
+                colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
+              <Text style={styles.assistantBtnText}>AI Kalori Asistanı</Text>
+              <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
+            </Pressable>
 
-          <View style={styles.searchWrap}>
-            <View style={styles.searchIconWrap}>
-              <Ionicons
-                name="search"
-                size={18}
-                color="#3F8F4E"
-                style={styles.searchIcon}
+            <View style={styles.searchWrap}>
+              <View style={styles.searchIconWrap}>
+                <Ionicons
+                  name="search"
+                  size={18}
+                  color="#3F8F4E"
+                  style={styles.searchIcon}
+                />
+              </View>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Menüde ara..."
+                placeholderTextColor={PALETTE.textSecondary}
+                style={styles.searchInput}
+                returnKeyType="search"
               />
             </View>
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Menüde ara..."
-              placeholderTextColor={PALETTE.textSecondary}
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
           </View>
         </View>
       </View>
@@ -467,7 +473,7 @@ export default function MenuScreen({ navigation }) {
                       size={18}
                       color={
                         isFavorite(item._id || item.id, branchId)
-                          ? '#E53935'
+                          ? PALETTE.favoriteHeart
                           : PALETTE.textSecondary
                       }
                     />
@@ -1124,23 +1130,26 @@ const styles = StyleSheet.create({
   },
   assistantBgLeaf: {
     position: 'absolute',
-    right: -6,
-    top: 8,
-    width: 164,
-    height: 114,
+    right: -8,
+    top: 6,
+    width: 172,
+    height: 104,
     opacity: 0.9,
     transform: [{ scaleX: 1 }],
+    zIndex: 0,
+    pointerEvents: 'none',
   },
   assistantTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   assistantTextCol: {
     flex: 1,
     minWidth: 0,
-    paddingRight: 116,
+    paddingRight: 132,
+    zIndex: 1,
   },
   assistantTitle: {
     fontFamily: homeFonts.sansSemi,
@@ -1150,14 +1159,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: -0.25,
   },
-  assistantDesc: {
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 14,
-    color: PALETTE.textSecondary,
-    lineHeight: 18,
-  },
   assistantDescSpacer: {
-    height: 35,
+    height: 29,
+  },
+  assistantFooter: {
+    position: 'relative',
+    zIndex: 2,
+    alignSelf: 'stretch',
+    marginTop: -4,
   },
   assistantBtn: {
     alignSelf: 'flex-start',

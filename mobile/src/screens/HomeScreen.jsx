@@ -171,9 +171,9 @@ export default function HomeScreen() {
                 />
               ) : (
                 <Ionicons
-                  name="person-outline"
-                  size={19}
-                  color={PALETTE.success}
+                  name="person-circle-outline"
+                  size={22}
+                  color={PALETTE.textPrimary}
                 />
               )}
             </View>
@@ -341,7 +341,7 @@ export default function HomeScreen() {
           onPress={() => navigation.navigate('Profile')}
           android_ripple={androidRipple}
         >
-          <Ionicons name="person-outline" size={18} color={PALETTE.textPrimary} />
+          <Ionicons name="receipt-outline" size={20} color={PALETTE.textPrimary} />
           <View style={styles.qrLinkTextWrap}>
             <Text style={styles.qrLinkText}>Profil ve Geçmiş Siparişler</Text>
             <Text style={styles.qrLinkSubtext}>Hesap ayarları ve sipariş takibi</Text>

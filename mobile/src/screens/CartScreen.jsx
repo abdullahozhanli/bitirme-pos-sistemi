@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,9 +15,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { menuColors, homeFonts, pressScale } from '../constants/homeTheme';
+import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useCart } from '../context/CartContext';
 import { useTableSession } from '../context/TableSessionContext';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +48,21 @@ export default function CartScreen({ navigation }) {
   const [openNoteIndex, setOpenNoteIndex] = useState(-1);
   const [paymentMethod, setPaymentMethod] = useState('table');
   const [checkoutError, setCheckoutError] = useState('');
+  const [checkoutSuccess, setCheckoutSuccess] = useState(null);
+
+  const replaceStackWithMenu = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 1,
+        routes: [{ name: 'Home' }, { name: 'Menu' }],
+      })
+    );
+  }, [navigation]);
+
+  const finishCheckoutSuccess = useCallback(() => {
+    setCheckoutSuccess(null);
+    replaceStackWithMenu();
+  }, [replaceStackWithMenu]);
 
   useFocusEffect(
     useCallback(() => {
@@ -192,10 +208,12 @@ export default function CartScreen({ navigation }) {
       const shortId = String(created?._id || '').slice(-6);
       clearCart();
       setOpenNoteIndex(-1);
-      await refreshUser();
-      Alert.alert('Siparişin mutfağa iletildi.', `Masa ${tableNumber} • No: …${shortId}`, [
-        { text: 'Menüye dön', onPress: () => navigation.navigate('Menu') },
-      ]);
+      void refreshUser();
+      setCheckoutSuccess({
+        tableNumber: String(tableNumber),
+        shortId,
+        branchLabel,
+      });
     } catch (err) {
       const message = apiErrorMessage(err, 'Sipariş gönderilemedi.');
       setCheckoutError(message);
@@ -245,7 +263,7 @@ export default function CartScreen({ navigation }) {
           </Text>
           <Pressable
             style={({ pressed }) => [styles.primaryBtn, pressScale(pressed)]}
-            onPress={() => navigation.navigate('Menu')}
+            onPress={replaceStackWithMenu}
           >
             <Text style={styles.primaryBtnText}>Menüye dön</Text>
           </Pressable>
@@ -561,6 +579,63 @@ export default function CartScreen({ navigation }) {
         </>
       )}
     </KeyboardAvoidingView>
+
+      <Modal
+        visible={checkoutSuccess !== null}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={finishCheckoutSuccess}
+      >
+        <View style={styles.successOverlay} accessibilityViewIsModal>
+          <View style={styles.successCard}>
+            <View style={styles.successIconWrap} accessibilityRole="image">
+              <Ionicons name="checkmark" size={36} color="#111827" />
+            </View>
+            <Text style={styles.successTitle}>Sipariş mutfağa iletildi</Text>
+            <Text style={styles.successSubtitle}>
+              Hazırlık başladı; sipariş numaranızı mutfak ekranında da görebilirsiniz.
+            </Text>
+            <View style={styles.successMeta}>
+              <View style={styles.successMetaRow}>
+                <Text style={styles.successMetaLabel}>Masa</Text>
+                <Text style={styles.successMetaValue}>{checkoutSuccess?.tableNumber}</Text>
+              </View>
+              <View style={styles.successMetaDivider} />
+              <View style={styles.successMetaRow}>
+                <Text style={styles.successMetaLabel}>Sipariş no</Text>
+                <Text style={styles.successMetaValueMono}>…{checkoutSuccess?.shortId}</Text>
+              </View>
+              {checkoutSuccess?.branchLabel ? (
+                <>
+                  <View style={styles.successMetaDivider} />
+                  <View style={styles.successMetaRow}>
+                    <Text style={styles.successMetaLabel}>İşletme</Text>
+                    <Text style={styles.successMetaValue} numberOfLines={2}>
+                      {checkoutSuccess.branchLabel}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
+            </View>
+            <Pressable
+              onPress={finishCheckoutSuccess}
+              style={({ pressed }) => [styles.successPrimaryWrap, pressScale(pressed)]}
+              accessibilityRole="button"
+              accessibilityLabel="Menüye dön"
+            >
+              <LinearGradient
+                colors={['#7FD67F', '#52C060', '#3FA34D']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.successPrimaryGradient}
+              >
+                <Text style={styles.successPrimaryText}>Menüye dön</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1152,5 +1227,112 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.48)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 28,
+  },
+  successCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
+    ...uiShadow.lift,
+  },
+  successIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  successTitle: {
+    fontFamily: homeFonts.sansBold,
+    fontSize: 20,
+    color: menuColors.textBold,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    marginBottom: 8,
+  },
+  successSubtitle: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: menuColors.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  successMeta: {
+    backgroundColor: menuColors.bgSoft,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: menuColors.border,
+    paddingVertical: 4,
+    marginBottom: 18,
+  },
+  successMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    gap: 12,
+  },
+  successMetaDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(15, 23, 42, 0.08)',
+    marginHorizontal: 14,
+  },
+  successMetaLabel: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 13,
+    color: '#111827',
+    flexShrink: 0,
+    marginRight: 8,
+  },
+  successMetaValue: {
+    flex: 1,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: '#111827',
+    textAlign: 'right',
+  },
+  successMetaValueMono: {
+    flex: 1,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: '#111827',
+    textAlign: 'right',
+    letterSpacing: 0.5,
+  },
+  successPrimaryWrap: {
+    width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  successPrimaryGradient: {
+    minHeight: 50,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successPrimaryText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 16,
+    color: '#FFFFFF',
   },
 });

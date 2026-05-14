@@ -43,3 +43,15 @@ export function isStrongPassword(value) {
   if (!/[^A-Za-z0-9]/.test(s)) return false;
   return true;
 }
+
+/** Kayıt / şifre ekranında anlık tik listesi için (isStrongPassword ile aynı kurallar). */
+export function getPasswordCriteriaState(value) {
+  const s = String(value || '');
+  return {
+    minLength: s.length >= 8,
+    lower: /[a-z]/.test(s),
+    upper: /[A-Z]/.test(s),
+    digit: /[0-9]/.test(s),
+    symbol: /[^A-Za-z0-9]/.test(s),
+  };
+}

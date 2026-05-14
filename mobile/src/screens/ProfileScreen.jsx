@@ -197,7 +197,7 @@ export default function ProfileScreen({ navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.avatarPhoto}
                 >
-                  <Ionicons name="person-outline" size={34} color={menuColors.white} />
+                  <Ionicons name="person-circle-outline" size={40} color={menuColors.white} />
                 </LinearGradient>
               )}
               {avatarBusy ? (
