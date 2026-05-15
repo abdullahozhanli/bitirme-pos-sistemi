@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,24 +14,27 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import ScreenBackButton from '../components/ScreenBackButton';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useAuth } from '../context/AuthContext';
 import {
   pickProfileImageUri,
-  uriToProfileAvatarDataUrl,
+  prepareProfileAvatarFileUri,
 } from '../utils/pickProfileAvatar';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import * as LoyaltyPoints from '../utils/loyaltyPoints';
 import client from '../api/client';
 
 const PROFILE_GRADIENT = ['#3FA34D', '#66BB6A'];
 const PAGE_BG = '#F3F6F4';
+/** Mat, doygun siyah — yeşil ikon kutusu içinde */
+const PROFILE_ICON = '#1A1A1A';
 
 export default function ProfileScreen({ navigation }) {
-  const { user, logout, refreshUser, updateProfile } = useAuth();
+  const { user, logout, refreshUser, uploadProfileAvatar, removeProfileAvatar } = useAuth();
   const [avatarBusy, setAvatarBusy] = useState(false);
-  const [previewPicked, setPreviewPicked] = useState(null);
+  const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
   const [orderTotal, setOrderTotal] = useState(0);
-  const preparedUploadRef = useRef({ uri: null, promise: null });
 
   useFocusEffect(
     useCallback(() => {
@@ -52,84 +55,79 @@ export default function ProfileScreen({ navigation }) {
   );
   const displayName = user?.name?.trim() || 'Misafir';
   const loyaltyPoints = LoyaltyPoints.getLoyaltyPoints(user);
-  const hasAvatar = Boolean(user?.avatarUrl?.trim());
+  const avatarUri = resolveMediaUrl(user?.avatarUrl);
+  const hasAvatar = Boolean(avatarUri);
 
-  useEffect(() => {
-    if (!previewPicked?.uri) {
-      preparedUploadRef.current = { uri: null, promise: null };
-      return;
-    }
-    const { uri, mimeType } = previewPicked;
-    preparedUploadRef.current = {
-      uri,
-      promise: uriToProfileAvatarDataUrl(uri, mimeType),
-    };
-  }, [previewPicked]);
-
-  const pickAvatarFromLibrary = useCallback(async () => {
+  const pickAndUploadAvatar = useCallback(async () => {
     const picked = await pickProfileImageUri();
-    if (picked) setPreviewPicked(picked);
-  }, []);
-
-  const closeAvatarPreview = useCallback(() => {
-    setPreviewPicked(null);
-  }, []);
-
-  const confirmAvatarPreview = useCallback(async () => {
-    if (!previewPicked) return;
+    if (!picked?.uri) return;
     try {
       setAvatarBusy(true);
-      let dataUrl = null;
-      const prep = preparedUploadRef.current;
-      if (prep.uri === previewPicked.uri && prep.promise) {
-        dataUrl = await prep.promise;
-      }
-      if (!dataUrl) {
-        dataUrl = await uriToProfileAvatarDataUrl(
-          previewPicked.uri,
-          previewPicked.mimeType
-        );
-      }
-      if (!dataUrl) return;
-      await updateProfile({ avatarUrl: dataUrl });
-      setPreviewPicked(null);
+      const fileUri = await prepareProfileAvatarFileUri(picked.uri);
+      await uploadProfileAvatar(fileUri);
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || 'Yüklenemedi';
       Alert.alert('Hata', msg);
     } finally {
       setAvatarBusy(false);
     }
-  }, [previewPicked, updateProfile]);
-
-  const retryAvatarPick = useCallback(async () => {
-    setPreviewPicked(null);
-    const picked = await pickProfileImageUri();
-    if (picked) setPreviewPicked(picked);
-  }, []);
+  }, [uploadProfileAvatar]);
 
   const clearAvatar = useCallback(async () => {
     try {
       setAvatarBusy(true);
-      await updateProfile({ avatarUrl: '' });
+      await removeProfileAvatar();
     } catch (e) {
       const msg = e?.response?.data?.message || e?.message || 'Kaldırılamadı';
       Alert.alert('Hata', msg);
     } finally {
       setAvatarBusy(false);
     }
-  }, [updateProfile]);
+  }, [removeProfileAvatar]);
+
+  const closeAvatarSheet = useCallback(() => setAvatarSheetOpen(false), []);
 
   const openAvatarOptions = useCallback(() => {
     if (avatarBusy) return;
-    const buttons = [
-      { text: 'Galeriden seç', onPress: () => void pickAvatarFromLibrary() },
-      ...(hasAvatar
-        ? [{ text: 'Fotoğrafı kaldır', style: 'destructive', onPress: () => void clearAvatar() }]
-        : []),
-      { text: 'İptal', style: 'cancel' },
-    ];
-    Alert.alert('Profil fotoğrafı', 'Görselinizi güncelleyin veya kaldırın.', buttons);
-  }, [avatarBusy, hasAvatar, pickAvatarFromLibrary, clearAvatar]);
+    setAvatarSheetOpen(true);
+  }, [avatarBusy]);
+
+  const onSheetPickGallery = useCallback(() => {
+    setAvatarSheetOpen(false);
+    void pickAndUploadAvatar();
+  }, [pickAndUploadAvatar]);
+
+  const onSheetRemovePhoto = useCallback(() => {
+    setAvatarSheetOpen(false);
+    void clearAvatar();
+  }, [clearAvatar]);
+
+  function AvatarSheetOption({ icon, label, hint, onPress, muted }) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.sheetOption,
+          pressed && styles.sheetOptionPressed,
+        ]}
+        onPress={onPress}
+      >
+        <View style={styles.sheetOptionIcon}>
+          <Ionicons
+            name={icon}
+            size={19}
+            color={muted ? '#6B7280' : '#111827'}
+          />
+        </View>
+        <View style={styles.sheetOptionTextWrap}>
+          <Text style={[styles.sheetOptionLabel, muted && styles.sheetOptionLabelMuted]}>
+            {label}
+          </Text>
+          {hint ? <Text style={styles.sheetOptionHint}>{hint}</Text> : null}
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={menuColors.textMutedLight} />
+      </Pressable>
+    );
+  }
 
   function MenuRow({ icon, label, onPress }) {
     return (
@@ -139,7 +137,7 @@ export default function ProfileScreen({ navigation }) {
       >
         <View style={styles.rowLeft}>
           <View style={styles.rowIconBox}>
-            <Ionicons name={icon} size={17} color={menuColors.primaryDark} />
+            <Ionicons name={icon} size={17} color={PROFILE_ICON} />
           </View>
           <Text style={styles.rowLabel}>{label}</Text>
         </View>
@@ -155,21 +153,8 @@ export default function ProfileScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable
-          style={({ pressed }) => [styles.topIconBtn, pressScale(pressed)]}
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-        >
-          <Ionicons name="chevron-back" size={20} color={menuColors.text} />
-        </Pressable>
+        <ScreenBackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topTitle}>Profilim</Text>
-        <Pressable
-          style={({ pressed }) => [styles.topIconBtn, pressScale(pressed)]}
-          onPress={openAvatarOptions}
-          hitSlop={10}
-        >
-          <Ionicons name="create-outline" size={18} color={menuColors.text} />
-        </Pressable>
       </View>
 
       <ScrollView
@@ -186,7 +171,7 @@ export default function ProfileScreen({ navigation }) {
             <View style={styles.avatarWrap}>
               {hasAvatar ? (
                 <Image
-                  source={{ uri: user.avatarUrl }}
+                  source={{ uri: avatarUri }}
                   style={styles.avatarPhoto}
                   resizeMode="cover"
                 />
@@ -221,7 +206,7 @@ export default function ProfileScreen({ navigation }) {
             <Ionicons
               name="bag-check-outline"
               size={16}
-              color={menuColors.primaryDark}
+              color={PROFILE_ICON}
             />
             <Text style={styles.statsText}>Toplam sipariş: {orderTotal}</Text>
           </View>
@@ -236,7 +221,7 @@ export default function ProfileScreen({ navigation }) {
             ]}
             onPress={() => navigation.navigate('LoyaltyPoints')}
           >
-            <Ionicons name="sparkles-outline" size={18} color={menuColors.primaryDark} />
+            <Ionicons name="sparkles-outline" size={18} color={PROFILE_ICON} />
             <Text style={styles.miniTitle}>Puanlarım</Text>
             <Text style={styles.miniDesc}>
               {loyaltyPoints} puan biriktirdin
@@ -250,7 +235,7 @@ export default function ProfileScreen({ navigation }) {
             ]}
             onPress={() => navigation.navigate('Campaigns')}
           >
-            <Ionicons name="pricetag-outline" size={18} color={menuColors.primaryDark} />
+            <Ionicons name="pricetag-outline" size={18} color={PROFILE_ICON} />
             <Text style={styles.miniTitle}>Kampanyalarım</Text>
             <Text style={styles.miniDesc}>Sepet tutarına göre indirim seçenekleri</Text>
           </Pressable>
@@ -320,60 +305,50 @@ export default function ProfileScreen({ navigation }) {
       </ScrollView>
 
       <Modal
-        visible={Boolean(previewPicked)}
+        visible={avatarSheetOpen}
         transparent
-        animationType="fade"
-        onRequestClose={closeAvatarPreview}
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={closeAvatarSheet}
       >
-        <View style={styles.avatarModalBackdrop}>
-          <View style={styles.avatarModalCard}>
-            <Text style={styles.avatarModalTitle}>Profil fotoğrafı</Text>
-            <Text style={styles.avatarModalHint}>
-              Profilde kare alanın içinde ortalanarak gösterilir. Uygunsa onaylayın.
+        <View style={styles.sheetRoot}>
+          <Pressable style={styles.sheetBackdrop} onPress={closeAvatarSheet} />
+          <View style={styles.sheetPanel}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Profil fotoğrafı</Text>
+            <Text style={styles.sheetSubtitle}>
+              Galeriden yeni bir görsel seçin veya mevcut fotoğrafı kaldırın.
             </Text>
-            <View style={styles.avatarModalPreviewWrap}>
-              {previewPicked?.uri ? (
-                <Image
-                  source={{ uri: previewPicked.uri }}
-                  style={styles.avatarModalPreview}
-                  resizeMode="cover"
-                />
+
+            <View style={styles.sheetOptionsCard}>
+              <AvatarSheetOption
+                icon="images-outline"
+                label="Galeriden seç"
+                hint="Hızlı yükleme, otomatik boyutlandırma"
+                onPress={onSheetPickGallery}
+              />
+              {hasAvatar ? (
+                <>
+                  <View style={styles.sheetOptionDivider} />
+                  <AvatarSheetOption
+                    icon="trash-outline"
+                    label="Fotoğrafı kaldır"
+                    hint="Profil görseli varsayılana döner"
+                    onPress={onSheetRemovePhoto}
+                    muted
+                  />
+                </>
               ) : null}
             </View>
-            <View style={styles.avatarModalActions}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.avatarModalBtnGhost,
-                  pressed && { opacity: 0.85 },
-                ]}
-                onPress={closeAvatarPreview}
-              >
-                <Text style={styles.avatarModalBtnGhostText}>Vazgeç</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.avatarModalBtnGhost,
-                  pressed && { opacity: 0.85 },
-                ]}
-                onPress={() => void retryAvatarPick()}
-                disabled={avatarBusy}
-              >
-                <Text style={styles.avatarModalBtnGhostText}>Başka foto</Text>
-              </Pressable>
-            </View>
+
             <Pressable
               style={({ pressed }) => [
-                styles.avatarModalBtnPrimary,
-                (avatarBusy || pressed) && { opacity: avatarBusy ? 0.65 : 0.92 },
+                styles.sheetCancelBtn,
+                pressScale(pressed),
               ]}
-              disabled={avatarBusy}
-              onPress={() => void confirmAvatarPreview()}
+              onPress={closeAvatarSheet}
             >
-              {avatarBusy ? (
-                <ActivityIndicator color={menuColors.white} />
-              ) : (
-                <Text style={styles.avatarModalBtnPrimaryText}>Profilde kullan</Text>
-              )}
+              <Text style={styles.sheetCancelText}>Vazgeç</Text>
             </Pressable>
           </View>
         </View>
@@ -390,22 +365,14 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 18,
     paddingTop: 6,
     paddingBottom: 8,
   },
-  topIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: menuColors.card,
-    borderWidth: 1,
-    borderColor: menuColors.border,
-  },
   topTitle: {
+    flex: 1,
+    marginRight: 40,
+    textAlign: 'center',
     fontFamily: homeFonts.sansSemi,
     fontSize: 18,
     color: menuColors.text,
@@ -585,76 +552,112 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#B91C1C',
   },
-  avatarModalBackdrop: {
+  sheetRoot: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 22,
+    justifyContent: 'flex-end',
   },
-  avatarModalCard: {
-    backgroundColor: menuColors.card,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: menuColors.border,
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
-  avatarModalTitle: {
+  sheetPanel: {
+    backgroundColor: PAGE_BG,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 28,
+    borderTopWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(15, 23, 42, 0.12)',
+    marginBottom: 14,
+  },
+  sheetTitle: {
     fontFamily: homeFonts.sansSemi,
     fontSize: 18,
-    color: menuColors.text,
+    color: '#111827',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  avatarModalHint: {
+  sheetSubtitle: {
     fontFamily: homeFonts.sans,
     fontSize: 13,
     color: menuColors.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
     lineHeight: 19,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
-  avatarModalPreviewWrap: {
-    width: 220,
-    height: 220,
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignSelf: 'center',
-    marginBottom: 18,
-    backgroundColor: menuColors.pillMuted,
-  },
-  avatarModalPreview: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarModalActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  avatarModalBtnGhost: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+  sheetOptionsCard: {
+    backgroundColor: menuColors.card,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: menuColors.border,
-    backgroundColor: menuColors.card,
+    overflow: 'hidden',
+    marginBottom: 12,
+    ...uiShadow.card,
   },
-  avatarModalBtnGhostText: {
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 14,
-    color: menuColors.text,
-  },
-  avatarModalBtnPrimary: {
-    backgroundColor: menuColors.primary,
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 14,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  sheetOptionPressed: {
+    backgroundColor: menuColors.bgSoft,
+  },
+  sheetOptionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarModalBtnPrimaryText: {
+  sheetOptionTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  sheetOptionLabel: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 16,
-    color: menuColors.white,
+    fontSize: 15,
+    color: '#111827',
+  },
+  sheetOptionLabelMuted: {
+    color: '#4B5563',
+  },
+  sheetOptionHint: {
+    marginTop: 2,
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: menuColors.textMuted,
+  },
+  sheetOptionDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: menuColors.border,
+    marginLeft: 66,
+  },
+  sheetCancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: menuColors.card,
+    borderWidth: 1,
+    borderColor: menuColors.border,
+  },
+  sheetCancelText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: menuColors.text,
   },
 });

@@ -10,6 +10,10 @@ import { Platform, Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import client from '../api/client';
+import {
+  deleteProfileAvatarRequest,
+  uploadProfileAvatarFile,
+} from '../api/profileAvatarApi';
 import { API_BASE_URL_CANDIDATES } from '../constants/config';
 import { coerceUserPoints, mergeUserFromMe } from '../utils/loyaltyPoints';
 
@@ -213,6 +217,28 @@ export function AuthProvider({ children }) {
     return res.data;
   }, []);
 
+  const applyMeToUser = useCallback((data) => {
+    setUser((prev) => {
+      const merged = mergeUserFromMe(prev || {}, data);
+      AsyncStorage.setItem(USER_KEY, JSON.stringify(merged)).catch(() => {});
+      return merged;
+    });
+    return data;
+  }, []);
+
+  const uploadProfileAvatar = useCallback(
+    async (localUri) => {
+      const data = await uploadProfileAvatarFile(localUri);
+      return applyMeToUser(data);
+    },
+    [applyMeToUser]
+  );
+
+  const removeProfileAvatar = useCallback(async () => {
+    const data = await deleteProfileAvatarRequest();
+    return applyMeToUser(data);
+  }, [applyMeToUser]);
+
   const value = useMemo(
     () => ({
       user,
@@ -223,6 +249,8 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
       updateProfile,
+      uploadProfileAvatar,
+      removeProfileAvatar,
       changePassword,
     }),
     [
@@ -234,6 +262,8 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
       updateProfile,
+      uploadProfileAvatar,
+      removeProfileAvatar,
       changePassword,
     ]
   );

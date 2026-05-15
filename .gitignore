@@ -63,6 +63,11 @@ Desktop.ini
 .expo/
 **/web-build/
 
+# Yüklenen profil görselleri (klasör yapısı repoda kalır)
+backend/uploads/*
+!backend/uploads/avatars/
+!backend/uploads/avatars/.gitkeep
+
 # IDE / Editor
 .idea/
 *.iml

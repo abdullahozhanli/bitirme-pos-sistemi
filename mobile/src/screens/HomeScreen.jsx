@@ -21,6 +21,7 @@ import {
 import { useAuth, showComingSoon } from '../context/AuthContext';
 import { useTableSession } from '../context/TableSessionContext';
 import { getLoyaltyPoints } from '../utils/loyaltyPoints';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import LottieView from 'lottie-react-native';
 
 /** Ana ekran — soft shadow */
@@ -128,6 +129,7 @@ export default function HomeScreen() {
   const { first: firstName, last: lastName } = namePartsFromUser(user);
   const points = getLoyaltyPoints(user);
   const campaignCount = user?.campaignsCount ?? user?.campaignCount ?? DEFAULT_CAMPAIGNS;
+  const avatarUri = resolveMediaUrl(user?.avatarUrl);
 
   useFocusEffect(
     useCallback(() => {
@@ -163,9 +165,9 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('Profile')}
           >
             <View style={styles.avatar}>
-              {user?.avatarUrl?.trim() ? (
+              {avatarUri ? (
                 <Image
-                  source={{ uri: user.avatarUrl }}
+                  source={{ uri: avatarUri }}
                   style={styles.avatarImage}
                   resizeMode="cover"
                 />
@@ -330,27 +332,6 @@ export default function HomeScreen() {
               color={PALETTE.success}
             />
           </View>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.qrLink,
-            homeShadowCard,
-            { transform: [{ scale: pressed ? 0.96 : 1 }] },
-          ]}
-          onPress={() => navigation.navigate('Profile')}
-          android_ripple={androidRipple}
-        >
-          <Ionicons name="receipt-outline" size={20} color={PALETTE.textPrimary} />
-          <View style={styles.qrLinkTextWrap}>
-            <Text style={styles.qrLinkText}>Profil ve Geçmiş Siparişler</Text>
-            <Text style={styles.qrLinkSubtext}>Hesap ayarları ve sipariş takibi</Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color={PALETTE.textSecondary}
-          />
         </Pressable>
       </ScrollView>
     </View>
@@ -688,33 +669,5 @@ const styles = StyleSheet.create({
     fontFamily: homeFonts.sansSemi,
     fontSize: 13,
     color: PALETTE.success,
-  },
-  qrLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: PALETTE.cardBg,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    marginTop: 4,
-  },
-  qrLinkTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  qrLinkText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 14,
-    color: PALETTE.textPrimary,
-  },
-  qrLinkSubtext: {
-    fontFamily: homeFonts.sans,
-    fontSize: 12,
-    color: PALETTE.textSecondary,
-    marginTop: 2,
   },
 });

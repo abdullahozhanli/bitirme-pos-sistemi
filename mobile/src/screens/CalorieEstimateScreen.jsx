@@ -41,9 +41,13 @@ const PALETTE = {
 
 const GRADIENT = ['#2F8F39', PALETTE.btnPrimary, '#67C96B'];
 
+const MEAL_HEADER_ICON = 'receipt-outline';
+const AI_KCAL_BADGE_ICON = require('../assets/icons/ai-kcal-badge.png');
+const AI_KCAL_BADGE_MONO = require('../assets/icons/ai-kcal-badge-mono.png');
+
 const SOFT_SHADOW = {
   shadowColor: '#000000',
-  shadowOffset: { width: 0, height: 4 },
+  shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.05,
   shadowRadius: 10,
   elevation: 2,
@@ -55,8 +59,8 @@ const SOFT_SHADOW = {
  */
 const INTRO_DECOR_SLIDES = [
   require('../assets/intro-decor/Kalori_görsel_1.png'),
-  require('../assets/intro-decor/Kalori_görsel_2.png'),
-  require('../assets/intro-decor/Kalori_görsel_3.png'),
+  require('../assets/intro-decor/Kalori_görsel_4.png'),
+  require('../assets/intro-decor/Kalori_görsel_5.png'),
 ];
 
 const INTRO_DECOR_FALLBACK = require('../görsel/dal.png');
@@ -144,6 +148,7 @@ export default function CalorieEstimateScreen({ navigation }) {
   const [mealText, setMealText] = useState('');
   const [previewUri, setPreviewUri] = useState('');
   const [imageBase64, setImageBase64] = useState('');
+  const [inputMode, setInputMode] = useState('text');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -169,6 +174,7 @@ export default function CalorieEstimateScreen({ navigation }) {
     if (picked.canceled || !picked.assets?.length) return;
     setPreviewUri(picked.assets[0].uri || '');
     setImageBase64(picked.assets[0].base64 || '');
+    setInputMode('photo');
     setResult(null);
   }
 
@@ -235,7 +241,14 @@ export default function CalorieEstimateScreen({ navigation }) {
           accessibilityRole="header"
           accessibilityLabel="AI Kalori Asistanı"
         >
-          <Ionicons name="sparkles" size={14} color={PALETTE.success} />
+          <View style={styles.heroPillIconWrap}>
+            <Image
+              source={AI_KCAL_BADGE_ICON}
+              style={styles.heroPillIcon}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
+          </View>
           <Text style={styles.heroPillText}>AI Kalori Asistanı</Text>
         </View>
 
@@ -253,82 +266,171 @@ export default function CalorieEstimateScreen({ navigation }) {
         <View style={styles.formCard}>
           <View style={styles.formCardHeader}>
             <View style={styles.formCardHeaderIconWrap}>
-              <Ionicons name="sparkles-outline" size={23} color={PALETTE.success} />
+              <Ionicons name={MEAL_HEADER_ICON} size={17} color="#6B6560" />
             </View>
             <View style={styles.formCardHeaderTitles}>
               <Text style={styles.fieldLabel}>Öğün açıklaması</Text>
-              <Text style={styles.fieldHint}>
-                Yediklerini yaz; istersen fotoğraf da ekleyebilirsin.
-              </Text>
+              <View style={styles.fieldHintRow}>
+                <View style={styles.formInfoIcon}>
+                  <Text style={styles.formInfoBang}>!</Text>
+                </View>
+                <Text style={styles.fieldHint}>
+                  Ürünleri yazın veya fotoğraf ekleyin. AI yaklaşık kalori tahmini oluştursun.
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.textAreaShell}>
-            <TextInput
-              value={mealText}
-              onChangeText={setMealText}
-              placeholder="Örn: 1 porsiyon tavuk döner, az pilav, ayran"
-              placeholderTextColor={PALETTE.textSecondary}
-              multiline
-              maxLength={600}
-              style={styles.textArea}
-              textAlignVertical="top"
-            />
-            <Text style={styles.charCount}>{mealText.length}/600</Text>
-          </View>
-
-          <View style={styles.actionsRow}>
+          <View style={styles.segmentRow}>
             <Pressable
               style={({ pressed }) => [
-                styles.outlineBtn,
+                styles.segmentTab,
+                inputMode === 'text' && styles.segmentTabActive,
                 pressed && { opacity: 0.92 },
-                pressScale(pressed),
               ]}
-              onPress={pickImage}
-              android_ripple={{ ...androidRipple, borderless: false }}
+              onPress={() => setInputMode('text')}
             >
-              <Ionicons name="image-outline" size={18} color={PALETTE.textPrimary} />
-              <Text style={styles.outlineBtnText}>Fotoğraf seç</Text>
+              <Ionicons
+                name="document-text-outline"
+                size={15}
+                color={inputMode === 'text' ? PALETTE.textPrimary : '#9CA3AF'}
+              />
+              <Text
+                style={[
+                  styles.segmentTabText,
+                  inputMode === 'text' && styles.segmentTabTextActive,
+                ]}
+              >
+                Metin girin
+              </Text>
             </Pressable>
-            {imageBase64 ? (
-              <Pressable onPress={clearImage} hitSlop={8} style={styles.clearPhotoBtn}>
-                <Ionicons name="trash-outline" size={16} color="#B42318" />
-                <Text style={styles.clearPhotoText}>Kaldır</Text>
-              </Pressable>
-            ) : null}
+            <Pressable
+              style={({ pressed }) => [
+                styles.segmentTab,
+                inputMode === 'photo' && styles.segmentTabActive,
+                pressed && { opacity: 0.92 },
+              ]}
+              onPress={() => setInputMode('photo')}
+            >
+              <Ionicons
+                name="camera-outline"
+                size={15}
+                color={inputMode === 'photo' ? PALETTE.textPrimary : '#9CA3AF'}
+              />
+              <Text
+                style={[
+                  styles.segmentTabText,
+                  inputMode === 'photo' && styles.segmentTabTextActive,
+                ]}
+              >
+                Fotoğraf ekle
+              </Text>
+            </Pressable>
           </View>
 
-          {previewUri ? (
-            <View style={styles.previewWrap}>
-              <Image source={{ uri: previewUri }} style={styles.preview} />
+          {inputMode === 'text' ? (
+            <View style={styles.textAreaShell}>
+              <TextInput
+                value={mealText}
+                onChangeText={setMealText}
+                placeholder=""
+                placeholderTextColor="#9CA3AF"
+                multiline
+                maxLength={600}
+                style={styles.textArea}
+                textAlignVertical="top"
+              />
+              <Text style={styles.charCount}>{mealText.length}/600</Text>
             </View>
-          ) : null}
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.ctaOuter,
-              (loading || pressed) && { opacity: loading ? 1 : 0.92 },
-            ]}
-            onPress={runEstimate}
-            disabled={loading}
-            android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
-          >
-            <LinearGradient
-              colors={GRADIENT}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.ctaGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <View style={styles.photoPanel}>
+              {previewUri ? (
+                <View style={styles.previewWrap}>
+                  <Image source={{ uri: previewUri }} style={styles.preview} />
+                  <Pressable
+                    onPress={clearImage}
+                    hitSlop={8}
+                    style={({ pressed }) => [
+                      styles.previewRemoveBtn,
+                      pressed && { opacity: 0.9 },
+                    ]}
+                  >
+                    <Ionicons name="close" size={16} color="#FFFFFF" />
+                  </Pressable>
+                </View>
               ) : (
-                <>
-                  <Ionicons name="nutrition-outline" size={18} color="#FFFFFF" />
-                  <Text style={styles.ctaText}>Tahmin et</Text>
-                </>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.photoPickArea,
+                    pressed && { opacity: 0.94 },
+                  ]}
+                  onPress={pickImage}
+                  android_ripple={{ ...androidRipple, borderless: false }}
+                >
+                  <View style={styles.photoPickIconWrap}>
+                    <Ionicons name="camera-outline" size={22} color="#6B7280" />
+                  </View>
+                  <Text style={styles.photoPickTitle}>Fotoğraf seç</Text>
+                  <Text style={styles.photoPickHint}>Galeriden öğün fotoğrafı ekleyin</Text>
+                </Pressable>
               )}
-            </LinearGradient>
-          </Pressable>
+              {previewUri ? (
+                <Pressable
+                  onPress={pickImage}
+                  style={({ pressed }) => [
+                    styles.photoChangeLink,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                >
+                  <Text style={styles.photoChangeLinkText}>Başka fotoğraf seç</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
+
+          <View style={styles.formCardFooter}>
+            <View style={styles.formInfoRow}>
+              <View style={styles.formInfoIcon}>
+                <Text style={styles.formInfoBang}>!</Text>
+              </View>
+              <Text style={styles.formInfoText}>
+                Detaylı açıklamalar daha doğru tahmin sağlar.
+              </Text>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.ctaCompact,
+                (loading || pressed) && { opacity: loading ? 1 : 0.92 },
+              ]}
+              onPress={runEstimate}
+              disabled={loading}
+              accessibilityRole="button"
+              accessibilityLabel="Tahmin et"
+              android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
+            >
+              <LinearGradient
+                colors={GRADIENT}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.ctaGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Image
+                      source={AI_KCAL_BADGE_MONO}
+                      style={styles.ctaIconMono}
+                      resizeMode="contain"
+                      accessibilityIgnoresInvertColors
+                    />
+                    <Text style={styles.ctaText}>Tahmin et</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
 
         {result ? (
@@ -419,18 +521,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: PALETTE.softAmber,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#D7E7D8',
+    borderColor: '#C5DDB0',
+    shadowColor: '#7BA858',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  heroPillIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroPillIcon: {
+    width: 22,
+    height: 22,
   },
   heroPillText: {
-    fontFamily: homeFonts.sansSemi,
+    fontFamily: homeFonts.sansMedium,
     fontSize: 12,
-    color: PALETTE.success,
-    letterSpacing: 0.2,
+    color: '#3A3A3A',
+    letterSpacing: 0.05,
   },
   introCard: {
     backgroundColor: PALETTE.cardBg,
@@ -478,138 +598,237 @@ const styles = StyleSheet.create({
     backgroundColor: PALETTE.cardBg,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: PALETTE.border,
+    borderColor: '#ECE8E2',
     paddingHorizontal: 14,
-    paddingVertical: 16,
-    gap: 14,
+    paddingVertical: 14,
+    gap: 10,
     ...SOFT_SHADOW,
   },
   formCardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 11,
   },
   formCardHeaderIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(31, 41, 51, 0.06)',
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(31, 41, 51, 0.1)',
+    marginTop: 2,
   },
   formCardHeaderTitles: {
     flex: 1,
     minWidth: 0,
-    paddingTop: 1,
+    paddingTop: 3,
   },
   fieldLabel: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 16,
-    color: PALETTE.textPrimary,
-    letterSpacing: -0.2,
+    fontSize: 14,
+    color: '#4A4540',
+    letterSpacing: -0.12,
+  },
+  fieldHintRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 3,
   },
   fieldHint: {
+    flex: 1,
     fontFamily: homeFonts.sans,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#7A7168',
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  segmentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E5E9',
+    backgroundColor: '#F4F5F7',
+  },
+  segmentTabActive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#B0B8C4',
+  },
+  segmentTabText: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 13,
     color: PALETTE.textSecondary,
-    marginTop: 4,
+  },
+  segmentTabTextActive: {
+    fontFamily: homeFonts.sansSemi,
+    color: PALETTE.textPrimary,
   },
   textAreaShell: {
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: PALETTE.border,
+    borderColor: '#E8E0D6',
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   textArea: {
-    minHeight: 118,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 8,
+    minHeight: 88,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 4,
     fontFamily: homeFonts.sans,
-    fontSize: 15,
+    fontSize: 14,
     color: PALETTE.textPrimary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   charCount: {
     fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: PALETTE.textSecondary,
+    fontSize: 10,
+    color: '#9CA3AF',
     textAlign: 'right',
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 10,
+    paddingBottom: 6,
     paddingTop: 0,
   },
-  actionsRow: {
+  formCardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
-    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 2,
   },
-  outlineBtn: {
+  formInfoRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    backgroundColor: '#FAFAF9',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    gap: 7,
+    minWidth: 0,
   },
-  outlineBtnText: {
-    fontFamily: homeFonts.sansSemi,
+  formInfoIcon: {
+    width: 11,
+    height: 11,
+    borderRadius: 5.5,
+    backgroundColor: PALETTE.btnPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  formInfoBang: {
+    fontFamily: homeFonts.sansBold,
     fontSize: 14,
-    color: PALETTE.textPrimary,
+    lineHeight: 10,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    marginTop: 0.5,
   },
-  clearPhotoBtn: {
-    flexDirection: 'row',
+  formInfoText: {
+    flex: 1,
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#7A7168',
+  },
+  photoPanel: {
+    gap: 6,
+  },
+  photoPickArea: {
+    minHeight: 108,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#D4CCC2',
+    backgroundColor: '#FAFAF9',
     alignItems: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  clearPhotoText: {
-    fontFamily: homeFonts.sansMedium,
+  photoPickIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F1F3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  photoPickTitle: {
+    fontFamily: homeFonts.sansSemi,
     fontSize: 13,
-    color: '#B42318',
+    color: PALETTE.textPrimary,
+    marginBottom: 2,
+  },
+  photoPickHint: {
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    color: PALETTE.textSecondary,
+    textAlign: 'center',
+  },
+  photoChangeLink: {
+    alignSelf: 'center',
+    paddingVertical: 4,
+  },
+  photoChangeLinkText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 13,
+    color: '#1F6B38',
   },
   previewWrap: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: PALETTE.border,
+    borderColor: '#E8E0D6',
     backgroundColor: '#F4F4F5',
+    position: 'relative',
   },
   preview: {
     width: '100%',
-    height: 168,
+    height: 128,
     backgroundColor: '#F4F4F5',
   },
-  ctaOuter: {
-    width: '100%',
+  previewRemoveBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(17, 24, 39, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaCompact: {
+    flexShrink: 0,
     borderRadius: 999,
     overflow: 'hidden',
-    marginTop: 0,
-    minHeight: 50,
   },
   ctaGradient: {
-    minHeight: 50,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
+    gap: 5,
+    height: 34,
+    paddingHorizontal: 11,
+  },
+  ctaIconMono: {
+    width: 18,
+    height: 18,
   },
   ctaText: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 15,
+    fontSize: 13,
     color: '#FFFFFF',
-    letterSpacing: 0.2,
+    letterSpacing: 0.05,
   },
   resultCard: {
     borderRadius: 18,

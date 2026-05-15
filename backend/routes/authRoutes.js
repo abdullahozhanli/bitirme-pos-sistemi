@@ -5,13 +5,19 @@ const jwt = require('jsonwebtoken'); // Token (Giriş Kartı) oluşturmak için
 
 const User = require('../models/User');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { uploadAvatar } = require('../middleware/uploadAvatar');
+const {
+  deleteAvatarFileIfManaged,
+  publicPathForFilename,
+  resolveAvatarUrlForClient,
+} = require('../utils/avatarStorage');
 const {
   isValidEmail,
   isStrongPassword,
   PASSWORD_POLICY_MESSAGE,
 } = require('../utils/authValidation');
 
-function userPayload(doc) {
+function userPayload(req, doc) {
   const pts = doc.loyaltyPoints != null ? doc.loyaltyPoints : 0;
   return {
     id: doc._id || doc.id,
@@ -20,12 +26,12 @@ function userPayload(doc) {
     role: doc.role,
     points: pts,
     loyaltyPoints: pts,
-    avatarUrl: doc.avatarUrl || '',
+    avatarUrl: req ? resolveAvatarUrlForClient(req, doc.avatarUrl || '') : doc.avatarUrl || '',
     passwordMeetsPolicy: doc.passwordMeetsPolicy === true,
   };
 }
 
-function meResponse(user) {
+function meResponse(req, user) {
   const pts = user.loyaltyPoints != null ? user.loyaltyPoints : 0;
   return {
     id: user._id,
@@ -38,7 +44,7 @@ function meResponse(user) {
       : null,
     points: pts,
     loyaltyPoints: pts,
-    avatarUrl: user.avatarUrl || '',
+    avatarUrl: resolveAvatarUrlForClient(req, user.avatarUrl || ''),
     passwordMeetsPolicy: user.passwordMeetsPolicy === true,
   };
 }
@@ -54,7 +60,73 @@ router.get('/me', authMiddleware, async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
-    res.json(meResponse(user));
+    res.json(meResponse(req, user));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * @route   POST /api/auth/me/avatar
+ * @desc    Profil fotoğrafı yükle (multipart, kalıcı dosya + URL)
+ */
+router.post(
+  '/me/avatar',
+  authMiddleware,
+  (req, res, next) => {
+    uploadAvatar.single('avatar')(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ message: err.message || 'Yükleme hatası' });
+      }
+      next();
+    });
+  },
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Fotoğraf dosyası gerekli' });
+      }
+      const userId = req.user.id || req.user._id;
+      const user = await User.findById(userId).populate('branchId', 'name');
+      if (!user) {
+        return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+      }
+
+      const previous = user.avatarUrl;
+      user.avatarUrl = publicPathForFilename(req.file.filename);
+      await user.save();
+      deleteAvatarFileIfManaged(previous);
+
+      const fresh = await User.findById(userId)
+        .populate('branchId', 'name')
+        .select('-passwordHash');
+      res.json(meResponse(req, fresh));
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/**
+ * @route   DELETE /api/auth/me/avatar
+ * @desc    Profil fotoğrafını kaldır
+ */
+router.delete('/me/avatar', authMiddleware, async (req, res, next) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const user = await User.findById(userId).populate('branchId', 'name');
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+
+    deleteAvatarFileIfManaged(user.avatarUrl);
+    user.avatarUrl = '';
+    await user.save();
+
+    const fresh = await User.findById(userId)
+      .populate('branchId', 'name')
+      .select('-passwordHash');
+    res.json(meResponse(req, fresh));
   } catch (e) {
     next(e);
   }
@@ -62,7 +134,7 @@ router.get('/me', authMiddleware, async (req, res, next) => {
 
 /**
  * @route   PATCH /api/auth/me
- * @desc    Profil güncelle (ör. avatarUrl data URL, isim)
+ * @desc    Profil güncelle (isim; avatar için POST /me/avatar kullanın)
  */
 router.patch('/me', authMiddleware, async (req, res, next) => {
   try {
@@ -81,27 +153,26 @@ router.patch('/me', authMiddleware, async (req, res, next) => {
     if (req.body && Object.prototype.hasOwnProperty.call(req.body, 'avatarUrl')) {
       const raw = req.body.avatarUrl;
       if (raw === null || raw === '') {
+        deleteAvatarFileIfManaged(user.avatarUrl);
         user.avatarUrl = '';
       } else if (typeof raw === 'string') {
         const trimmed = raw.trim();
         if (!trimmed) {
+          deleteAvatarFileIfManaged(user.avatarUrl);
           user.avatarUrl = '';
-        } else {
-          const okPrefix = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(trimmed);
-          if (!okPrefix) {
-            return res.status(400).json({ message: 'Geçersiz görsel formatı (jpeg, png veya webp gerekli)' });
-          }
-          if (trimmed.length > 450000) {
-            return res.status(400).json({ message: 'Görsel çok büyük; daha küçük bir fotoğraf seçin' });
-          }
+        } else if (trimmed.startsWith('/uploads/avatars/')) {
           user.avatarUrl = trimmed;
+        } else {
+          return res.status(400).json({
+            message: 'Profil fotoğrafı için POST /api/auth/me/avatar kullanın',
+          });
         }
       }
     }
 
     await user.save();
     const fresh = await User.findById(userId).populate('branchId', 'name').select('-passwordHash');
-    res.json(meResponse(fresh));
+    res.json(meResponse(req, fresh));
   } catch (e) {
     next(e);
   }
@@ -161,7 +232,7 @@ router.post('/register', async (req, res, next) => {
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.status(201).json({ token, user: userPayload(user) });
+        res.status(201).json({ token, user: userPayload(req, user) });
       }
     );
   } catch (error) {
@@ -318,7 +389,7 @@ router.post('/login', async (req, res, next) => {
           : null,
         points: pts,
         loyaltyPoints: pts,
-        avatarUrl: user.avatarUrl || '',
+        avatarUrl: resolveAvatarUrlForClient(req, user.avatarUrl || ''),
         passwordMeetsPolicy: user.passwordMeetsPolicy === true,
       },
     });

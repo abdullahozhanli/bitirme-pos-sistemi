@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  /** Müşteri profil görseli (data URL, jpeg/png/webp base64) */
+  /** Profil görseli: /uploads/avatars/... veya eski data URL */
   avatarUrl: {
     type: String,
     default: '',

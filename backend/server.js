@@ -1,4 +1,5 @@
 // server.js
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -99,6 +100,9 @@ app.use(cors({
 
 // body parser
 app.use(express.json({ limit: '2mb' }));
+
+// Profil ve diğer yüklenen dosyalar (kalıcı URL)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Request logging middleware (tüm istekleri logla - route'lardan ÖNCE)
 app.use((req, res, next) => {

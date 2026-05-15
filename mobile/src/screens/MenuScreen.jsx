@@ -34,6 +34,8 @@ import { useFavorites } from '../context/FavoritesContext';
 
 import client from '../api/client';
 
+const AI_KCAL_BADGE_ICON = require('../assets/icons/ai-kcal-badge.png');
+
 const PALETTE = {
   pageBg: '#FFFFFF',
   cardBg: '#FFFFFF',
@@ -367,9 +369,10 @@ export default function MenuScreen({ navigation }) {
         ) : null}
         <View style={styles.heroStatusChip}>
           <Text style={styles.heroStatusText}>Masa {tableNumber || '—'}</Text>
-          <Text style={styles.heroStatusDivider}>•</Text>
-          <View style={styles.statusDot} />
-          <Text style={styles.heroStatusText}>QR ile bağlı</Text>
+          <View style={styles.heroStatusLinked}>
+            <View style={styles.statusDot} />
+            <Text style={styles.heroStatusText}>QR ile bağlı</Text>
+          </View>
         </View>
 
         <View style={styles.assistantCard}>
@@ -402,7 +405,14 @@ export default function MenuScreen({ navigation }) {
                 end={{ x: 1, y: 0.5 }}
                 style={StyleSheet.absoluteFill}
               />
-              <Ionicons name="sparkles-outline" size={14} color="#FFFFFF" />
+              <View style={styles.assistantBtnIconWrap}>
+                <Image
+                  source={AI_KCAL_BADGE_ICON}
+                  style={styles.assistantBtnIcon}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+              </View>
               <Text style={styles.assistantBtnText}>AI Kalori Asistanı</Text>
               <Ionicons name="chevron-forward" size={15} color="#FFFFFF" />
             </Pressable>
@@ -1062,10 +1072,10 @@ const styles = StyleSheet.create({
     height: 40,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PALETTE.success,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#5CB348',
   },
   scroll: { flex: 1 },
   scrollContent: {},
@@ -1100,21 +1110,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 8,
     paddingHorizontal: 0,
     paddingVertical: 0,
     marginBottom: 12,
+  },
+  heroStatusLinked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   heroStatusText: {
     fontFamily: homeFonts.sans,
     fontSize: 15,
     color: '#2E3238',
-  },
-  heroStatusDivider: {
-    fontFamily: homeFonts.sans,
-    fontSize: 15,
-    color: '#2E3238',
-    opacity: 0.7,
   },
   assistantCard: {
     backgroundColor: '#FFFFFF',
@@ -1179,6 +1188,19 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
     overflow: 'hidden',
+  },
+  assistantBtnIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assistantBtnIcon: {
+    width: 18,
+    height: 18,
   },
   assistantBtnText: {
     fontFamily: homeFonts.sansSemi,
