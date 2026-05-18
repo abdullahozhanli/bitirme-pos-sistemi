@@ -307,14 +307,13 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [
-            styles.campaignCard,
-            homeShadowCard,
-            { transform: [{ scale: pressed ? 0.98 : 1 }] },
-          ]}
-          onPress={() => showComingSoon('Kampanya detaylari')}
-          android_ripple={androidRipple}
-        >
+  style={({ pressed }) => [
+    styles.campaignCard,
+    homeShadowCard,
+    pressScale(pressed),
+  ]}
+  onPress={() => showComingSoon('Kampanya detaylari')}
+>
           <View style={styles.campaignTopRow}>
             <View style={styles.campaignBadge}>
               <Text style={styles.campaignBadgeText}>MOBİL UYGULAMAYA ÖZEL</Text>

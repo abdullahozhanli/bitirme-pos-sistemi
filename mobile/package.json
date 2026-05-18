@@ -9,7 +9,8 @@
     "start:poll:clean": "cross-env CHOKIDAR_USEPOLLING=true CHOKIDAR_INTERVAL=250 expo start -c",
     "dev": "expo start",
     "android": "expo start --android",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build:apk": "eas build -p android --profile preview"
   },
   "dependencies": {
     "@expo-google-fonts/comic-neue": "^0.4.1",

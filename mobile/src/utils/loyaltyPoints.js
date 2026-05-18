@@ -20,5 +20,12 @@ export function mergeUserFromMe(prev, meData) {
   const raw = d.points ?? d.loyaltyPoints;
   const n = Number(raw ?? 0);
   const safe = Number.isFinite(n) ? n : 0;
-  return { ...(prev || {}), ...d, points: safe, loyaltyPoints: safe };
+  return {
+    ...(prev || {}),
+    ...d,
+    points: safe,
+    loyaltyPoints: safe,
+    passwordMeetsPolicy:
+      d.passwordMeetsPolicy === true || prev?.passwordMeetsPolicy === true,
+  };
 }

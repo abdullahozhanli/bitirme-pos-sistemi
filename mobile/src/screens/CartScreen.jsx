@@ -167,6 +167,22 @@ export default function CartScreen({ navigation }) {
     if (submitting || lines.length === 0) return;
     setCheckoutError('');
 
+    const previewDiscount = campaignDiscount + couponDiscount + pointsDiscount;
+    if (previewDiscount > 0.01 && payableTotal < totals.sum) {
+      // Backend şu an kalemlerin tam fiyatını kaydeder; indirimler yalnızca notta.
+      const ok = await new Promise((resolve) => {
+        Alert.alert(
+          'İndirim bilgisi',
+          `Sepette gösterilen indirim (${formatPrice(previewDiscount)}) sipariş notuna eklenir. Ödeme tutarı restoranda kalemlerin toplamına göre hesaplanır.`,
+          [
+            { text: 'İptal', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Devam', onPress: () => resolve(true) },
+          ]
+        );
+      });
+      if (!ok) return;
+    }
+
     if (!tableNumber) {
       Alert.alert('Masa gerekli', 'Sipariş vermek için önce QR ile masayı bağlayın.', [
         { text: 'QR Tara', onPress: () => navigation.navigate('QRScanner') },

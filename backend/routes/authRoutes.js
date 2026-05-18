@@ -16,6 +16,9 @@ const {
   isStrongPassword,
   PASSWORD_POLICY_MESSAGE,
 } = require('../utils/authValidation');
+const { authLoginLimiter } = require('../middleware/rateLimiters');
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 function userPayload(req, doc) {
   const pts = doc.loyaltyPoints != null ? doc.loyaltyPoints : 0;
@@ -183,7 +186,7 @@ router.patch('/me', authMiddleware, async (req, res, next) => {
  * @desc    Yeni müşteri kaydı (e-posta + güçlü şifre)
  * @access  Public
  */
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLoginLimiter, async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
 
@@ -249,7 +252,7 @@ router.post('/register', async (req, res, next) => {
  * @desc    E-posta ve şifre ile giriş
  * @access  Public
  */
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLoginLimiter, async (req, res, next) => {
   try {
     const emailRaw = String(req.body.email ?? req.body.identifier ?? '').trim().toLowerCase();
     const { password } = req.body;
@@ -273,7 +276,9 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
 
-    console.log(`🔍 Kullanıcı bulundu: ${user.email}, Rol: ${user.role}, Aktif: ${user.isActive}`);
+    if (isDevelopment) {
+      console.log(`🔍 Kullanıcı bulundu: ${user.email}, Rol: ${user.role}`);
+    }
 
     if (!user.passwordHash || typeof user.passwordHash !== 'string') {
       console.error('Kullanıcıda passwordHash yok veya geçersiz:', {
@@ -301,20 +306,15 @@ router.post('/login', async (req, res, next) => {
     let isMatch;
     try {
       isMatch = await bcrypt.compare(password, user.passwordHash);
-      console.log(`🔐 Şifre kontrolü: ${isMatch ? '✅ Eşleşti' : '❌ Eşleşmedi'}`);
     } catch (bcryptError) {
-      console.error('bcrypt.compare() hatası:', bcryptError);
-      console.error('Parametreler:', {
-        password: password ? `${password.substring(0, 3)}...` : 'undefined',
-        passwordHash: user.passwordHash ? `${user.passwordHash.substring(0, 10)}...` : 'undefined',
-      });
+      console.error('bcrypt.compare() hatası:', bcryptError.message || bcryptError);
       return res.status(500).json({ message: 'Şifre kontrolü sırasında hata oluştu' });
     }
 
     if (!isMatch) {
-      console.error(
-        `❌ Şifre yanlış - Giriş: ${emailRaw}, Kullanıcı bulundu: ${!!user}, passwordHash var: ${!!user.passwordHash}`
-      );
+      if (isDevelopment) {
+        console.warn(`❌ Geçersiz şifre denemesi: ${emailRaw}`);
+      }
       return res.status(400).json({ message: 'Geçersiz giriş bilgileri' });
     }
 

@@ -1,5 +1,7 @@
 const express = require('express');
 const MealCalorieEstimate = require('../models/MealCalorieEstimate');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { calorieEstimateLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
@@ -390,7 +392,7 @@ async function askCalorieEstimateWithUsda(text) {
   );
 }
 
-router.post('/estimate', async (req, res, next) => {
+router.post('/estimate', calorieEstimateLimiter, authMiddleware, async (req, res, next) => {
   try {
     const userInputText = sanitizeText(req.body?.text);
     const imageBase64 = String(req.body?.imageBase64 || '').trim();

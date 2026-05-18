@@ -63,6 +63,7 @@ export function FavoritesProvider({ children }) {
       return;
     }
     let cancelled = false;
+    hydrated.current = false;
     (async () => {
       try {
         let raw = await AsyncStorage.getItem(keyV2(user.id));

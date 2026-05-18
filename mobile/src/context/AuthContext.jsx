@@ -15,6 +15,7 @@ import {
   uploadProfileAvatarFile,
 } from '../api/profileAvatarApi';
 import { API_BASE_URL_CANDIDATES } from '../constants/config';
+import { isStrongPassword } from '../utils/authValidation';
 import { coerceUserPoints, mergeUserFromMe } from '../utils/loyaltyPoints';
 
 const TOKEN_KEY = 'selfkasa_token';
@@ -113,8 +114,13 @@ export function AuthProvider({ children }) {
         password,
       });
       const { token: t, user: u } = res.data;
-      await persistSession(t, u);
-      return u;
+      const normalized = {
+        ...u,
+        passwordMeetsPolicy:
+          u?.passwordMeetsPolicy === true || isStrongPassword(password),
+      };
+      await persistSession(t, normalized);
+      return normalized;
     },
     [persistSession]
   );
@@ -127,8 +133,12 @@ export function AuthProvider({ children }) {
         name: name?.trim() || undefined,
       });
       const { token: t, user: u } = res.data;
-      await persistSession(t, u);
-      return u;
+      const normalized = {
+        ...u,
+        passwordMeetsPolicy: u?.passwordMeetsPolicy === true || isStrongPassword(password),
+      };
+      await persistSession(t, normalized);
+      return normalized;
     },
     [persistSession]
   );

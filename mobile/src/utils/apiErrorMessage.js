@@ -4,6 +4,11 @@ import { API_BASE_URL } from '../constants/config';
  * Axios hatalarını kullanıcıya gösterilecek kısa metne çevirir.
  */
 export function apiErrorMessage(err, fallback) {
+  const status = err.response?.status;
+  if (status === 404) {
+    return 'Sunucuda bu işlem henüz aktif değil. Backend güncellenmeli veya uygulamayı yeniden başlatıp tekrar giriş yapın.';
+  }
+
   const serverMsg = err.response?.data?.message;
   if (serverMsg) return serverMsg;
 

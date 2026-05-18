@@ -26,6 +26,9 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 
 dotenv.config();
 
+const { warnInsecureJwtSecret } = require('./utils/envSecurity');
+warnInsecureJwtSecret();
+
 // Başlangıç log'u
 console.log('\n🔧 Backend başlatılıyor...');
 console.log(`📁 Çalışma Dizini: ${process.cwd()}`);
@@ -141,9 +144,18 @@ const server = http.createServer(app);
 let io = null;
 try {
   const { Server } = require('socket.io');
+  const socketOrigins = [
+    'https://selfkasa.site',
+    'https://www.selfkasa.site',
+    process.env.FRONTEND_ORIGIN,
+    ...(isDevelopment
+      ? ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173']
+      : []),
+  ].filter(Boolean);
+
   io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: isDevelopment ? true : socketOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

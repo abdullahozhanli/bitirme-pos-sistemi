@@ -254,65 +254,6 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       return res.status(400).json({ message: 'Menü öğeleri veya ürünler bulunamadı' });
     }
 
-    // Stok kontrolü ve düşürme için Product'ları session ile güncelle
-    const StockMovement = require('../models/StockMovement');
-    const mongoose = require('mongoose');
-    const session = await mongoose.startSession();
-    
-    try {
-      await session.withTransaction(async () => {
-        // Product'ları tekrar çek (stok kontrolü için)
-        const productIdsForStock = items
-          .map(i => i.menuItemId || i.productId)
-          .filter(id => productsMap[String(id)]);
-        
-        if (productIdsForStock.length > 0) {
-          const productsForStock = await Product.find({ 
-            _id: { $in: productIdsForStock } 
-          }).session(session);
-          
-          // Stok kontrolü ve düşürme
-          for (const item of items) {
-            const itemId = item.menuItemId || item.productId;
-            const product = productsForStock.find(p => String(p._id) === String(itemId));
-            
-            if (product) {
-              const qty = Number(item.qty) || 1;
-              
-              // Stok kontrolü
-              if (product.countInStock < qty) {
-                throw new Error(`Yetersiz stok: ${product.name} (Stok: ${product.countInStock}, İstenen: ${qty})`);
-              }
-              
-              // Stok düşür
-              const updateResult = await Product.updateOne(
-                { _id: product._id, countInStock: { $gte: qty } },
-                { $inc: { countInStock: -qty } }
-              ).session(session);
-              
-              if (updateResult.modifiedCount === 0) {
-                throw new Error(`Yetersiz stok: ${product.name}`);
-              }
-              
-              // StockMovement kaydı
-              await StockMovement.create([{
-                productId: product._id,
-                delta: -qty,
-                reason: 'order',
-                refId: null, // Order ID henüz yok, sonra güncellenecek
-                actorId: null, // Müşteri siparişi
-              }], { session });
-            }
-          }
-        }
-      });
-    } catch (stockError) {
-      await session.endSession();
-      return res.status(400).json({ message: stockError.message || 'Stok kontrolü başarısız' });
-    }
-    
-    await session.endSession();
-
     // Order items oluştur - önce MenuItem'da ara, yoksa Product'ta ara
     const orderItemsPromises = items.map(async (i) => {
       const itemId = i.menuItemId || i.productId;
@@ -399,16 +340,82 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       if (u && u.role === 'musteri') customerId = u._id;
     }
 
-    // Sipariş oluştur
-    const order = await Order.create({
-      table: table._id,
-      items: orderItems,
-      total: Number(total),
-      notes: notes || '', // Genel sipariş notu
-      status: 'hazirlaniyor',
-      branchId: finalBranchId,
-      ...(customerId ? { customer: customerId } : {}),
-    });
+    const StockMovement = require('../models/StockMovement');
+    const productIdsForStock = items
+      .map((i) => i.menuItemId || i.productId)
+      .filter((id) => productsMap[String(id)]);
+
+    const session = await mongoose.startSession();
+    let order;
+    try {
+      await session.withTransaction(async () => {
+        const productsForStock =
+          productIdsForStock.length > 0
+            ? await Product.find({ _id: { $in: productIdsForStock } }).session(session)
+            : [];
+
+        for (const line of items) {
+          const itemId = line.menuItemId || line.productId;
+          const product = productsForStock.find((p) => String(p._id) === String(itemId));
+          if (!product) continue;
+          const qty = Number(line.qty) || 1;
+          if (product.countInStock < qty) {
+            throw new Error(
+              `Yetersiz stok: ${product.name} (Stok: ${product.countInStock}, İstenen: ${qty})`
+            );
+          }
+        }
+
+        const created = await Order.create(
+          [
+            {
+              table: table._id,
+              items: orderItems,
+              total: Number(total),
+              notes: notes || '',
+              status: 'hazirlaniyor',
+              branchId: finalBranchId,
+              ...(customerId ? { customer: customerId } : {}),
+            },
+          ],
+          { session }
+        );
+        order = created[0];
+
+        for (const line of items) {
+          const itemId = line.menuItemId || line.productId;
+          const product = productsForStock.find((p) => String(p._id) === String(itemId));
+          if (!product) continue;
+          const qty = Number(line.qty) || 1;
+
+          const updateResult = await Product.updateOne(
+            { _id: product._id, countInStock: { $gte: qty } },
+            { $inc: { countInStock: -qty } }
+          ).session(session);
+
+          if (updateResult.modifiedCount === 0) {
+            throw new Error(`Yetersiz stok: ${product.name}`);
+          }
+
+          await StockMovement.create(
+            [
+              {
+                productId: product._id,
+                delta: -qty,
+                reason: 'order',
+                refId: order._id,
+                actorId: customerId || null,
+              },
+            ],
+            { session }
+          );
+        }
+      });
+    } catch (stockError) {
+      return res.status(400).json({ message: stockError.message || 'Stok veya sipariş kaydı başarısız' });
+    } finally {
+      await session.endSession();
+    }
 
     let pointsEarned = 0;
     let customerLoyaltyPoints = null;
@@ -421,22 +428,8 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       ).select('loyaltyPoints');
       if (updatedUser) customerLoyaltyPoints = updatedUser.loyaltyPoints;
     }
-    
-    // StockMovement kayıtlarını order ID ile güncelle
-    const productIdsForStock = items
-      .map(i => i.menuItemId || i.productId)
-      .filter(id => productsMap[String(id)]);
-    
+
     if (productIdsForStock.length > 0) {
-      await StockMovement.updateMany(
-        { 
-          productId: { $in: productIdsForStock },
-          reason: 'order',
-          refId: null
-        },
-        { $set: { refId: order._id } }
-      );
-      
       // Real-time stok güncellemesi için socket emit
       const io = req.app.get('io');
       if (io) {

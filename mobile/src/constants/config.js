@@ -19,14 +19,17 @@ function deriveDevHostUrl() {
 
 const envUrl = trimUrl(process.env.EXPO_PUBLIC_API_URL);
 const devHostUrl = __DEV__ ? deriveDevHostUrl() : '';
-const emulatorUrl = Platform.OS === 'android' ? `http://10.0.2.2:${API_PORT}` : '';
-const localhostUrl = `http://localhost:${API_PORT}`;
+const emulatorUrl = __DEV__ && Platform.OS === 'android' ? `http://10.0.2.2:${API_PORT}` : '';
+const localhostUrl = __DEV__ ? `http://localhost:${API_PORT}` : '';
 
-export const API_BASE_URL_CANDIDATES = [
-  envUrl,
-  devHostUrl,
-  emulatorUrl,
-  localhostUrl,
-].filter((url, index, arr) => Boolean(url) && arr.indexOf(url) === index);
+const devCandidates = [envUrl, devHostUrl, emulatorUrl, localhostUrl];
+const prodCandidates = [envUrl];
 
-export const API_BASE_URL = API_BASE_URL_CANDIDATES[0] || localhostUrl;
+export const API_BASE_URL_CANDIDATES = (__DEV__ ? devCandidates : prodCandidates).filter(
+  (url, index, arr) => Boolean(url) && arr.indexOf(url) === index
+);
+
+export const API_BASE_URL =
+  API_BASE_URL_CANDIDATES[0] ||
+  (__DEV__ ? localhostUrl : envUrl) ||
+  '';

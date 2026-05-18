@@ -4,6 +4,7 @@
     "slug": "self-kasa-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./src/görsel/logo.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
@@ -11,7 +12,11 @@
     },
     "android": {
       "package": "com.selfkasa.mobile",
-      "usesCleartextTraffic": true
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./src/görsel/logo.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "plugins": [
       "expo-asset",
