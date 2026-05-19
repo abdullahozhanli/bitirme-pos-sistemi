@@ -5,7 +5,8 @@ import axios from 'axios';
 import HomeIcon from '@mui/icons-material/Home';
 import ReceiptLongIcon from '@mui/icons-material/Description';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
-import CategoryIcon from '@mui/icons-material/LocalOffer';
+import CategoryIcon from '@mui/icons-material/Category';
+import CampaignIcon from '@mui/icons-material/LocalOffer';
 import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import LaunchIcon from '@mui/icons-material/Visibility';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -16,6 +17,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import BusinessIcon from '@mui/icons-material/Business';
 import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import '../styles/admin.css';
+import '../styles/admin-mobile.css';
 
 const drawerWidth = 240;
 
@@ -70,6 +72,7 @@ export default function AdminLayout() {
     { to: '/admin/masalar', label: 'Masa Yönetimi', icon: <TableRestaurantIcon /> },
     { to: '/admin/urunler', label: 'Ürün Yönetimi', icon: <Inventory2Icon /> },
     { to: '/admin/kategoriler', label: 'Kategori Yönetimi', icon: <CategoryIcon /> },
+    { to: '/admin/kampanyalar', label: 'Kampanya Yönetimi', icon: <CampaignIcon /> },
     { to: '/', label: 'Müşteri Arayüzünü Gör', icon: <LaunchIcon /> },
   ];
 
@@ -264,36 +267,10 @@ export default function AdminLayout() {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Mobile için hamburger menü - Sidebar içinde */}
-      {isMobile && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 16,
-            left: 16,
-            zIndex: (t) => t.zIndex.drawer + 1,
-          }}
-        >
-          <IconButton
-            onClick={handleDrawerToggle}
-            sx={{
-              bgcolor: '#FFFFFF',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-medium)',
-              color: 'var(--color-text)',
-              '&:hover': {
-                bgcolor: '#f9fafb',
-              },
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Box>
-      )}
-
+    <Box className="admin-panel" sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Mobile Temporary Drawer */}
       <Drawer
+        className="admin-drawer-mobile"
         variant="temporary"
         open={mobileOpen}
         onClose={handleDrawerToggle}
@@ -342,14 +319,35 @@ export default function AdminLayout() {
 
       <Box
         component="main"
+        className="admin-panel-main"
         sx={{
           flex: 1,
           p: { xs: 2, sm: 3, md: 4 },
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          backgroundColor: '#FFFFFF',
-          pt: { xs: 8, md: 4 }, // Mobile için üstten boşluk (hamburger menü için)
+          backgroundColor: '#F4F6F8',
+          minWidth: 0,
         }}
       >
+        {isMobile && (
+          <Box component="header" className="admin-mobile-header">
+            <IconButton
+              className="admin-mobile-header__menu"
+              onClick={handleDrawerToggle}
+              aria-label="Menüyü aç"
+              size="medium"
+            >
+              <MenuIcon />
+            </IconButton>
+            <Box className="admin-mobile-header__text">
+              <Typography className="admin-mobile-header__title">Admin Panel</Typography>
+              {branchName ? (
+                <Typography className="admin-mobile-header__subtitle" component="p">
+                  {branchName}
+                </Typography>
+              ) : null}
+            </Box>
+          </Box>
+        )}
         <Outlet />
       </Box>
     </Box>

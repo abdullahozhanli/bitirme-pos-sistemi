@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Branch = require('../models/Branch');
 const { authMiddleware } = require('../middleware/authMiddleware');
+const { formatProductPricing } = require('../utils/pricing');
 
 const router = express.Router();
 
@@ -49,8 +50,18 @@ router.get('/', async (req, res, next) => {
       branchId ? Branch.findById(branchId).select('name').lean() : Promise.resolve(null),
     ]);
 
+    const now = new Date();
+    const itemsWithPricing = items.map((doc) => {
+      const plain = doc.toObject ? doc.toObject() : doc;
+      const pricing = formatProductPricing(plain, now);
+      return {
+        ...plain,
+        ...pricing,
+      };
+    });
+
     res.json({
-      items,
+      items: itemsWithPricing,
       branchName: branch?.name || null,
       page: Number(page),
       limit: Number(limit),

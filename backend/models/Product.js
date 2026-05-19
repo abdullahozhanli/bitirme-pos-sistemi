@@ -23,6 +23,18 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    salePrice: {
+      type: Number,
+      required: false,
+    },
+    saleStartsAt: {
+      type: Date,
+      required: false,
+    },
+    saleEndsAt: {
+      type: Date,
+      required: false,
+    },
     description: {
       type: String,
       required: false,

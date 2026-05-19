@@ -86,3 +86,10 @@ export const androidRipple = {
   color: 'rgba(63, 163, 77, 0.18)',
   foreground: true,
 };
+
+/** İndirim öncesi liste fiyatı — gri metin, kırmızı üstü çizili */
+export const saleOldPriceStyle = {
+  color: '#9CA3AF',
+  textDecorationLine: 'line-through',
+  textDecorationColor: '#DC2626',
+};

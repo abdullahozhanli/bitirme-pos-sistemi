@@ -27,13 +27,22 @@ import { COLORS } from '../../constants/colors.js';
 
 export default function PageHeader({ title, subtitle, action }) {
   return (
-    <Box sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <Box>
+    <Box
+      sx={{
+        mb: { xs: 2, sm: 3 },
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        justifyContent: 'space-between',
+        alignItems: { xs: 'stretch', sm: 'flex-start' },
+        gap: { xs: 1.5, sm: 0 },
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>
         <Typography 
           variant="h5" 
           fontWeight={700} 
           sx={{ 
-            fontSize: '28px',
+            fontSize: { xs: '1.35rem', sm: '1.5rem', md: '28px' },
             color: COLORS.textPrimary,
             mb: subtitle ? 0.5 : 0,
             lineHeight: 1.3,
@@ -58,7 +67,7 @@ export default function PageHeader({ title, subtitle, action }) {
         )}
       </Box>
       {action && (
-        <Box sx={{ ml: 2 }}>
+        <Box className="admin-page-header-action" sx={{ ml: { sm: 2 }, flexShrink: 0 }}>
           {action}
         </Box>
       )}

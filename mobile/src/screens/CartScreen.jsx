@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -13,10 +12,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useCart } from '../context/CartContext';
 import { useTableSession } from '../context/TableSessionContext';
@@ -24,9 +24,43 @@ import { useAuth } from '../context/AuthContext';
 import { getLoyaltyPoints } from '../utils/loyaltyPoints';
 import client from '../api/client';
 import { apiErrorMessage } from '../utils/apiErrorMessage';
+import PaymentCardPreview from '../components/PaymentCardPreview';
+import AppAlert from '../components/AppAlert';
 
 function formatPrice(value) {
   return `₺${Number(value).toFixed(2).replace('.', ',')}`;
+}
+
+function digitsOnly(value, maxLen) {
+  return String(value || '')
+    .replace(/\D/g, '')
+    .slice(0, maxLen);
+}
+
+function formatCardNumber(value) {
+  const d = digitsOnly(value, 16);
+  return d.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+function formatCardExpiry(value) {
+  const d = digitsOnly(value, 4);
+  if (d.length <= 2) return d;
+  return `${d.slice(0, 2)}/${d.slice(2)}`;
+}
+
+function isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv }) {
+  const holder = String(cardHolder || '').trim();
+  const num = digitsOnly(cardNumber, 19);
+  const expiry = String(cardExpiry || '').trim();
+  const cvv = digitsOnly(cardCvv, 4);
+  if (holder.length < 2) return false;
+  if (num.length < 16) return false;
+  if (!/^\d{2}\/\d{2}$/.test(expiry)) return false;
+  const [mm, yy] = expiry.split('/').map((x) => Number(x));
+  if (mm < 1 || mm > 12) return false;
+  if (yy < 0 || yy > 99) return false;
+  if (cvv.length < 3) return false;
+  return true;
 }
 
 const FALLBACK_IMG =
@@ -46,9 +80,24 @@ export default function CartScreen({ navigation }) {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponApplied, setCouponApplied] = useState('');
   const [openNoteIndex, setOpenNoteIndex] = useState(-1);
-  const [paymentMethod, setPaymentMethod] = useState('table');
+  const [paymentMethod, setPaymentMethod] = useState(null);
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
   const [checkoutSuccess, setCheckoutSuccess] = useState(null);
+  const [showCardSheet, setShowCardSheet] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
+  const [appAlert, setAppAlert] = useState(null);
+  const [remoteCampaigns, setRemoteCampaigns] = useState([]);
+  const insets = useSafeAreaInsets();
+
+  const closeAppAlert = useCallback(() => setAppAlert(null), []);
+
+  const showAppAlert = useCallback((config) => {
+    setAppAlert(config);
+  }, []);
 
   const replaceStackWithMenu = useCallback(() => {
     navigation.dispatch(
@@ -70,24 +119,51 @@ export default function CartScreen({ navigation }) {
     }, [refreshUser])
   );
 
+  useEffect(() => {
+    if (!branchId) {
+      setRemoteCampaigns([]);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await client.get('/api/campaigns', {
+          params: { branchId: String(branchId) },
+        });
+        if (!cancelled) {
+          setRemoteCampaigns(Array.isArray(res.data?.items) ? res.data.items : []);
+        }
+      } catch {
+        if (!cancelled) setRemoteCampaigns([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId]);
+
   const points = getLoyaltyPoints(user);
   const redeemablePointsValue = Number((points * POINT_VALUE_TRY).toFixed(2));
   const campaignOptions = useMemo(() => {
-    const list = [{ key: 'none', title: 'Kampanya kullanma', rate: 0 }];
-    if (totals.sum >= 500) {
-      list.push({ key: 'ten', title: '%10 sepet indirimi', rate: 0.1 });
-    } else if (totals.sum >= 300) {
-      list.push({ key: 'seven', title: '%7 sepet indirimi', rate: 0.07 });
-    } else if (totals.sum >= 200) {
-      list.push({ key: 'five', title: '%5 sepet indirimi', rate: 0.05 });
-    }
+    const list = [{ key: 'none', title: 'Kampanya kullanma', rate: 0, minCartTotal: 0 }];
+    remoteCampaigns.forEach((c) => {
+      list.push({
+        key: String(c._id),
+        title: c.title,
+        rate: Number(c.discountRate) || 0,
+        minCartTotal: Number(c.minCartTotal) || 0,
+        campaignType: c.campaignType || 'cart',
+      });
+    });
     return list;
-  }, [totals.sum]);
+  }, [remoteCampaigns]);
 
-  /** Çiplerde gösterilecekler ('Kampanya kullanma' yok) */
   const campaignChipOptions = useMemo(
-    () => campaignOptions.filter((c) => c.key !== 'none'),
-    [campaignOptions]
+    () =>
+      campaignOptions.filter(
+        (c) => c.key !== 'none' && totals.sum >= Number(c.minCartTotal || 0)
+      ),
+    [campaignOptions, totals.sum]
   );
 
   useEffect(() => {
@@ -130,6 +206,44 @@ export default function CartScreen({ navigation }) {
   );
 
   const branchLabel = String(branchName || '').trim() || 'A Blok Restoran';
+  const isOnlinePayment = paymentMethod === 'online';
+  const cardFormReady = isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv });
+
+  const closeCardSheet = useCallback(() => {
+    setShowCardSheet(false);
+    setPaymentMethod((prev) => {
+      if (prev === 'online' && !isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv })) {
+        return null;
+      }
+      return prev;
+    });
+  }, [cardHolder, cardNumber, cardExpiry, cardCvv]);
+
+  const selectPaymentMethod = useCallback(
+    (method) => {
+      setCheckoutError('');
+      if (method === 'online') {
+        setPaymentMethod('online');
+        setShowCardSheet(true);
+        return;
+      }
+      setPaymentMethod(method);
+      setShowCardSheet(false);
+    },
+    []
+  );
+
+  const confirmCardSheet = useCallback(() => {
+    if (!isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv })) {
+      showAppAlert({
+        variant: 'warning',
+        title: 'Kart bilgileri',
+        message: 'Kart üzerindeki ad, numara, son kullanma ve CVV alanlarını kontrol edin.',
+      });
+      return;
+    }
+    setShowCardSheet(false);
+  }, [cardHolder, cardNumber, cardExpiry, cardCvv, showAppAlert]);
 
   function getProductSubtitle(item) {
     const name = String(item?.name || '').toLowerCase();
@@ -142,7 +256,11 @@ export default function CartScreen({ navigation }) {
   function applyCoupon() {
     const normalized = String(couponCode || '').trim().toUpperCase();
     if (!normalized) {
-      Alert.alert('Kupon', 'Lütfen kupon kodu girin.');
+      showAppAlert({
+        variant: 'info',
+        title: 'Kupon',
+        message: 'Lütfen kupon kodu girin.',
+      });
       return;
     }
     const couponMap = {
@@ -154,40 +272,84 @@ export default function CartScreen({ navigation }) {
     if (!rate) {
       setCouponDiscount(0);
       setCouponApplied('');
-      Alert.alert('Kupon geçersiz', 'Bu kupon kodu kullanılamıyor.');
+      showAppAlert({
+        variant: 'warning',
+        title: 'Kupon geçersiz',
+        message: 'Bu kupon kodu kullanılamıyor.',
+      });
       return;
     }
     const discount = Number((totals.sum * rate).toFixed(2));
     setCouponDiscount(discount);
     setCouponApplied(normalized);
-    Alert.alert('Kupon uygulandı', `${normalized} ile -${formatPrice(discount)} indiriminiz var.`);
+    showAppAlert({
+      variant: 'success',
+      title: 'Kupon uygulandı',
+      message: `${normalized} ile ${formatPrice(discount)} indiriminiz var.`,
+    });
   }
 
   async function handleCheckout() {
     if (submitting || lines.length === 0) return;
     setCheckoutError('');
 
-    const previewDiscount = campaignDiscount + couponDiscount + pointsDiscount;
-    if (previewDiscount > 0.01 && payableTotal < totals.sum) {
-      // Backend şu an kalemlerin tam fiyatını kaydeder; indirimler yalnızca notta.
+    const clientOnlyDiscount = couponDiscount + pointsDiscount;
+    if (clientOnlyDiscount > 0.01) {
       const ok = await new Promise((resolve) => {
-        Alert.alert(
-          'İndirim bilgisi',
-          `Sepette gösterilen indirim (${formatPrice(previewDiscount)}) sipariş notuna eklenir. Ödeme tutarı restoranda kalemlerin toplamına göre hesaplanır.`,
-          [
-            { text: 'İptal', style: 'cancel', onPress: () => resolve(false) },
-            { text: 'Devam', onPress: () => resolve(true) },
-          ]
-        );
+        showAppAlert({
+          variant: 'info',
+          title: 'İndirim bilgisi',
+          message: `Kupon ve puan indirimi (${formatPrice(clientOnlyDiscount)}) sipariş notuna eklenir; restoranda uygulanır.`,
+          onCancel: () => resolve(false),
+          buttons: [
+            { text: 'İptal', onPress: () => resolve(false) },
+            { text: 'Devam', primary: true, onPress: () => resolve(true) },
+          ],
+        });
       });
       if (!ok) return;
     }
 
     if (!tableNumber) {
-      Alert.alert('Masa gerekli', 'Sipariş vermek için önce QR ile masayı bağlayın.', [
-        { text: 'QR Tara', onPress: () => navigation.navigate('QRScanner') },
-        { text: 'Tamam', style: 'cancel' },
-      ]);
+      showAppAlert({
+        variant: 'warning',
+        title: 'Masa gerekli',
+        message: 'Sipariş vermek için önce QR ile masayı bağlayın.',
+        buttons: [
+          { text: 'Tamam' },
+          { text: 'QR Tara', primary: true, onPress: () => navigation.navigate('QRScanner') },
+        ],
+      });
+      return;
+    }
+
+    if (!paymentMethod) {
+      const msg = 'Siparişi tamamlamak için bir ödeme yöntemi seçin.';
+      setCheckoutError(msg);
+      showAppAlert({
+        variant: 'warning',
+        title: 'Ödeme yöntemi',
+        message: msg,
+      });
+      return;
+    }
+
+    if (isOnlinePayment && !cardFormReady) {
+      setCheckoutError('Online ödeme için kart bilgilerini eksiksiz doldurun.');
+      showAppAlert({
+        variant: 'warning',
+        title: 'Kart bilgileri',
+        message:
+          'Önce kartın ön yüzünü doldurun, ardından kartı çevirip güvenlik kodunu girin.',
+        buttons: [
+          { text: 'Tamam' },
+          {
+            text: 'Kartı doldur',
+            primary: true,
+            onPress: () => setShowCardSheet(true),
+          },
+        ],
+      });
       return;
     }
 
@@ -212,11 +374,18 @@ export default function CartScreen({ navigation }) {
           activeCampaign?.rate ? `Kampanya: ${activeCampaign.title}` : '',
           couponDiscount > 0 ? `Kupon (${couponApplied}): -${formatPrice(couponDiscount)}` : '',
           pointsDiscount > 0 ? `Puan kullanimi (on izleme): -${formatPrice(pointsDiscount)}` : '',
-          paymentMethod ? `Odeme yontemi: ${paymentMethod}` : '',
+          paymentMethod === 'table'
+            ? 'Odeme yontemi: masada'
+            : paymentMethod === 'cashier'
+              ? 'Odeme yontemi: kasada'
+              : paymentMethod === 'online'
+                ? `Odeme yontemi: online (onaylandi, kart ****${digitsOnly(cardNumber, 16).slice(-4)})`
+                : '',
         ]
           .filter(Boolean)
           .join(' | '),
         branchId: branchPayload,
+        ...(campaignKey && campaignKey !== 'none' ? { campaignId: campaignKey } : {}),
       };
 
       const res = await client.post('/api/orders', orderPayload);
@@ -224,6 +393,12 @@ export default function CartScreen({ navigation }) {
       const shortId = String(created?._id || '').slice(-6);
       clearCart();
       setOpenNoteIndex(-1);
+      setCardHolder('');
+      setCardNumber('');
+      setCardExpiry('');
+      setCardCvv('');
+      setPaymentMethod(null);
+      setShowCardSheet(false);
       void refreshUser();
       setCheckoutSuccess({
         tableNumber: String(tableNumber),
@@ -233,7 +408,11 @@ export default function CartScreen({ navigation }) {
     } catch (err) {
       const message = apiErrorMessage(err, 'Sipariş gönderilemedi.');
       setCheckoutError(message);
-      Alert.alert('Hata', message);
+      showAppAlert({
+        variant: 'error',
+        title: 'Sipariş gönderilemedi',
+        message,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -502,63 +681,100 @@ export default function CartScreen({ navigation }) {
               ) : null}
             </View>
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.sectionTitle}>Odeme Ozeti</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Ara Toplam</Text>
-                <Text style={styles.summaryValue}>{formatPrice(totals.sum)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Indirim</Text>
-                <Text style={styles.summaryDiscount}>-{formatPrice(totalDiscount)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Para Puan</Text>
-                <Text style={styles.summaryDiscount}>-{formatPrice(pointsDiscount)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Servis Ucreti</Text>
-                <Text style={styles.summaryValue}>{formatPrice(serviceFee)}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryPayLabel}>Toplam</Text>
-                <Text style={styles.summaryPayValue}>{formatPrice(payableTotal)}</Text>
-              </View>
-            </View>
+            <View style={styles.checkoutCard}>
+              <Pressable
+                style={styles.checkoutSummaryHead}
+                onPress={() => setSummaryExpanded((v) => !v)}
+                disabled={submitting}
+              >
+                <View style={styles.checkoutSummaryHeadLeft}>
+                  <Text style={styles.sectionTitle}>Ödeme özeti</Text>
+                  {!summaryExpanded ? (
+                    <Text style={styles.checkoutSummaryHint}>Detaylar için dokun</Text>
+                  ) : null}
+                </View>
+                <View style={styles.checkoutSummaryHeadRight}>
+                  <Text style={styles.summaryPayValueCompact}>{formatPrice(payableTotal)}</Text>
+                  <Ionicons
+                    name={summaryExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color="#6B7280"
+                  />
+                </View>
+              </Pressable>
 
-            <View style={styles.paymentCard}>
+              {summaryExpanded ? (
+                <View style={styles.summaryDetails}>
+                  <View style={styles.summaryRowCompact}>
+                    <Text style={styles.summaryLabel}>Ara toplam</Text>
+                    <Text style={styles.summaryValue}>{formatPrice(totals.sum)}</Text>
+                  </View>
+                  {totalDiscount > 0 ? (
+                    <View style={styles.summaryRowCompact}>
+                      <Text style={styles.summaryLabel}>İndirim</Text>
+                      <Text style={styles.summaryDiscount}>-{formatPrice(totalDiscount)}</Text>
+                    </View>
+                  ) : null}
+                  {pointsDiscount > 0 ? (
+                    <View style={styles.summaryRowCompact}>
+                      <Text style={styles.summaryLabel}>Para puan</Text>
+                      <Text style={styles.summaryDiscount}>-{formatPrice(pointsDiscount)}</Text>
+                    </View>
+                  ) : null}
+                  {serviceFee > 0 ? (
+                    <View style={styles.summaryRowCompact}>
+                      <Text style={styles.summaryLabel}>Servis ücreti</Text>
+                      <Text style={styles.summaryValue}>{formatPrice(serviceFee)}</Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.summaryDivider} />
+                  <View style={styles.summaryRowCompact}>
+                    <Text style={styles.summaryPayLabel}>Toplam</Text>
+                    <Text style={styles.summaryPayValue}>{formatPrice(payableTotal)}</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={styles.checkoutDivider} />
+              <Text style={styles.checkoutSectionLabel}>Ödeme yöntemi</Text>
               <View style={styles.paymentMethodsRow}>
                 <Pressable
                   style={[styles.paymentOption, paymentMethod === 'table' && styles.paymentOptionActive]}
-                  onPress={() => setPaymentMethod('table')}
+                  onPress={() => selectPaymentMethod('table')}
+                  disabled={submitting}
                 >
-                  <Ionicons name="restaurant-outline" size={16} color="#4B5563" />
-                  <Text style={styles.paymentOptionText}>Masada odeme</Text>
-                  <Ionicons
-                    name={paymentMethod === 'table' ? 'radio-button-on' : 'radio-button-off'}
-                    size={16}
-                    color={paymentMethod === 'table' ? '#2E7D32' : '#9CA3AF'}
-                  />
+                  <Ionicons name="restaurant-outline" size={14} color="#4B5563" />
+                  <Text style={styles.paymentOptionText}>Masada</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.paymentOption, paymentMethod === 'cashier' && styles.paymentOptionActive]}
-                  onPress={() => setPaymentMethod('cashier')}
+                  onPress={() => selectPaymentMethod('cashier')}
+                  disabled={submitting}
                 >
-                  <Ionicons name="receipt-outline" size={16} color="#4B5563" />
-                  <Text style={styles.paymentOptionText}>Kasada odeme</Text>
-                  <Ionicons
-                    name={paymentMethod === 'cashier' ? 'radio-button-on' : 'radio-button-off'}
-                    size={16}
-                    color={paymentMethod === 'cashier' ? '#2E7D32' : '#9CA3AF'}
-                  />
+                  <Ionicons name="receipt-outline" size={14} color="#4B5563" />
+                  <Text style={styles.paymentOptionText}>Kasada</Text>
                 </Pressable>
-                <View style={[styles.paymentOption, styles.paymentOptionDisabled]}>
-                  <Ionicons name="card-outline" size={16} color="#9CA3AF" />
-                  <Text style={styles.paymentOptionTextMuted}>Online odeme</Text>
-                  <Text style={styles.comingSoon}>Yakinda</Text>
-                </View>
+                <Pressable
+                  style={[styles.paymentOption, paymentMethod === 'online' && styles.paymentOptionActive]}
+                  onPress={() => selectPaymentMethod('online')}
+                  disabled={submitting}
+                >
+                  <Ionicons name="card-outline" size={14} color="#4B5563" />
+                  <Text style={styles.paymentOptionText}>Online</Text>
+                </Pressable>
               </View>
+              {isOnlinePayment && cardFormReady && !showCardSheet ? (
+                <Pressable
+                  style={styles.cardSavedRow}
+                  onPress={() => setShowCardSheet(true)}
+                  disabled={submitting}
+                >
+                  <Ionicons name="checkmark-circle" size={14} color="#2E7D32" />
+                  <Text style={styles.cardSavedText} numberOfLines={1}>
+                    Kart ••••{digitsOnly(cardNumber, 16).slice(-4)} — düzenle
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
             {checkoutError ? <Text style={styles.errorTextInline}>{checkoutError}</Text> : null}
           </ScrollView>
@@ -586,7 +802,9 @@ export default function CartScreen({ navigation }) {
                   <Text style={styles.checkoutBtnText}>
                     {!tableNumber
                       ? 'QR okut'
-                      : `${formatPrice(payableTotal)} • Siparisi Tamamla`}
+                      : isOnlinePayment
+                        ? `${formatPrice(payableTotal)} • Öde ve tamamla`
+                        : `${formatPrice(payableTotal)} • Siparişi tamamla`}
                   </Text>
                 </LinearGradient>
               )}
@@ -595,6 +813,76 @@ export default function CartScreen({ navigation }) {
         </>
       )}
     </KeyboardAvoidingView>
+
+      <Modal
+        visible={showCardSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={closeCardSheet}
+      >
+        <KeyboardAvoidingView
+          style={styles.cardSheetBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable style={styles.cardSheetDismissArea} onPress={closeCardSheet} />
+          <View style={[styles.cardSheet, { paddingBottom: 16 + insets.bottom }]}>
+            <View style={styles.cardSheetHeader}>
+              <View style={styles.cardSheetHandle} />
+              <Pressable style={styles.cardSheetClose} onPress={closeCardSheet} hitSlop={10}>
+                <Ionicons name="close" size={22} color="#6B7280" />
+              </Pressable>
+            </View>
+
+            <PaymentCardPreview
+              holder={cardHolder}
+              number={cardNumber}
+              expiry={cardExpiry}
+              cvv={cardCvv}
+              onChangeHolder={setCardHolder}
+              onChangeNumber={(v) => setCardNumber(formatCardNumber(v))}
+              onChangeExpiry={(v) => setCardExpiry(formatCardExpiry(v))}
+              onChangeCvv={(v) => setCardCvv(digitsOnly(v, 4))}
+              editable={!submitting}
+            />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.cardSheetConfirmBtn,
+                pressed && styles.cardSheetConfirmBtnPressed,
+                !cardFormReady && styles.cardSheetConfirmBtnDisabled,
+              ]}
+              onPress={confirmCardSheet}
+              disabled={submitting || !cardFormReady}
+            >
+              <BlurView
+                intensity={cardFormReady ? 40 : 24}
+                tint="light"
+                style={styles.cardSheetConfirmGlass}
+              >
+                <LinearGradient
+                  colors={
+                    cardFormReady
+                      ? ['rgba(63, 163, 77, 0.18)', 'rgba(63, 163, 77, 0.1)']
+                      : ['rgba(0, 0, 0, 0.04)', 'rgba(0, 0, 0, 0.02)']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.cardSheetConfirmGlassBorder} pointerEvents="none" />
+                <Text
+                  style={[
+                    styles.cardSheetConfirmText,
+                    !cardFormReady && styles.cardSheetConfirmTextMuted,
+                  ]}
+                >
+                  Kartı onayla
+                </Text>
+              </BlurView>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal
         visible={checkoutSuccess !== null}
@@ -652,6 +940,16 @@ export default function CartScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      <AppAlert
+        visible={appAlert !== null}
+        variant={appAlert?.variant}
+        title={appAlert?.title ?? ''}
+        message={appAlert?.message}
+        buttons={appAlert?.buttons}
+        onRequestClose={closeAppAlert}
+        onDismiss={() => appAlert?.onCancel?.()}
+      />
     </SafeAreaView>
   );
 }
@@ -1103,12 +1401,59 @@ const styles = StyleSheet.create({
   toggleKnobActive: {
     transform: [{ translateX: 16 }],
   },
-  summaryCard: {
+  checkoutCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(15,23,42,0.06)',
     padding: 12,
+    marginBottom: 4,
+  },
+  checkoutSummaryHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  checkoutSummaryHeadLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  checkoutSummaryHeadRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  checkoutSummaryHint: {
+    marginTop: 2,
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    color: menuColors.textMuted,
+  },
+  summaryPayValueCompact: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 17,
+    color: '#111827',
+  },
+  summaryDetails: {
+    marginTop: 6,
+  },
+  summaryRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  checkoutDivider: {
+    height: 1,
+    backgroundColor: menuColors.border,
+    marginVertical: 10,
+  },
+  checkoutSectionLabel: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 12,
+    color: menuColors.textMuted,
+    marginBottom: 6,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1132,7 +1477,7 @@ const styles = StyleSheet.create({
     color: '#0F766E',
   },
   summaryDivider: {
-    marginTop: 10,
+    marginTop: 6,
     marginBottom: 2,
     height: 1,
     backgroundColor: menuColors.border,
@@ -1147,14 +1492,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#111827',
   },
-  paymentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.06)',
-    padding: 8,
-    marginBottom: 4,
-  },
   paymentMethodsRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -1164,42 +1501,121 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: menuColors.border,
-    borderRadius: 11,
-    paddingHorizontal: 7,
-    paddingVertical: 9,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
     backgroundColor: '#FFFFFF',
   },
   paymentOptionActive: {
     borderColor: menuColors.primary,
     backgroundColor: '#E8F5E9',
   },
-  paymentOptionDisabled: {
-    backgroundColor: '#F9FAFB',
-    borderStyle: 'dashed',
-  },
   paymentOptionText: {
     fontFamily: homeFonts.sansMedium,
-    fontSize: 11,
+    fontSize: 10,
     color: '#1F2937',
     textAlign: 'center',
   },
-  paymentOptionTextMuted: {
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: '#9CA3AF',
-    textAlign: 'center',
+  cardSavedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
-  comingSoon: {
+  cardSavedText: {
+    flex: 1,
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 11,
+    color: '#2E7D32',
+  },
+  cardSheetBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'transparent',
+  },
+  cardSheetDismissArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  cardSheet: {
+    backgroundColor: '#DDDDDD',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 22,
+  },
+  cardSheetHeader: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    marginBottom: 8,
+    position: 'relative',
+  },
+  cardSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  cardSheetClose: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardSheetConfirmBtn: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(63, 163, 77, 0.45)',
+    backgroundColor: 'rgba(63, 163, 77, 0.12)',
+  },
+  cardSheetConfirmBtnPressed: {
+    opacity: 0.9,
+  },
+  cardSheetConfirmBtnDisabled: {
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+  },
+  cardSheetConfirmGlass: {
+    minHeight: 50,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  cardSheetConfirmGlassBorder: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(63, 163, 77, 0.35)',
+  },
+  cardSheetConfirmText: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 10,
-    color: menuColors.primaryDark,
-    backgroundColor: '#DCFCE7',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    fontSize: 16,
+    color: '#3FA34D',
+    letterSpacing: 0.3,
+  },
+  cardSheetConfirmTextMuted: {
+    color: 'rgba(0, 0, 0, 0.35)',
   },
   errorTextInline: {
     marginBottom: 4,

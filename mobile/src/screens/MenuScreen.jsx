@@ -27,7 +27,10 @@ import {
   homeFonts,
   pressScale,
   androidRipple,
+  saleOldPriceStyle,
 } from '../constants/homeTheme';
+import { getProductDisplayPrices } from '../utils/productPricing';
+import { resolveMediaUrl } from '../utils/resolveMediaUrl';
 import { useTableSession } from '../context/TableSessionContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -93,23 +96,69 @@ function formatPrice(value) {
   return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
 }
 
+function menuBundleListTotal(campaign) {
+  const items = Array.isArray(campaign?.products) ? campaign.products : [];
+  return items.reduce((s, p) => s + Number(p.price || 0), 0);
+}
+
+const MenuBundleCard = memo(function MenuBundleCard({ campaign, cardWidth, onAddBundle }) {
+  const bundleProducts = Array.isArray(campaign.products) ? campaign.products : [];
+  const listTotal = menuBundleListTotal(campaign);
+  const bundlePrice = Number(campaign.bundlePrice || 0);
+  const names = bundleProducts.map((p) => p.name).filter(Boolean);
+  const thumb = bundleProducts.find((p) => p.imageUrl)?.imageUrl;
+  const thumbUri = thumb ? resolveMediaUrl(thumb) : FALLBACK_IMG;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.popularCard,
+        { width: cardWidth },
+        pressScale(pressed),
+      ]}
+      onPress={() => onAddBundle(campaign)}
+      android_ripple={androidRipple}
+    >
+      <View style={styles.popularImageWrap}>
+        <Image source={{ uri: thumbUri }} style={styles.popularImage} resizeMode="cover" />
+        <View style={styles.popularBadge}>
+          <Ionicons name="restaurant-outline" size={12} color="#FFFFFF" />
+        </View>
+      </View>
+      <View style={styles.popularBody}>
+        <Text style={styles.popularName} numberOfLines={2}>
+          {campaign.title}
+        </Text>
+        <Text style={styles.menuBundleSubline} numberOfLines={1}>
+          {names.length > 0 ? names.join(' · ') : 'Paket menü'}
+        </Text>
+        <View style={styles.popularFooter}>
+          {listTotal > bundlePrice + 0.01 ? (
+            <Text style={styles.popularPriceOld} numberOfLines={1}>
+              {formatPrice(listTotal)}
+            </Text>
+          ) : null}
+          <Text style={styles.popularPrice} numberOfLines={1}>
+            {formatPrice(bundlePrice)}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+});
+
 const MenuProductCard = memo(function MenuProductCard({
   item,
-  onSelect,
   onQuickAdd,
   favorited,
   onToggleFavorite,
 }) {
-  const pid = String(item._id || item.id || item.name);
   const meta = productCardMeta(item);
+  const pricing = getProductDisplayPrices(item);
   const uri = item.imageUrl || item.image || FALLBACK_IMG;
   return (
     <View style={styles.itemCard}>
-      <Pressable
-        style={({ pressed }) => [styles.itemPress, pressed && { opacity: 0.96 }]}
-        onPress={() => onSelect(item)}
-        android_ripple={androidRipple}
-      >
+      <View style={styles.itemPress}>
         <View style={styles.itemThumbWrap}>
           <Image source={{ uri }} style={styles.itemThumb} resizeMode="cover" />
           {meta.showBadge ? (
@@ -150,9 +199,16 @@ const MenuProductCard = memo(function MenuProductCard({
           </View>
           <View style={styles.itemFooterBlock}>
             <View style={styles.itemPriceAddRow}>
-              <Text style={styles.itemPrice} numberOfLines={1}>
-                {formatPrice(item.price)}
-              </Text>
+              <View style={styles.itemPriceCol}>
+                {pricing.isOnSale ? (
+                  <Text style={styles.itemPriceOld} numberOfLines={1}>
+                    {formatPrice(pricing.list)}
+                  </Text>
+                ) : null}
+                <Text style={styles.itemPrice} numberOfLines={1}>
+                  {formatPrice(pricing.effective)}
+                </Text>
+              </View>
               <Pressable
                 style={({ pressed }) => [
                   styles.itemAddBtn,
@@ -166,7 +222,7 @@ const MenuProductCard = memo(function MenuProductCard({
             </View>
           </View>
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 });
@@ -190,13 +246,11 @@ export default function MenuScreen({ navigation }) {
   );
   const [activeCat, setActiveCat] = useState('Tum');
   const [products, setProducts] = useState([]);
+  const [menuCampaigns, setMenuCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [showCartPreview, setShowCartPreview] = useState(false);
-  const [extraSauce, setExtraSauce] = useState(false);
-  const [extraCheese, setExtraCheese] = useState(false);
 
   const categoryScrollRef = useRef(null);
   const categoryLayoutsRef = useRef({});
@@ -220,19 +274,49 @@ export default function MenuScreen({ navigation }) {
       setLoading(true);
       setLoadError('');
       try {
-        const res = await client.get('/api/products', {
-          params: { branchId, inStock: true, limit: 200 },
-        });
-        const items = Array.isArray(res.data?.items) ? res.data.items : [];
-        const nextBranchName = String(res.data?.branchName || '').trim();
+        const [productsResult, campaignsResult] = await Promise.allSettled([
+          client.get('/api/products', {
+            params: { branchId, inStock: true, limit: 200 },
+          }),
+          client.get('/api/campaigns', {
+            params: { branchId: String(branchId) },
+          }),
+        ]);
+
+        if (productsResult.status !== 'fulfilled') {
+          throw productsResult.reason;
+        }
+
+        const productsRes = productsResult.value;
+        const items = Array.isArray(productsRes.data?.items) ? productsRes.data.items : [];
+        const nextBranchName = String(productsRes.data?.branchName || '').trim();
         if (nextBranchName) {
           setBranchName(nextBranchName);
         }
-        if (!cancelled) setProducts(items);
+
+        let menus = [];
+        if (campaignsResult.status === 'fulfilled') {
+          const allCampaigns = Array.isArray(campaignsResult.value.data?.items)
+            ? campaignsResult.value.data.items
+            : [];
+          menus = allCampaigns.filter(
+            (c) =>
+              c.campaignType === 'menu' ||
+              (c.bundlePrice != null &&
+                Array.isArray(c.products) &&
+                c.products.length > 0)
+          );
+        }
+
+        if (!cancelled) {
+          setProducts(items);
+          setMenuCampaigns(menus);
+        }
       } catch (e) {
         if (!cancelled) {
           setLoadError('Menü yüklenemedi. Lütfen tekrar deneyin.');
           setProducts([]);
+          setMenuCampaigns([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -317,29 +401,32 @@ export default function MenuScreen({ navigation }) {
     return pool.slice(0, 8);
   }, [products, activeCat]);
 
-  function extrasNote() {
-    const parts = [];
-    if (extraSauce) parts.push('Özel sos');
-    if (extraCheese) parts.push('Ekstra peynir');
-    return parts.length ? `Ekstra: ${parts.join(', ')}` : '';
-  }
-
-  function confirmAddFromSheet() {
-    if (!selectedProduct) return;
-    const base = Number(selectedProduct.price || 0);
-    const extras = (extraSauce ? 19.9 : 0) + (extraCheese ? 24.9 : 0);
-    addToCart(selectedProduct, {
-      unitPrice: base + extras,
-      note: extrasNote(),
-    });
-    setSelectedProduct(null);
-    setExtraSauce(false);
-    setExtraCheese(false);
-  }
-
   const quickAdd = useCallback((product) => {
-    addToCart(product, { unitPrice: Number(product.price || 0) });
+    const { effective } = getProductDisplayPrices(product);
+    addToCart(product, { unitPrice: effective });
   }, [addToCart]);
+
+  const addMenuBundle = useCallback(
+    (campaign) => {
+      const bundleProducts = Array.isArray(campaign?.products) ? campaign.products : [];
+      bundleProducts.forEach((bp) => {
+        const pid = bp.productId || bp._id;
+        if (!pid) return;
+        const catalog = products.find(
+          (p) => String(p._id || p.id) === String(pid)
+        );
+        const product = catalog || {
+          _id: pid,
+          name: bp.name,
+          price: bp.price,
+          imageUrl: bp.imageUrl,
+        };
+        const { effective } = getProductDisplayPrices(product);
+        addToCart(product, { unitPrice: effective });
+      });
+    },
+    [products, addToCart]
+  );
 
   function catLabel(cat) {
     return cat === 'Tum' ? 'Tümü' : cat;
@@ -442,6 +529,29 @@ export default function MenuScreen({ navigation }) {
     [branchDisplayName, tableNumber, search, navigation]
   );
 
+  const menuBundlesSectionEl = useMemo(() => {
+    if (loading || loadError || menuCampaigns.length === 0) return null;
+    return (
+      <View style={styles.popularSection}>
+        <Text style={styles.sectionTitle}>Kampanyalı Menüler</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.popularRow}
+        >
+          {menuCampaigns.map((c) => (
+            <MenuBundleCard
+              key={String(c._id)}
+              campaign={c}
+              cardWidth={popularCardWidth}
+              onAddBundle={addMenuBundle}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }, [loading, loadError, menuCampaigns, popularCardWidth, addMenuBundle]);
+
   const popularSectionEl = useMemo(() => {
     if (!showPopular) return null;
     return (
@@ -464,7 +574,7 @@ export default function MenuScreen({ navigation }) {
                   { width: popularCardWidth },
                   pressScale(pressed),
                 ]}
-                onPress={() => setSelectedProduct(item)}
+                onPress={() => quickAdd(item)}
                 android_ripple={androidRipple}
               >
                 <View style={styles.popularImageWrap}>
@@ -526,12 +636,21 @@ export default function MenuScreen({ navigation }) {
                     </View>
                   </View>
                   <View style={styles.popularFooter}>
-                    <Text
-                      style={styles.popularPrice}
-                      numberOfLines={1}
-                    >
-                      {formatPrice(item.price)}
-                    </Text>
+                    {(() => {
+                      const pricing = getProductDisplayPrices(item);
+                      return (
+                        <View>
+                          {pricing.isOnSale ? (
+                            <Text style={styles.popularPriceOld} numberOfLines={1}>
+                              {formatPrice(pricing.list)}
+                            </Text>
+                          ) : null}
+                          <Text style={styles.popularPrice} numberOfLines={1}>
+                            {formatPrice(pricing.effective)}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                   </View>
                 </View>
               </Pressable>
@@ -540,7 +659,7 @@ export default function MenuScreen({ navigation }) {
         </ScrollView>
       </View>
     );
-  }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite]);
+  }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite, quickAdd]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -577,11 +696,13 @@ export default function MenuScreen({ navigation }) {
               (totals.count > 0 ? 124 : 36) + insets.bottom,
           },
         ]}
-        stickyHeaderIndices={[1]}
+        stickyHeaderIndices={[menuCampaigns.length > 0 ? 2 : 1]}
         keyboardShouldPersistTaps="always"
         {...(Platform.OS === 'ios' ? { delayContentTouches: false } : {})}
       >
         {welcomeSection}
+
+        {menuBundlesSectionEl}
 
         <View style={styles.stickyCategoriesWrap} collapsable={false}>
           <ScrollView
@@ -705,7 +826,6 @@ export default function MenuScreen({ navigation }) {
           <MenuProductCard
             key={String(item._id || item.id || item.name)}
             item={item}
-            onSelect={setSelectedProduct}
             onQuickAdd={quickAdd}
             favorited={isFavorite(item._id || item.id, branchId)}
             onToggleFavorite={handleToggleFavorite}
@@ -860,95 +980,6 @@ export default function MenuScreen({ navigation }) {
               <Text style={styles.cartPreviewActionText}>Sepete Git</Text>
             </Pressable>
           </LinearGradient>
-        </View>
-      </Modal>
-
-      {/* Ürün detay modal */}
-      <Modal
-        visible={Boolean(selectedProduct)}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedProduct(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setSelectedProduct(null)}
-          />
-          {selectedProduct ? (
-            <View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }]}>
-              <View style={styles.sheetHeaderRow}>
-                <View style={styles.sheetHandle} />
-                <Pressable
-                  style={styles.sheetClose}
-                  onPress={() => setSelectedProduct(null)}
-                  hitSlop={10}
-                  android_ripple={androidRipple}
-                >
-                  <Ionicons name="close" size={20} color={PALETTE.textSecondary} />
-                </Pressable>
-              </View>
-              <Image
-                source={{
-                  uri:
-                    selectedProduct.imageUrl ||
-                    selectedProduct.image ||
-                    FALLBACK_IMG,
-                }}
-                style={styles.sheetImage}
-                resizeMode="cover"
-              />
-              <View style={styles.sheetTitleRow}>
-                <Text style={styles.sheetTitle}>{selectedProduct.name}</Text>
-                <Text style={styles.sheetPrice}>
-                  {formatPrice(selectedProduct.price)}
-                </Text>
-              </View>
-              <Text style={styles.sheetDesc}>
-                {selectedProduct.description ||
-                  selectedProduct.desc ||
-                  'Lezzetli seçim'}
-              </Text>
-
-              <Text style={styles.extrasTitle}>EKSTRALAR</Text>
-              <Pressable
-                style={styles.extraRow}
-                onPress={() => setExtraSauce((v) => !v)}
-                android_ripple={androidRipple}
-              >
-                <Text style={styles.extraLabel}>Özel sos (+₺19,90)</Text>
-                <Ionicons
-                  name={extraSauce ? 'checkbox' : 'square-outline'}
-                  size={22}
-                  color={extraSauce ? PALETTE.textPrimary : PALETTE.textSecondary}
-                />
-              </Pressable>
-              <Pressable
-                style={styles.extraRow}
-                onPress={() => setExtraCheese((v) => !v)}
-                android_ripple={androidRipple}
-              >
-                <Text style={styles.extraLabel}>Ekstra peynir (+₺24,90)</Text>
-                <Ionicons
-                  name={extraCheese ? 'checkbox' : 'square-outline'}
-                  size={22}
-                  color={extraCheese ? PALETTE.textPrimary : PALETTE.textSecondary}
-                />
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.sheetAddBtn,
-                  pressed && { backgroundColor: PALETTE.btnPrimarySoft },
-                ]}
-                onPress={confirmAddFromSheet}
-                android_ripple={{ color: 'rgba(255,255,255,0.18)', foreground: true }}
-              >
-                <Ionicons name="add" size={20} color="#FFFFFF" />
-                <Text style={styles.sheetAddText}>Sepete ekle</Text>
-              </Pressable>
-            </View>
-          ) : null}
         </View>
       </Modal>
     </SafeAreaView>
@@ -1287,43 +1318,12 @@ const styles = StyleSheet.create({
     fontFamily: homeFonts.sansSemi,
   },
 
-  campaignCard: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#F1FAF1',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  campaignBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: PALETTE.softAmber,
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    marginBottom: 4,
-  },
-  campaignBadgeText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 10,
-    color: PALETTE.tagText,
-    letterSpacing: 0.4,
-  },
-  campaignTitle: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 15,
-    color: PALETTE.textPrimary,
-    marginBottom: 0,
-    letterSpacing: -0.2,
-  },
-  campaignDesc: {
+  menuBundleSubline: {
     fontFamily: homeFonts.sans,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 15,
     color: PALETTE.textSecondary,
-    marginTop: 4,
+    marginBottom: 6,
   },
 
   popularSection: {
@@ -1430,6 +1430,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 8,
+  },
+  popularPriceOld: {
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    ...saleOldPriceStyle,
   },
   popularPrice: {
     flex: 1,
@@ -1598,12 +1603,21 @@ const styles = StyleSheet.create({
     gap: 10,
     minHeight: 32,
   },
+  itemPriceCol: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
   itemPrice: {
     fontFamily: homeFonts.sansSemi,
     fontSize: 14,
     fontWeight: '500',
     color: '#3A7F3D',
     letterSpacing: 0,
+  },
+  itemPriceOld: {
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    ...saleOldPriceStyle,
   },
   itemAddBtn: {
     minHeight: 28,
@@ -1805,11 +1819,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
 
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-  },
   cartPreviewBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -1857,81 +1866,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-  },
-  sheetImage: {
-    width: '100%',
-    height: 168,
-    borderRadius: 14,
-    marginBottom: 12,
-    backgroundColor: PALETTE.softNeutral,
-  },
-  sheetTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 4,
-  },
-  sheetTitle: {
-    flex: 1,
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 19,
-    color: PALETTE.textPrimary,
-    lineHeight: 25,
-    letterSpacing: -0.35,
-  },
-  sheetPrice: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 17,
-    color: PALETTE.textPrimary,
-    marginTop: 1,
-  },
-  sheetDesc: {
-    fontFamily: homeFonts.sans,
-    fontSize: 13,
-    lineHeight: 19,
-    color: PALETTE.textSecondary,
-    marginBottom: 14,
-  },
-  extrasTitle: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 11,
-    color: PALETTE.textSecondary,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  extraRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    paddingVertical: 10,
-    paddingHorizontal: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: PALETTE.border,
-  },
-  extraLabel: {
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 14,
-    color: PALETTE.textPrimary,
-    flex: 1,
-    paddingRight: 12,
-  },
-  sheetAddBtn: {
-    marginTop: 16,
-    backgroundColor: PALETTE.btnPrimary,
-    borderRadius: 999,
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    overflow: 'hidden',
-  },
-  sheetAddText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 16,
-    color: '#FFFFFF',
-    letterSpacing: 0.1,
   },
 });

@@ -27,13 +27,14 @@ export default defineConfig(({ mode }) => {
       allowedHosts: ['.ngrok.app', '.ngrok-free.app', 'localhost', '127.0.0.1', 'selfkasa.site', '.selfkasa.site'],
       proxy: {
         '/api': {
-          // .env dosyasındaki VITE_API_URL değerini kullan, yoksa localhost'a düş
           target: env.VITE_API_URL || 'http://localhost:5001',
           changeOrigin: true,
           secure: false,
-          // Eğer hedef HTTPS ise ve SSL sertifikası self-signed ise secure: false kalmalı.
-          // changeOrigin: true olduğu için host header'ı otomatik ayarlanır,
-          // manuel configure bloğuna gerek kalmaz.
+        },
+        '/uploads': {
+          target: env.VITE_API_URL || 'http://localhost:5001',
+          changeOrigin: true,
+          secure: false,
         },
       },
     },

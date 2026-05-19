@@ -21,6 +21,7 @@ import PasswordUpgradePage from '../features/auth/pages/PasswordUpgradePage.jsx'
 import AdminDashboard from '../features/admin/pages/AdminDashboard.jsx';
 import CategoryManagementPage from '../features/admin/pages/CategoryManagementPage.jsx';
 import ProductManagementPage from '../features/admin/pages/ProductManagementPage.jsx';
+import CampaignManagementPage from '../features/admin/pages/CampaignManagementPage.jsx';
 import OrderManagementPage from '../features/admin/pages/OrderManagementPage.jsx';
 import AdminTableManagementPage from '../features/admin/pages/AdminTableManagementPage.jsx';
 import KitchenDisplayPage from '../features/kitchen/pages/KitchenDisplayPage.jsx';
@@ -125,6 +126,7 @@ function App() {
         <Route path="masalar" element={<AdminTableManagementPage />} />
         <Route path="urunler" element={<ProductManagementPage />} />
         <Route path="kategoriler" element={<CategoryManagementPage />} />
+        <Route path="kampanyalar" element={<CampaignManagementPage />} />
         <Route path="qr-kodlar" element={<QRCodeManagementPage />} />
       </Route>
     </Routes>

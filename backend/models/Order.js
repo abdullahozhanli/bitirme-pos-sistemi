@@ -29,6 +29,10 @@ const orderSchema = new mongoose.Schema({
   }],
   total: { type: Number, required: true },
   totalPrice: { type: Number }, // Yeni model için
+  subtotal: { type: Number },
+  discountTotal: { type: Number, default: 0 },
+  campaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' },
+  campaignTitle: { type: String },
   notes: { type: String }, // Genel sipariş notu (müşteri notu)
   status: {
     type: String,

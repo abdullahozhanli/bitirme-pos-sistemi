@@ -1,7 +1,8 @@
 // src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getApiBaseURL } from '../lib/apiBase.js';
 
 const AuthContext = createContext();
 
@@ -64,12 +65,11 @@ export function AuthProvider({ children }) {
   // axios baseURL (Vite .env → VITE_API_URL) - her zaman güncelle
   useEffect(() => {
     const updateBaseURL = () => {
-      // VITE_API_URL'den al, yoksa fallback olarak localhost kullan
-      const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
-      
-      // Her zaman güncelle
+      const baseURL = getApiBaseURL();
       axios.defaults.baseURL = baseURL;
-      console.log('🔧 AuthContext - Axios baseURL ayarlandı:', baseURL);
+      if (import.meta.env.DEV) {
+        console.log('🔧 AuthContext - dev proxy (baseURL boş, hedef vite.config proxy)');
+      }
     };
     
     // İlk yüklemede ayarla
@@ -81,10 +81,9 @@ export function AuthProvider({ children }) {
     axios.interceptors.request.use(
       (config) => {
         // Her istekte baseURL'i VITE_API_URL'den kontrol et
-        const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
+        const baseURL = getApiBaseURL();
         if (axios.defaults.baseURL !== baseURL) {
           axios.defaults.baseURL = baseURL;
-          console.log('🔧 Interceptor - baseURL güncellendi:', baseURL);
         }
         
         // Token'ı ekle
@@ -331,7 +330,7 @@ export function AuthProvider({ children }) {
     return () => axios.interceptors.response.eject(id);
   }, []);
 
-  const login = (tokenValue, userData = null) => {
+  const login = useCallback((tokenValue, userData = null) => {
     try {
       const decoded = jwtDecode(tokenValue); // { id, exp } - role bilgisi yok
       // Token süresi kontrolü
@@ -373,13 +372,16 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
     }
-  };
-  const logout = () => {
+  }, []);
+
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
-  };
+    delete axios.defaults.headers.common['Authorization'];
+    delete axios.defaults.headers.common['x-auth-token'];
+  }, []);
 
   /** /api/auth/me ile kullanıcıyı güncelle (şifre politikası bayrağı dahil) */
   const refreshUserFromMe = async () => {
@@ -392,8 +394,18 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    const res = await axios.post('/api/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return res.data;
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, refreshUserFromMe }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, login, logout, refreshUserFromMe, changePassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

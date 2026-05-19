@@ -5,6 +5,12 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Branch = require('../models/Branch');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/authMiddleware');
+const Campaign = require('../models/Campaign');
+const {
+  effectivePrice,
+  isCampaignActive,
+  campaignDiscountAmount,
+} = require('../utils/pricing');
 
 const router = express.Router();
 
@@ -168,7 +174,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
  */
 router.post('/', optionalAuthMiddleware, async (req, res, next) => {
   try {
-    const { tableNumber, items, notes } = req.body;
+    const { tableNumber, items, notes, campaignId } = req.body;
     
     if (!tableNumber || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Eksik veri' });
@@ -279,29 +285,30 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       // MenuItem'da bulunamadı, Product'ta ara
       item = productsMap[String(itemId)];
       if (item) {
-        // Product bulundu - Product'ı MenuItem olarak kullan
-        // Önce MenuItem'da var mı kontrol et (name'e göre)
-        let menuItem = await MenuItem.findOne({ name: item.name });
-        if (!menuItem) {
-          // MenuItem yoksa oluştur
-          menuItem = await MenuItem.create({
-            name: item.name,
-            category: item.category?.name || (typeof item.category === 'object' ? item.category.name : item.category) || '',
-            price: item.price,
-            isActive: true
-          });
-        }
-        
-        if (!menuItem.price || isNaN(menuItem.price)) {
-          console.warn('⚠️ MenuItem fiyatı geçersiz:', menuItem);
+        const linePrice = effectivePrice(item);
+        if (!linePrice || isNaN(linePrice)) {
+          console.warn('⚠️ Product fiyatı geçersiz:', item);
           return null;
         }
+        let menuItem = await MenuItem.findOne({ name: item.name });
+        if (!menuItem) {
+          menuItem = await MenuItem.create({
+            name: item.name,
+            category:
+              item.category?.name ||
+              (typeof item.category === 'object' ? item.category.name : item.category) ||
+              '',
+            price: linePrice,
+            isActive: true,
+          });
+        }
+
         return {
           menuItem: menuItem._id,
-          name: menuItem.name,
+          name: item.name,
           qty: Number(i.qty) || 1,
-          price: Number(menuItem.price),
-          note: i.note || ''
+          price: linePrice,
+          note: i.note || '',
         };
       }
 
@@ -315,12 +322,38 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       return res.status(400).json({ message: 'Geçerli ürün bulunamadı' });
     }
 
-    // Total hesapla
-    const total = orderItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
+    const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const subtotalRounded = Number(subtotal.toFixed(2));
 
-    // Debug log'ları kaldırıldı
+    let discountTotal = 0;
+    let appliedCampaign = null;
+    if (campaignId) {
+      if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+        return res.status(400).json({ message: 'Geçersiz kampanya' });
+      }
+      const campaign = await Campaign.findById(campaignId).lean();
+      if (!campaign) {
+        return res.status(400).json({ message: 'Kampanya bulunamadı' });
+      }
+      const campaignBranch = campaign.branchId ? String(campaign.branchId) : null;
+      const orderBranch = requestBranchId ? String(requestBranchId) : null;
+      if (campaignBranch && orderBranch && campaignBranch !== orderBranch) {
+        return res.status(400).json({ message: 'Kampanya bu şube için geçerli değil' });
+      }
+      if (!isCampaignActive(campaign)) {
+        return res.status(400).json({ message: 'Kampanya şu an aktif değil' });
+      }
+      if (subtotalRounded < Number(campaign.minCartTotal || 0)) {
+        return res.status(400).json({
+          message: `Kampanya için minimum sepet tutarı ${campaign.minCartTotal} TL`,
+        });
+      }
+      discountTotal = campaignDiscountAmount(subtotalRounded, campaign);
+      appliedCampaign = campaign;
+    }
 
-    // Validation: table._id ve total kontrolü
+    const total = Number(Math.max(0, subtotalRounded - discountTotal).toFixed(2));
+
     if (!table._id) {
       return res.status(400).json({ message: 'Masa ID bulunamadı' });
     }
@@ -366,13 +399,23 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
           }
         }
 
+        const noteParts = [notes || ''];
+        if (appliedCampaign) {
+          noteParts.push(`Kampanya: ${appliedCampaign.title}`);
+        }
+
         const created = await Order.create(
           [
             {
               table: table._id,
               items: orderItems,
+              subtotal: subtotalRounded,
+              discountTotal,
               total: Number(total),
-              notes: notes || '',
+              totalPrice: Number(total),
+              campaignId: appliedCampaign?._id,
+              campaignTitle: appliedCampaign?.title,
+              notes: noteParts.filter(Boolean).join(' | '),
               status: 'hazirlaniyor',
               branchId: finalBranchId,
               ...(customerId ? { customer: customerId } : {}),

@@ -21,6 +21,7 @@ const superAdminRoutes = require('./routes/superAdminRoutes');
 // Eski route'lar (geriye dönük uyumluluk için - deprecated)
 const categoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoutes');
+const campaignRoutes = require('./routes/campaignRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 
@@ -261,6 +262,7 @@ app.use('/api/admin', admin);
 app.use('/api/payments', waiterRoutes); // payments endpoint'i waiterRoutes içinde
 app.use('/api/qr', qrRoutes); // QR kod oluşturma
 app.use('/api/calorie', calorieRoutes);
+app.use('/api/campaigns', campaignRoutes);
 
 // Eski route'lar (geriye dönük uyumluluk - deprecated)
 // TODO: Bu route'lar kaldırılacak, admin routes kullanılmalı

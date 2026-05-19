@@ -6,10 +6,89 @@ const requireRole = require('../middleware/requireRole');
 const branchAccess = require('../middleware/branchAccess');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Campaign = require('../models/Campaign');
+const { formatProductPricing } = require('../utils/pricing');
 const Category = require('../models/Category');
 const DailyAggregate = require('../models/DailyAggregate');
 const OrderEvent = require('../models/OrderEvent');
 const Table = require('../models/Table');
+
+function validateProductSaleFields(body, listPriceFallback) {
+  const list = body.price != null ? Number(body.price) : Number(listPriceFallback);
+  if (body.salePrice != null && body.salePrice !== '') {
+    const sale = Number(body.salePrice);
+    if (!Number.isFinite(sale) || sale < 0) return 'Geçersiz indirimli fiyat';
+    if (Number.isFinite(list) && sale >= list) {
+      return 'İndirimli fiyat normal fiyattan düşük olmalı';
+    }
+  }
+  if (body.saleStartsAt && body.saleEndsAt) {
+    if (new Date(body.saleEndsAt) < new Date(body.saleStartsAt)) {
+      return 'İndirim bitiş tarihi başlangıçtan önce olamaz';
+    }
+  }
+  return null;
+}
+
+function validateCampaignBody(body) {
+  const type = body.campaignType === 'menu' ? 'menu' : 'cart';
+  if (!body.title || !String(body.title).trim()) return 'Kampanya başlığı gerekli';
+
+  if (body.startsAt && body.endsAt && new Date(body.endsAt) < new Date(body.startsAt)) {
+    return 'Bitiş tarihi başlangıçtan önce olamaz';
+  }
+
+  if (type === 'menu') {
+    const bundle = Number(body.bundlePrice);
+    if (!Number.isFinite(bundle) || bundle <= 0) return 'Kampanya fiyatı geçerli olmalı';
+    const products = Array.isArray(body.products) ? body.products : [];
+    if (products.length === 0) return 'En az bir ürün seçin';
+    return null;
+  }
+
+  const min = Number(body.minCartTotal);
+  if (!Number.isFinite(min) || min < 0) return 'Geçersiz minimum sepet tutarı';
+  const rate = Number(body.discountRate);
+  if (!Number.isFinite(rate) || rate <= 0 || rate > 1) {
+    return 'İndirim oranı 0 ile 1 arasında olmalı (ör. 0.10 = %10)';
+  }
+  return null;
+}
+
+async function resolveMenuProducts(branchId, productsInput) {
+  const raw = Array.isArray(productsInput) ? productsInput : [];
+  const ids = raw
+    .map((p) => p?.productId || p?._id || p?.id)
+    .filter((id) => id && mongoose.Types.ObjectId.isValid(String(id)));
+  if (ids.length === 0) return { error: 'Geçerli ürün seçilmedi' };
+
+  const docs = await Product.find({
+    _id: { $in: ids },
+    branchId,
+  }).lean();
+
+  if (docs.length !== ids.length) {
+    return { error: 'Seçilen ürünlerden bazıları bu şubeye ait değil' };
+  }
+
+  const byId = new Map(docs.map((d) => [String(d._id), d]));
+  const now = new Date();
+  const items = ids.map((id) => {
+    const doc = byId.get(String(id));
+    const pricing = formatProductPricing(doc, now);
+    const fromClient = raw.find(
+      (p) => String(p?.productId || p?._id || p?.id) === String(id)
+    );
+    return {
+      productId: doc._id,
+      name: doc.name,
+      price: pricing.effectivePrice,
+      imageUrl: doc.imageUrl || fromClient?.imageUrl || '',
+    };
+  });
+
+  return { items };
+}
 
 /**
  * GET /api/admin/stats/today
@@ -607,8 +686,20 @@ router.get('/products', auth, requireRole('admin'), async (req, res, next) => {
       Product.countDocuments(filter),
     ]);
 
+    const now = new Date();
+    const itemsWithPricing = items.map((doc) => {
+      const plain = doc.toObject();
+      const pricing = formatProductPricing(plain, now);
+      return {
+        ...plain,
+        effectivePrice: pricing.effectivePrice,
+        isOnSale: pricing.isOnSale,
+        listPrice: pricing.listPrice,
+      };
+    });
+
     res.json({
-      items,
+      items: itemsWithPricing,
       page: Number(page),
       limit: Number(limit),
       total,
@@ -625,24 +716,42 @@ router.get('/products', auth, requireRole('admin'), async (req, res, next) => {
  */
 router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const { name, price, description, imageUrl, category, countInStock, station } = req.body;
-    
+    const {
+      name,
+      price,
+      description,
+      imageUrl,
+      category,
+      countInStock,
+      station,
+      salePrice,
+      saleStartsAt,
+      saleEndsAt,
+    } = req.body;
+
     if (!req.user || !req.user.branchId) {
       return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
     }
 
-    const product = new Product({ 
-      name, 
-      price, 
-      description, 
-      imageUrl, 
-      category, 
-      countInStock, 
+    const saleErr = validateProductSaleFields(req.body);
+    if (saleErr) return res.status(400).json({ message: saleErr });
+
+    const product = new Product({
+      name,
+      price,
+      description,
+      imageUrl,
+      category,
+      countInStock,
       station: station || 'hot',
       branchId: req.user.branchId,
+      ...(salePrice != null && salePrice !== '' ? { salePrice: Number(salePrice) } : {}),
+      ...(saleStartsAt ? { saleStartsAt: new Date(saleStartsAt) } : {}),
+      ...(saleEndsAt ? { saleEndsAt: new Date(saleEndsAt) } : {}),
     });
     await product.save();
-    res.status(201).json(product);
+    const plain = product.toObject();
+    res.status(201).json({ ...plain, ...formatProductPricing(plain) });
   } catch (e) {
     next(e);
   }
@@ -658,13 +767,28 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
       return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
     }
 
+    const existing = await Product.findOne({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
+    if (!existing) return res.status(404).json({ message: 'Ürün bulunamadı' });
+
+    const saleErr = validateProductSaleFields(req.body, existing.price);
+    if (saleErr) return res.status(400).json({ message: saleErr });
+
+    const patch = { ...req.body };
+    if (patch.salePrice === '' || patch.salePrice == null) patch.salePrice = null;
+    if (patch.saleStartsAt === '') patch.saleStartsAt = null;
+    if (patch.saleEndsAt === '') patch.saleEndsAt = null;
+
     const updated = await Product.findOneAndUpdate(
       { _id: req.params.id, branchId: req.user.branchId },
-      req.body,
+      patch,
       { new: true }
     );
     if (!updated) return res.status(404).json({ message: 'Ürün bulunamadı' });
-    res.json(updated);
+    const plain = updated.toObject();
+    res.json({ ...plain, ...formatProductPricing(plain) });
   } catch (e) {
     next(e);
   }
@@ -686,6 +810,142 @@ router.delete('/products/:id', auth, requireRole('admin'), async (req, res, next
     });
     if (!deleted) return res.status(404).json({ message: 'Ürün bulunamadı' });
     res.json({ message: 'Ürün silindi', id: deleted._id });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/campaigns
+ */
+router.get('/campaigns', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    if (!req.user?.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+    const items = await Campaign.find({ branchId: req.user.branchId })
+      .sort({ sortOrder: 1, minCartTotal: 1 })
+      .lean();
+    res.json({ items });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/campaigns
+ */
+router.post('/campaigns', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    if (!req.user?.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+    const err = validateCampaignBody(req.body);
+    if (err) return res.status(400).json({ message: err });
+
+    const campaignType = req.body.campaignType === 'menu' ? 'menu' : 'cart';
+    let createPayload = {
+      branchId: req.user.branchId,
+      campaignType,
+      title: String(req.body.title).trim(),
+      isActive: req.body.isActive !== false,
+      startsAt: req.body.startsAt ? new Date(req.body.startsAt) : undefined,
+      endsAt: req.body.endsAt ? new Date(req.body.endsAt) : undefined,
+      sortOrder: Number(req.body.sortOrder) || 0,
+    };
+
+    if (campaignType === 'menu') {
+      const resolved = await resolveMenuProducts(req.user.branchId, req.body.products);
+      if (resolved.error) return res.status(400).json({ message: resolved.error });
+      const listTotal = resolved.items.reduce((s, p) => s + Number(p.price || 0), 0);
+      const bundlePrice = Number(req.body.bundlePrice);
+      createPayload = {
+        ...createPayload,
+        products: resolved.items,
+        bundlePrice,
+        minCartTotal: listTotal,
+        discountRate:
+          listTotal > 0 ? Math.min(1, Math.max(0, 1 - bundlePrice / listTotal)) : 0,
+      };
+    } else {
+      createPayload = {
+        ...createPayload,
+        minCartTotal: Number(req.body.minCartTotal) || 0,
+        discountRate: Number(req.body.discountRate),
+        products: [],
+      };
+    }
+
+    const campaign = await Campaign.create(createPayload);
+    res.status(201).json(campaign);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * PUT /api/admin/campaigns/:id
+ */
+router.put('/campaigns/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    if (!req.user?.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+    if (req.body.title !== undefined && !String(req.body.title).trim()) {
+      return res.status(400).json({ message: 'Kampanya başlığı gerekli' });
+    }
+    if (
+      req.body.discountRate !== undefined ||
+      req.body.minCartTotal !== undefined ||
+      req.body.title !== undefined
+    ) {
+      const existing = await Campaign.findOne({
+        _id: req.params.id,
+        branchId: req.user.branchId,
+      });
+      if (!existing) return res.status(404).json({ message: 'Kampanya bulunamadı' });
+      const merged = {
+        title: req.body.title ?? existing.title,
+        minCartTotal: req.body.minCartTotal ?? existing.minCartTotal,
+        discountRate: req.body.discountRate ?? existing.discountRate,
+        startsAt: req.body.startsAt ?? existing.startsAt,
+        endsAt: req.body.endsAt ?? existing.endsAt,
+      };
+      const err = validateCampaignBody(merged);
+      if (err) return res.status(400).json({ message: err });
+    }
+
+    const patch = { ...req.body };
+    if (patch.title) patch.title = String(patch.title).trim();
+    if (patch.startsAt === '') patch.startsAt = null;
+    if (patch.endsAt === '') patch.endsAt = null;
+
+    const updated = await Campaign.findOneAndUpdate(
+      { _id: req.params.id, branchId: req.user.branchId },
+      patch,
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: 'Kampanya bulunamadı' });
+    res.json(updated);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * DELETE /api/admin/campaigns/:id
+ */
+router.delete('/campaigns/:id', auth, requireRole('admin'), async (req, res, next) => {
+  try {
+    if (!req.user?.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+    const deleted = await Campaign.findOneAndDelete({
+      _id: req.params.id,
+      branchId: req.user.branchId,
+    });
+    if (!deleted) return res.status(404).json({ message: 'Kampanya bulunamadı' });
+    res.json({ message: 'Kampanya silindi', id: deleted._id });
   } catch (e) {
     next(e);
   }

@@ -1,15 +1,42 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ProfileSubLayout from '../components/ProfileSubLayout';
 import { menuColors, homeFonts, uiShadow } from '../constants/homeTheme';
-
-const RULES = [
-  { title: '₺200 ve üzeri sepet', desc: '%5 sepet indirimi seçeneği (uygun olduğunda).' },
-  { title: '₺300 ve üzeri sepet', desc: '%7 sepet indirimi seçeneği.' },
-  { title: '₺500 ve üzeri sepet', desc: '%10 sepet indirimi seçeneği.' },
-  { title: 'Parapuan', desc: 'Ödeme adımında puanlarınızdan yararlanabilirsiniz (limitler sepete göre).' },
-];
+import { useTableSession } from '../context/TableSessionContext';
+import client from '../api/client';
 
 export default function CampaignsScreen({ navigation }) {
+  const { branchId } = useTableSession();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!branchId) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await client.get('/api/campaigns', {
+          params: { branchId: String(branchId) },
+        });
+        if (!cancelled) {
+          setItems(Array.isArray(res.data?.items) ? res.data.items : []);
+        }
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [branchId]);
+
   return (
     <ProfileSubLayout navigation={navigation} title="Kampanyalarım">
       <ScrollView
@@ -17,15 +44,36 @@ export default function CampaignsScreen({ navigation }) {
         contentContainerStyle={styles.scroll}
       >
         <Text style={styles.intro}>
-          Aşağıdaki kurallar sepet ekranındaki kampanya çipleriyle uyumludur; koşullar sepet
-          tutarına göre otomatik değişir.
+          İşletmenin tanımladığı kampanyalar sepet ekranında görünür. Minimum sepet tutarına
+          ulaştığınızda ilgili kampanyayı seçebilirsiniz.
         </Text>
-        {RULES.map((r) => (
-          <View key={r.title} style={[styles.card, uiShadow.card]}>
-            <Text style={styles.cardTitle}>{r.title}</Text>
-            <Text style={styles.cardDesc}>{r.desc}</Text>
-          </View>
-        ))}
+        {loading ? (
+          <ActivityIndicator color={menuColors.primary} style={{ marginTop: 24 }} />
+        ) : null}
+        {!loading && items.length === 0 ? (
+          <Text style={styles.empty}>Bu şube için aktif kampanya bulunmuyor.</Text>
+        ) : null}
+        {items.map((c) => {
+          const isMenu = c.campaignType === 'menu';
+          const productNames = (c.products || []).map((p) => p.name).filter(Boolean);
+          const desc = isMenu
+            ? `${productNames.join(', ') || 'Menü paketi'} · Paket ₺${Number(c.bundlePrice || 0).toFixed(0)}`
+            : `₺${Number(c.minCartTotal || 0).toFixed(0)} ve üzeri sepete %${Math.round(
+                Number(c.discountRate || 0) * 100
+              )} indirim`;
+          return (
+            <View key={String(c._id)} style={[styles.card, uiShadow.card]}>
+              <Text style={styles.cardTitle}>{c.title}</Text>
+              <Text style={styles.cardDesc}>{desc}</Text>
+            </View>
+          );
+        })}
+        <View style={[styles.card, uiShadow.card]}>
+          <Text style={styles.cardTitle}>Parapuan</Text>
+          <Text style={styles.cardDesc}>
+            Ödeme adımında puanlarınızdan yararlanabilirsiniz (limitler sepete göre).
+          </Text>
+        </View>
       </ScrollView>
     </ProfileSubLayout>
   );
@@ -43,6 +91,12 @@ const styles = StyleSheet.create({
     color: menuColors.textSecondary,
     lineHeight: 21,
     marginBottom: 8,
+  },
+  empty: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: menuColors.textMuted,
+    marginTop: 8,
   },
   card: {
     backgroundColor: menuColors.card,

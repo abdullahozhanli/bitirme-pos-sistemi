@@ -1,0 +1,259 @@
+/**
+ * Admin panel — mobil / tablet düzen (iş mantığına dokunmaz, sadece görünüm)
+ */
+
+/* ——— Ana içerik alanı ——— */
+.admin-panel-main {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ——— Mobil üst bar (AdminLayout) ——— */
+.admin-mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: -16px -16px 16px -16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.admin-mobile-header__menu {
+  flex-shrink: 0;
+  border: 1px solid var(--color-border, #e5e7eb) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+}
+
+.admin-mobile-header__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-mobile-header__title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  color: var(--color-text, #111827) !important;
+}
+
+.admin-mobile-header__subtitle {
+  font-size: 0.75rem !important;
+  color: #6b7280 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 899px) {
+  .admin-panel-main {
+    padding-top: 0 !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 24px !important;
+  }
+}
+
+/* ——— Sayfa başlığı ——— */
+@media (max-width: 599px) {
+  .admin-page-header-action .MuiButton-root {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ——— Paper / kartlar ——— */
+@media (max-width: 899px) {
+  .admin-panel-main .MuiPaper-root {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .admin-panel-main .MuiTypography-h5 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* ——— DataGrid — yatay kaydırma, tablo kırılmasın ——— */
+@media (max-width: 899px) {
+  .admin-panel-main .MuiPaper-root:has(.MuiDataGrid-root) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-panel-main .MuiDataGrid-root {
+    min-width: 560px;
+  }
+
+  .admin-panel-main .MuiDataGrid-columnHeaders {
+    font-size: 0.8rem !important;
+  }
+
+  .admin-panel-main .MuiDataGrid-cell {
+    font-size: 0.85rem !important;
+    padding: 8px !important;
+  }
+
+  .admin-panel-main .MuiDataGrid-cell[data-field='actions'] .MuiStack-root {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+
+  .admin-panel-main .MuiDataGrid-cell[data-field='actions'] .MuiButton-root {
+    width: 100%;
+    min-height: 40px !important;
+  }
+}
+
+/* ——— Form satırları (ürün ekleme vb.) ——— */
+@media (max-width: 899px) {
+  .admin-panel-main form[style*='flex-wrap'],
+  .admin-panel-main .MuiBox-root > form {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .admin-panel-main form .MuiTextField-root,
+  .admin-panel-main form .MuiFormControl-root {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ——— Dialog — tam genişlik mobil ——— */
+@media (max-width: 599px) {
+  .admin-panel-main .MuiDialog-paper {
+    margin: 12px !important;
+    width: calc(100% - 24px) !important;
+    max-width: calc(100% - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+  }
+
+  .MuiDialogActions-root {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .MuiDialogActions-root .MuiButton-root {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
+
+/* ——— Liste satırları (kampanya, sipariş vb.) ——— */
+@media (max-width: 599px) {
+  .admin-panel-main .campaign-menu-list-item,
+  .campaign-page .campaign-menu-list-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .admin-panel-main .campaign-menu-list-item > .MuiBox:last-child,
+  .campaign-page .campaign-menu-list-item > .MuiBox:last-child {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-panel-main .campaign-menu-list-item .MuiButton-root,
+  .campaign-page .campaign-menu-list-item .MuiButton-root {
+    width: 100%;
+  }
+}
+
+/* ——— KPI / dashboard grid ——— */
+@media (max-width: 599px) {
+  .admin-panel-main .MuiGrid-container {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .admin-panel-main .MuiGrid-item {
+    padding-left: 0 !important;
+    padding-top: 12px !important;
+  }
+}
+
+/* ——— Drawer mobil ——— */
+@media (max-width: 899px) {
+  .admin-drawer-mobile .MuiDrawer-paper {
+    width: min(280px, 88vw) !important;
+  }
+}
+
+/* ——— Kampanya mod seçici ——— */
+@media (max-width: 899px) {
+  .campaign-mode-toggle {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-bottom: 4px;
+  }
+
+  .campaign-toggle-group {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .campaign-toggle-group .MuiToggleButton-root {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 599px) {
+  .campaign-create-card {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .campaign-create-title {
+    font-size: 1.15rem !important;
+  }
+
+  .campaign-mode-toggle .MuiToggleButtonGroup-root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .campaign-toggle-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .campaign-toggle-group .MuiToggleButton-root {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 10px !important;
+    margin-bottom: 4px;
+  }
+
+  .campaign-preview-panel {
+    position: static !important;
+  }
+
+  .campaign-form-row--cart {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ——— Tablo toolbar ——— */
+@media (max-width: 599px) {
+  .admin-panel-main .MuiDataGrid-toolbarContainer {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px !important;
+  }
+}
