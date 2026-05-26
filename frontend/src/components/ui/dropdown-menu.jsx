@@ -55,7 +55,7 @@ export const DropdownMenuTrigger = ({ children, className = '', onClick, ...prop
   </button>
 );
 
-export const DropdownMenuContent = ({ children, className = '', onClose, ...props }) => (
+export const DropdownMenuContent = ({ children, className = '', onClose: _onClose, ...props }) => (
   <div
     className={['absolute z-50 mt-1 min-w-[8rem] rounded-md border bg-white p-1 shadow-lg', className].join(' ')}
     {...props}

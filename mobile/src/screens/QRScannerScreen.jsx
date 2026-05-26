@@ -26,7 +26,7 @@ const SCAN_CORNER_SOFT = 'rgba(74, 222, 128, 0.55)';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function QRScannerScreen({ navigation }) {
-  const { setTableNumber, setBranchId, setBranchName } = useTableSession();
+  const { connectFromQr } = useTableSession();
   const [permission, requestPermission] = useCameraPermissions();
   const [error, setError] = useState('');
   const [manual, setManual] = useState('');
@@ -92,14 +92,19 @@ export default function QRScannerScreen({ navigation }) {
       setBarcodeEnabled(false);
       setProcessing(true);
       await sleep(500);
-      await setTableNumber(data.tableNumber);
-      await setBranchId(data.branchId || null);
-      await setBranchName(data.branchName || null);
+      await connectFromQr({
+        tableNumber: data.tableNumber,
+        branchId: data.branchId || null,
+        branchName: data.branchName || null,
+        tableId: data.tableId || data.tableNumber,
+        restaurantId: data.branchId || null,
+        restaurantName: data.branchName || null,
+      });
       setProcessing(false);
       navigation.replace('Menu');
       return true;
     },
-    [navigation, setTableNumber, setBranchId, setBranchName]
+    [navigation, connectFromQr]
   );
 
   const onBarcodeScanned = useCallback(

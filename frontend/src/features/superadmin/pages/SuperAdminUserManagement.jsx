@@ -338,7 +338,6 @@ export default function SuperAdminUserManagement() {
         submitData.password = generateSecurePassword();
       }
 
-      let response;
       if (editingUser) {
         await axios.put(`/api/superadmin/users/${editingUser._id}`, submitData, { headers });
         handleCloseDialog();
@@ -352,7 +351,7 @@ export default function SuperAdminUserManagement() {
           setError(PASSWORD_POLICY_MESSAGE);
           return;
         }
-        response = await axios.post('/api/superadmin/users', submitData, { headers });
+        await axios.post('/api/superadmin/users', submitData, { headers });
         
         // Yeni kullanıcı oluşturulduğunda şifreyi göster
         if (autoGeneratePassword) {

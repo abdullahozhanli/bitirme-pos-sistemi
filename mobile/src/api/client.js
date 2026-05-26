@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL, API_BASE_URL_CANDIDATES } from '../constants/config';
+import { isUnauthorizedError, notifyUnauthorized } from './authSession';
 
 const TOKEN_KEY = 'selfkasa_token';
 
@@ -51,6 +52,11 @@ client.interceptors.request.use(async (config) => {
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (isUnauthorizedError(error)) {
+      await notifyUnauthorized();
+      throw error;
+    }
+
     const config = error?.config;
     const isNetworkError = !error?.response && Boolean(config);
     if (!isNetworkError) throw error;

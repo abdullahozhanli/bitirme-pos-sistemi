@@ -1,0 +1,161 @@
+﻿
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\app\App.jsx
+  5:10  warning  'useAuth' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\components\ui\command.jsx
+  1:17  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\components\ui\dropdown-menu.jsx
+  58:65  warning  'onClose' is defined but never used  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\components\ui\select.jsx
+  62:85  warning  'value' is defined but never used    no-unused-vars
+  78:59  warning  'onClose' is defined but never used  no-unused-vars
+  94:40  warning  'value' is defined but never used    no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\components\TableCard.jsx
+   5:44  warning  'statusLabels' is defined but never used                                                      no-unused-vars
+   5:79  warning  'onEdit' is defined but never used                                                            no-unused-vars
+  34:9   warning  'displayTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  35:9   warning  'displayPrice' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\components\TableDetailPanel.jsx
+  26:10  warning  'deleting' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  30:9   warning  'statusMap' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\pages\AdminDashboard.jsx
+  69:10  warning  'summary' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  70:10  warning  'orders' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\pages\AdminTableManagementPage.jsx
+   35:10  warning  'isModalOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+   38:10  warning  'qrModalOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+   38:23  warning  'setQrModalOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+   39:10  warning  'qrTableNumber' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   39:25  warning  'setQrTableNumber' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   40:10  warning  'qrCapacity' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   40:22  warning  'setQrCapacity' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+   41:10  warning  'generatingQR' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   41:24  warning  'setGeneratingQR' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   45:9   warning  'statusMap' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  216:9   warning  'handleAddTable' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  234:9   warning  'handleTableSaved' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\pages\OrderManagementPage.jsx
+   42:9  warning  'normalizeTr' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                           no-unused-vars
+  108:5  warning  React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array                        react-hooks/exhaustive-deps
+  136:6  warning  React Hook useEffect has missing dependencies: 'applyFilters' and 'persistState'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  471:6  warning  React Hook useEffect has missing dependencies: 'fetchOrders' and 'persistState'. Either include them or remove the dependency array   react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\pages\ProductManagementPage.jsx
+  276:6  warning  React Hook useMemo has a missing dependency: 'handleDeleteProduct'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\admin\pages\QRCodeManagementPage.jsx
+  68:6  warning  React Hook useEffect has a missing dependency: 'fetchQRCodes'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\auth\pages\LoginPage.jsx
+  41:28  warning  'Icon' is defined but never used  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\cashier\pages\CashierDashboard.jsx
+   43:11  warning  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  329:6   warning  React Hook useEffect has a missing dependency: 'activeTab'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\customer\pages\CartPage.jsx
+  22:9  warning  'isMobile' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\customer\pages\HomePage.jsx
+   41:10  warning  'totalProducts' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                   no-unused-vars
+  273:6   warning  React Hook useMemo has a missing dependency: 'categoryOrder'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\customer\pages\QRScannerPage.jsx
+  34:14  warning  'e' is defined but never used              no-unused-vars
+  59:23  warning  'decodedResult' is defined but never used  no-unused-vars
+  63:10  warning  'errorMessage' is defined but never used   no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\kitchen\components\KitchenOrderHistory.jsx
+  37:6  warning  React Hook useEffect has a missing dependency: 'periods'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\kitchen\pages\KitchenDisplayPage.jsx
+   28:11  warning  'isAuthenticated' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                      no-unused-vars
+   36:9   warning  'branchId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                             no-unused-vars
+  194:9   warning  'stats' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                no-unused-vars
+  292:9   warning  'markAllReady' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                         no-unused-vars
+  490:8   warning  React Hook useEffect has missing dependencies: 'initialOrderStatus' and 'order'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  501:8   warning  React Hook useEffect has a missing dependency: 'optimisticItems'. Either include it or remove the dependency array                   react-hooks/exhaustive-deps
+  545:13  warning  'itemCurrentStatusForBackend' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  723:21  warning  'itemStatus' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                           no-unused-vars
+  855:48  warning  'tableName' is defined but never used                                                                                                no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\superadmin\pages\SuperAdminUserManagement.jsx
+  355:9  warning  'response' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\components\OrderCreateModal.jsx
+  266:9  warning  'removeFromCart' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\components\WaiterTableCard.jsx
+   6:50  warning  'statusLabels' is defined but never used                                                      no-unused-vars
+  30:9   warning  'displayTime' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  31:9   warning  'displayPrice' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  36:9   warning  'orderCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\components\WaiterTableDetailPanel.jsx
+   1:17  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u              no-unused-vars
+  40:9   warning  'statusColor' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\pages\WaiterDashboard.jsx
+  10:11  warning  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+  18:10  warning  'readyOrders' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\pages\WaiterOrderCreatePage.jsx
+  60:6  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\pages\WaiterOrdersPage.jsx
+   41:9   warning  'isMobile' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+   58:9   warning  'paymentMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                     no-unused-vars
+  107:6   warning  React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  172:6   warning  React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  487:23  warning  'id' is defined but never used                                                                                  no-unused-vars
+  491:22  warning  'id' is defined but never used                                                                                  no-unused-vars
+  494:25  warning  'id' is defined but never used                                                                                  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\features\waiter\pages\WaiterTableManagementPage.jsx
+  86:20  warning  'err' is defined but never used  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\hooks\useSocket.js
+  81:6  warning  React Hook useEffect has a missing dependency: 'callbacks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\components\modals\OrderDetailModal.jsx
+  17:7  warning  'pill' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\components\ui\command.jsx
+  1:17  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\components\ui\dropdown-menu.jsx
+  58:65  warning  'onClose' is defined but never used  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\components\ui\select.jsx
+  62:85  warning  'value' is defined but never used    no-unused-vars
+  78:59  warning  'onClose' is defined but never used  no-unused-vars
+  94:40  warning  'value' is defined but never used    no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\context\AuthContext.jsx
+   31:20  warning  'e' is defined but never used                                                                            no-unused-vars
+   39:16  warning  'e' is defined but never used                                                                            no-unused-vars
+   55:16  warning  'e' is defined but never used                                                                            no-unused-vars
+  154:20  warning  'e' is defined but never used                                                                            no-unused-vars
+  161:16  warning  'e' is defined but never used                                                                            no-unused-vars
+  202:20  warning  'e' is defined but never used                                                                            no-unused-vars
+  218:22  warning  'e' is defined but never used                                                                            no-unused-vars
+  227:16  warning  'e' is defined but never used                                                                            no-unused-vars
+  241:6   warning  React Hook useEffect has a missing dependency: 'user'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  267:24  warning  'e' is defined but never used                                                                            no-unused-vars
+  280:18  warning  'e' is defined but never used                                                                            no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\guards\ProtectedRoute.jsx
+  52:16  warning  'e' is defined but never used  no-unused-vars
+
+C:\Users\abdul\Desktop\bitirme-pos-sistemi\frontend\src\shared\hooks\useSocket.js
+  81:6  warning  React Hook useEffect has a missing dependency: 'callbacks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 90 problems (0 errors, 90 warnings)
+

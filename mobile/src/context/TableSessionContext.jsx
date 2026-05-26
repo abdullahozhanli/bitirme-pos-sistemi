@@ -6,126 +6,203 @@ import {
   useMemo,
   useState,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
-
-const TABLE_KEY = 'tableNumber';
-const BRANCH_KEY = 'branchId';
-const BRANCH_NAME_KEY = 'branchName';
+import {
+  buildTableSession,
+  clearTableSessionStorage,
+  isSessionValid,
+  loadTableSession,
+  migrateLegacyTableKeys,
+  saveTableSession,
+} from '../utils/tableSessionStorage';
 
 const TableSessionContext = createContext(null);
 
+function applySessionToState(session, setters) {
+  if (!session) {
+    setters.setTableSession(null);
+    setters.setTableNumber(null);
+    setters.setBranchId(null);
+    setters.setBranchName(null);
+    return;
+  }
+  setters.setTableSession(session);
+  setters.setTableNumber(session.tableNumber ?? null);
+  setters.setBranchId(session.branchId ?? session.restaurantId ?? null);
+  setters.setBranchName(session.branchName ?? session.restaurantName ?? null);
+}
+
 export function TableSessionProvider({ children }) {
   const { token, ready } = useAuth();
+  const [tableSession, setTableSession] = useState(null);
   const [tableNumber, setTableNumberState] = useState(null);
   const [branchId, setBranchIdState] = useState(null);
   const [branchName, setBranchNameState] = useState(null);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  const setters = useMemo(
+    () => ({
+      setTableSession,
+      setTableNumber: setTableNumberState,
+      setBranchId: setBranchIdState,
+      setBranchName: setBranchNameState,
+    }),
+    []
+  );
+
+  const hydrate = useCallback(
+    (session) => {
+      applySessionToState(session, setters);
+    },
+    [setters]
+  );
 
   useEffect(() => {
     if (!ready) return;
     if (!token) {
-      setTableNumberState(null);
-      setBranchIdState(null);
-      setBranchNameState(null);
-      AsyncStorage.removeItem(TABLE_KEY).catch(() => {});
-      AsyncStorage.removeItem(BRANCH_KEY).catch(() => {});
-      AsyncStorage.removeItem(BRANCH_NAME_KEY).catch(() => {});
+      hydrate(null);
+      setSessionReady(true);
+      clearTableSessionStorage().catch(() => {});
       return;
     }
+
     let cancelled = false;
     (async () => {
       try {
-        const t = await AsyncStorage.getItem(TABLE_KEY);
-        const b = await AsyncStorage.getItem(BRANCH_KEY);
-        const bn = await AsyncStorage.getItem(BRANCH_NAME_KEY);
-        if (cancelled) return;
-        setTableNumberState(t ? JSON.parse(t) : null);
-        setBranchIdState(b ? JSON.parse(b) : null);
-        setBranchNameState(bn ? JSON.parse(bn) : null);
+        let session = await loadTableSession();
+        if (!session) session = await migrateLegacyTableKeys();
+        if (!cancelled) {
+          hydrate(isSessionValid(session) ? session : null);
+        }
       } catch {
-        /* ignore */
+        if (!cancelled) hydrate(null);
+      } finally {
+        if (!cancelled) setSessionReady(true);
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [ready, token]);
+  }, [ready, token, hydrate]);
 
-  const setTableNumber = useCallback(async (value) => {
-    setTableNumberState(value);
-    try {
+  const connectFromQr = useCallback(
+    async ({ tableNumber: num, branchId: bid, branchName: bname, tableId, restaurantId, restaurantName }) => {
+      const session = buildTableSession({
+        tableNumber: num,
+        branchId: bid,
+        branchName: bname,
+        tableId,
+        restaurantId,
+        restaurantName,
+      });
+      await saveTableSession(session);
+      hydrate(session);
+      return session;
+    },
+    [hydrate]
+  );
+
+  const setTableNumber = useCallback(
+    async (value) => {
+      if (tableSession && isSessionValid(tableSession)) {
+        const next = {
+          ...tableSession,
+          tableNumber: value,
+          tableName: value ? `Masa ${value}` : tableSession.tableName,
+        };
+        await saveTableSession(next);
+        hydrate(next);
+        return;
+      }
+      setTableNumberState(value);
       if (value != null && value !== '') {
-        await AsyncStorage.setItem(TABLE_KEY, JSON.stringify(value));
-      } else {
-        await AsyncStorage.removeItem(TABLE_KEY);
+        const session = buildTableSession({ tableNumber: value });
+        await saveTableSession(session);
+        hydrate(session);
       }
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    },
+    [tableSession, hydrate]
+  );
 
-  const setBranchId = useCallback(async (value) => {
-    setBranchIdState(value);
-    try {
-      if (value != null && value !== '') {
-        await AsyncStorage.setItem(BRANCH_KEY, JSON.stringify(value));
-      } else {
-        await AsyncStorage.removeItem(BRANCH_KEY);
+  const setBranchId = useCallback(
+    async (value) => {
+      if (tableSession) {
+        const next = { ...tableSession, branchId: value, restaurantId: value || tableSession.restaurantId };
+        await saveTableSession(next);
+        hydrate(next);
+        return;
       }
-    } catch {
-      /* ignore */
-    }
-  }, []);
+      setBranchIdState(value);
+    },
+    [tableSession, hydrate]
+  );
 
-  const setBranchName = useCallback(async (value) => {
-    setBranchNameState(value);
-    try {
-      if (value != null && String(value).trim() !== '') {
-        await AsyncStorage.setItem(BRANCH_NAME_KEY, JSON.stringify(String(value).trim()));
-      } else {
-        await AsyncStorage.removeItem(BRANCH_NAME_KEY);
+  const setBranchName = useCallback(
+    async (value) => {
+      const name = value != null ? String(value).trim() : '';
+      if (tableSession) {
+        const next = {
+          ...tableSession,
+          branchName: name || null,
+          restaurantName: name || tableSession.restaurantName,
+        };
+        await saveTableSession(next);
+        hydrate(next);
+        return;
       }
-    } catch {
-      /* ignore */
-    }
-  }, []);
+      setBranchNameState(name || null);
+    },
+    [tableSession, hydrate]
+  );
 
   const clearTableSession = useCallback(async () => {
-    setTableNumberState(null);
-    setBranchIdState(null);
-    setBranchNameState(null);
-    try {
-      await AsyncStorage.multiRemove([TABLE_KEY, BRANCH_KEY, BRANCH_NAME_KEY]);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    await clearTableSessionStorage();
+    hydrate(null);
+  }, [hydrate]);
+
+  /** Ana sayfa odaklanınca süre dolumu kontrolü */
+  const refreshTableSession = useCallback(async () => {
+    const session = await loadTableSession();
+    hydrate(session);
+    return session;
+  }, [hydrate]);
+
+  const isTableConnected = Boolean(tableSession && isSessionValid(tableSession));
 
   const value = useMemo(
     () => ({
+      tableSession,
       tableNumber,
       branchId,
       branchName,
+      sessionReady,
+      isTableConnected,
+      connectFromQr,
       setTableNumber,
       setBranchId,
       setBranchName,
       clearTableSession,
+      refreshTableSession,
     }),
     [
+      tableSession,
       tableNumber,
       branchId,
       branchName,
+      sessionReady,
+      isTableConnected,
+      connectFromQr,
       setTableNumber,
       setBranchId,
       setBranchName,
       clearTableSession,
+      refreshTableSession,
     ]
   );
 
   return (
-    <TableSessionContext.Provider value={value}>
-      {children}
-    </TableSessionContext.Provider>
+    <TableSessionContext.Provider value={value}>{children}</TableSessionContext.Provider>
   );
 }
 

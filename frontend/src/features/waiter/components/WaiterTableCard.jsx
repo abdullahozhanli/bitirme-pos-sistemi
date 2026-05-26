@@ -3,7 +3,7 @@ import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import { TABLE_STATUS, STATUS_LABELS, STATUS_CLASS_MAP } from '../constants/tableStatus.js';
 import './WaiterTableCard.css';
 
-export default function WaiterTableCard({ table, statusLabels, isSelected, onClick }) {
+export default function WaiterTableCard({ table, isSelected, onClick }) {
   const statusClass = STATUS_CLASS_MAP[table.status] || 'available';
 
   // Aktif siparişin süresini hesapla (dakika)
@@ -27,13 +27,8 @@ export default function WaiterTableCard({ table, statusLabels, isSelected, onCli
   };
 
   const orderDuration = calculateOrderDuration();
-  const displayTime = orderDuration !== null ? `${orderDuration}dk` : '';
-  const displayPrice = table.totalAmount ? table.totalAmount.toFixed(2) : '0,00';
-  
-  // Sipariş bilgilerini hazırla
   const activeOrder = table.activeOrders && table.activeOrders.length > 0 ? table.activeOrders[0] : null;
   const orderNumber = activeOrder?._id ? activeOrder._id.slice(-4).toUpperCase() : (activeOrder?.orderNumber || '');
-  const orderCount = table.activeOrders?.length || table.activeOrderCount || 0;
   const totalPrice = table.totalAmount || 0;
   
   // Toplam ürün sayısını hesapla (tüm aktif siparişlerdeki ürünler)
@@ -85,6 +80,9 @@ export default function WaiterTableCard({ table, statusLabels, isSelected, onCli
                 <div className="order-info-compact">
                   <span className="order-number-compact">Sipariş #{orderNumber || '---'}</span>
                   <span className="order-price-compact">{totalPrice.toFixed(2).replace('.', ',')}₺</span>
+                  {orderDuration != null ? (
+                    <span className="order-time-compact">{orderDuration}dk</span>
+                  ) : null}
                 </div>
                 {totalItemCount > 0 && (
                   <div className="order-count-compact">{totalItemCount} ürün</div>

@@ -42,6 +42,16 @@ const orderSchema = new mongoose.Schema({
   paidAt: {
     type: Date
   },
+  /** table | cashier | online (müşteri) veya cash | card (personel) */
+  paymentMethod: {
+    type: String,
+    enum: ['table', 'cashier', 'online', 'cash', 'card'],
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['unpaid', 'paid', 'refunded'],
+    default: 'unpaid',
+  },
   branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }, // Yeni model için
   /** Mobil müşteri (giriş yapmış) siparişi */
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },

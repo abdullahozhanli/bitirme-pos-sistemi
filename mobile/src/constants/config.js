@@ -1,6 +1,8 @@
+import Constants from 'expo-constants';
 import { NativeModules, Platform } from 'react-native';
 
 const API_PORT = '5001';
+const isSimulator = Constants.isDevice === false;
 
 function trimUrl(value) {
   if (!value || typeof value !== 'string') return '';
@@ -19,10 +21,15 @@ function deriveDevHostUrl() {
 
 const envUrl = trimUrl(process.env.EXPO_PUBLIC_API_URL);
 const devHostUrl = __DEV__ ? deriveDevHostUrl() : '';
-const emulatorUrl = __DEV__ && Platform.OS === 'android' ? `http://10.0.2.2:${API_PORT}` : '';
-const localhostUrl = __DEV__ ? `http://localhost:${API_PORT}` : '';
+/** Yalnızca Android emülatörde; fiziksel telefonda 10.0.2.2 yanlış sunucuya gider → sahte 401 */
+const emulatorUrl =
+  __DEV__ && Platform.OS === 'android' && isSimulator ? `http://10.0.2.2:${API_PORT}` : '';
+const localhostUrl =
+  __DEV__ && (Platform.OS === 'web' || isSimulator) ? `http://localhost:${API_PORT}` : '';
 
-const devCandidates = [envUrl, devHostUrl, emulatorUrl, localhostUrl];
+const devCandidates = envUrl
+  ? [envUrl, ...(devHostUrl && devHostUrl !== envUrl ? [devHostUrl] : [])]
+  : [devHostUrl, emulatorUrl, localhostUrl];
 const prodCandidates = [envUrl];
 
 export const API_BASE_URL_CANDIDATES = (__DEV__ ? devCandidates : prodCandidates).filter(

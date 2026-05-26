@@ -38,7 +38,8 @@ function homePathForRole(role) {
   return '/';
 }
 
-function AuthField({ icon: Icon, ...props }) {
+function AuthField({ icon, ...props }) {
+  const Icon = icon;
   return (
     <TextField
       fullWidth
@@ -80,7 +81,6 @@ export default function LoginPage() {
   // Sadece sayfa ilk açıldığında eski oturumu temizle (logout deps'e bağlanırsa giriş sonrası tekrar çalışır)
   useEffect(() => {
     logout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e) => {

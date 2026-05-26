@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -13,7 +12,6 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import ScreenBackButton from '../components/ScreenBackButton';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useAuth } from '../context/AuthContext';
@@ -21,11 +19,12 @@ import {
   pickProfileImageUri,
   prepareProfileAvatarFileUri,
 } from '../utils/pickProfileAvatar';
-import { resolveMediaUrl } from '../utils/resolveMediaUrl';
+import ProfileAvatar from '../components/ProfileAvatar';
+import { isUnauthorizedError } from '../api/authSession';
+import { apiErrorMessage } from '../utils/apiErrorMessage';
 import * as LoyaltyPoints from '../utils/loyaltyPoints';
 import client from '../api/client';
 
-const PROFILE_GRADIENT = ['#3FA34D', '#66BB6A'];
 const PAGE_BG = '#F3F6F4';
 /** Mat, doygun siyah — yeşil ikon kutusu içinde */
 const PROFILE_ICON = '#1A1A1A';
@@ -55,8 +54,7 @@ export default function ProfileScreen({ navigation }) {
   );
   const displayName = user?.name?.trim() || 'Misafir';
   const loyaltyPoints = LoyaltyPoints.getLoyaltyPoints(user);
-  const avatarUri = resolveMediaUrl(user?.avatarUrl);
-  const hasAvatar = Boolean(avatarUri);
+  const hasAvatar = Boolean(String(user?.avatarUrl || '').trim());
 
   const pickAndUploadAvatar = useCallback(async () => {
     const picked = await pickProfileImageUri();
@@ -66,8 +64,9 @@ export default function ProfileScreen({ navigation }) {
       const fileUri = await prepareProfileAvatarFileUri(picked.uri);
       await uploadProfileAvatar(fileUri);
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || 'Yüklenemedi';
-      Alert.alert('Hata', msg);
+      if (!isUnauthorizedError(e)) {
+        Alert.alert('Hata', apiErrorMessage(e, 'Yüklenemedi'));
+      }
     } finally {
       setAvatarBusy(false);
     }
@@ -78,8 +77,9 @@ export default function ProfileScreen({ navigation }) {
       setAvatarBusy(true);
       await removeProfileAvatar();
     } catch (e) {
-      const msg = e?.response?.data?.message || e?.message || 'Kaldırılamadı';
-      Alert.alert('Hata', msg);
+      if (!isUnauthorizedError(e)) {
+        Alert.alert('Hata', apiErrorMessage(e, 'Kaldırılamadı'));
+      }
     } finally {
       setAvatarBusy(false);
     }
@@ -169,22 +169,13 @@ export default function ProfileScreen({ navigation }) {
             style={({ pressed }) => [styles.avatarPress, pressed && { opacity: 0.92 }]}
           >
             <View style={styles.avatarWrap}>
-              {hasAvatar ? (
-                <Image
-                  source={{ uri: avatarUri }}
-                  style={styles.avatarPhoto}
-                  resizeMode="cover"
-                />
-              ) : (
-                <LinearGradient
-                  colors={PROFILE_GRADIENT}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.avatarPhoto}
-                >
-                  <Ionicons name="person-circle-outline" size={40} color={menuColors.white} />
-                </LinearGradient>
-              )}
+              <ProfileAvatar
+                avatarUrl={user?.avatarUrl}
+                size={78}
+                borderRadius={24}
+                variant="profile"
+                style={styles.avatarPhoto}
+              />
               {avatarBusy ? (
                 <View style={styles.avatarLoading}>
                   <ActivityIndicator color={menuColors.white} size="small" />

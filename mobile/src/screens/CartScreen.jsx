@@ -48,6 +48,18 @@ function formatCardExpiry(value) {
   return `${d.slice(0, 2)}/${d.slice(2)}`;
 }
 
+function orderStatusLabel(s) {
+  const x = String(s || '').toLowerCase();
+  const map = {
+    hazirlaniyor: 'Hazırlanıyor',
+    serviste: 'Serviste',
+    tamamlandi: 'Tamamlandı',
+    iptal: 'İptal',
+    ödendi: 'Ödendi',
+  };
+  return map[x] || s || '—';
+}
+
 function isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv }) {
   const holder = String(cardHolder || '').trim();
   const num = digitsOnly(cardNumber, 19);
@@ -71,8 +83,8 @@ const QTY_WARM_GREEN = '#7CB342';
 
 export default function CartScreen({ navigation }) {
   const { lines, incrementQty, decrementQty, clearCart, totals, updateLineNoteAt } = useCart();
-  const { tableNumber, branchId, branchName } = useTableSession();
-  const { refreshUser, user } = useAuth();
+  const { tableNumber, branchId, branchName, clearTableSession } = useTableSession();
+  const { refreshUser, applyMeToUser, user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [campaignKey, setCampaignKey] = useState('none');
   const [usePoints, setUsePoints] = useState(false);
@@ -93,6 +105,30 @@ export default function CartScreen({ navigation }) {
   const [remoteCampaigns, setRemoteCampaigns] = useState([]);
   const insets = useSafeAreaInsets();
 
+  useEffect(() => {
+    const orderId = checkoutSuccess?.orderId;
+    if (!orderId) return undefined;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await client.get(`/api/orders/${orderId}`);
+        if (!cancelled && res.data?.status) {
+          setCheckoutSuccess((prev) =>
+            prev ? { ...prev, status: res.data.status } : prev
+          );
+        }
+      } catch {
+        /* polling */
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [checkoutSuccess?.orderId]);
+
   const closeAppAlert = useCallback(() => setAppAlert(null), []);
 
   const showAppAlert = useCallback((config) => {
@@ -109,9 +145,15 @@ export default function CartScreen({ navigation }) {
   }, [navigation]);
 
   const finishCheckoutSuccess = useCallback(() => {
+    const paidOnline =
+      checkoutSuccess?.paymentMethod === 'online' ||
+      checkoutSuccess?.paymentStatus === 'paid';
     setCheckoutSuccess(null);
+    if (paidOnline) {
+      clearTableSession().catch(() => {});
+    }
     replaceStackWithMenu();
-  }, [replaceStackWithMenu]);
+  }, [replaceStackWithMenu, checkoutSuccess, clearTableSession]);
 
   useFocusEffect(
     useCallback(() => {
@@ -293,13 +335,12 @@ export default function CartScreen({ navigation }) {
     if (submitting || lines.length === 0) return;
     setCheckoutError('');
 
-    const clientOnlyDiscount = couponDiscount + pointsDiscount;
-    if (clientOnlyDiscount > 0.01) {
+    if (couponDiscount > 0.01) {
       const ok = await new Promise((resolve) => {
         showAppAlert({
           variant: 'info',
-          title: 'İndirim bilgisi',
-          message: `Kupon ve puan indirimi (${formatPrice(clientOnlyDiscount)}) sipariş notuna eklenir; restoranda uygulanır.`,
+          title: 'Kupon bilgisi',
+          message: `Kupon indirimi (${formatPrice(couponDiscount)}) yalnızca önizlemedir; backend toplamdan düşmez. Not olarak iletilir, restoranda uygulanır.`,
           onCancel: () => resolve(false),
           buttons: [
             { text: 'İptal', onPress: () => resolve(false) },
@@ -354,6 +395,7 @@ export default function CartScreen({ navigation }) {
     }
 
     setSubmitting(true);
+    const methodUsed = paymentMethod;
     try {
       const branchPayload =
         branchId && typeof branchId === 'object' && branchId._id
@@ -373,7 +415,7 @@ export default function CartScreen({ navigation }) {
         notes: [
           activeCampaign?.rate ? `Kampanya: ${activeCampaign.title}` : '',
           couponDiscount > 0 ? `Kupon (${couponApplied}): -${formatPrice(couponDiscount)}` : '',
-          pointsDiscount > 0 ? `Puan kullanimi (on izleme): -${formatPrice(pointsDiscount)}` : '',
+          pointsDiscount > 0 ? `Para puan: -${formatPrice(pointsDiscount)}` : '',
           paymentMethod === 'table'
             ? 'Odeme yontemi: masada'
             : paymentMethod === 'cashier'
@@ -386,12 +428,25 @@ export default function CartScreen({ navigation }) {
           .join(' | '),
         branchId: branchPayload,
         ...(campaignKey && campaignKey !== 'none' ? { campaignId: campaignKey } : {}),
+        ...(usePoints && pointsDiscount > 0
+          ? {
+              useLoyaltyPoints: true,
+              pointsDiscountTry: pointsDiscount,
+            }
+          : {}),
+        ...(methodUsed
+          ? {
+              paymentMethod: methodUsed,
+              ...(methodUsed === 'online' ? { paymentConfirmed: true } : {}),
+            }
+          : {}),
       };
 
       const res = await client.post('/api/orders', orderPayload);
       const created = res.data;
       const shortId = String(created?._id || '').slice(-6);
       clearCart();
+      setUsePoints(false);
       setOpenNoteIndex(-1);
       setCardHolder('');
       setCardNumber('');
@@ -399,11 +454,22 @@ export default function CartScreen({ navigation }) {
       setCardCvv('');
       setPaymentMethod(null);
       setShowCardSheet(false);
-      void refreshUser();
+      if (created?.customerLoyaltyPoints != null) {
+        applyMeToUser({
+          loyaltyPoints: created.customerLoyaltyPoints,
+          points: created.customerLoyaltyPoints,
+        });
+      } else {
+        await refreshUser();
+      }
       setCheckoutSuccess({
+        orderId: String(created?._id || ''),
         tableNumber: String(tableNumber),
         shortId,
         branchLabel,
+        status: created?.status || 'hazirlaniyor',
+        paymentMethod: created?.paymentMethod || methodUsed,
+        paymentStatus: created?.paymentStatus,
       });
     } catch (err) {
       const message = apiErrorMessage(err, 'Sipariş gönderilemedi.');
@@ -898,7 +964,11 @@ export default function CartScreen({ navigation }) {
             </View>
             <Text style={styles.successTitle}>Sipariş mutfağa iletildi</Text>
             <Text style={styles.successSubtitle}>
-              Hazırlık başladı; sipariş numaranızı mutfak ekranında da görebilirsiniz.
+              {checkoutSuccess?.paymentMethod === 'online'
+                ? 'Online ödemeniz (demo) alındı. Siparişiniz hazırlanıyor.'
+                : checkoutSuccess?.paymentMethod === 'cashier'
+                  ? 'Siparişiniz alındı. Ödemeyi kasada yapabilirsiniz.'
+                  : 'Siparişiniz alındı. Ödemeyi masada yapabilirsiniz.'}
             </Text>
             <View style={styles.successMeta}>
               <View style={styles.successMetaRow}>
@@ -910,6 +980,17 @@ export default function CartScreen({ navigation }) {
                 <Text style={styles.successMetaLabel}>Sipariş no</Text>
                 <Text style={styles.successMetaValueMono}>…{checkoutSuccess?.shortId}</Text>
               </View>
+              {checkoutSuccess?.status ? (
+                <>
+                  <View style={styles.successMetaDivider} />
+                  <View style={styles.successMetaRow}>
+                    <Text style={styles.successMetaLabel}>Durum</Text>
+                    <Text style={styles.successMetaValue}>
+                      {orderStatusLabel(checkoutSuccess.status)}
+                    </Text>
+                  </View>
+                </>
+              ) : null}
               {checkoutSuccess?.branchLabel ? (
                 <>
                   <View style={styles.successMetaDivider} />

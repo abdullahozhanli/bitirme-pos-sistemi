@@ -20,7 +20,7 @@ export const menuColors = {
   primary: '#3FA34D',
   primaryDark: '#2E7D32',
   primaryLight: '#5CBF6A',
-  bg: '#F5F7F6',
+  bg: '#FFFFFF',
   bgSoft: '#EEF1F0',
   card: '#FFFFFF',
   text: '#1A1A1A',

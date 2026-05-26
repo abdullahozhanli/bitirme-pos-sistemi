@@ -188,6 +188,12 @@ router.patch('/me', authMiddleware, async (req, res, next) => {
  */
 router.post('/register', authLoginLimiter, async (req, res, next) => {
   try {
+    if (process.env.ALLOW_PUBLIC_REGISTER === 'false') {
+      return res.status(403).json({
+        message: 'Kayıt şu anda kapalı. Lütfen restoran personeli ile iletişime geçin.',
+      });
+    }
+
     const { email, password, name } = req.body;
 
     const emailTrim = String(email || '').trim().toLowerCase();

@@ -4,6 +4,7 @@ import { Box, Button, Paper, Typography, TextField, Select, MenuItem, FormContro
 import { DataGrid } from '@mui/x-data-grid';
 import { useQueryClient } from '@tanstack/react-query';
 import StatusChip from '../../../shared/components/ui/StatusChip.jsx';
+import PaymentBadge from '../../../shared/components/ui/PaymentBadge.jsx';
 import OrderDetailModal from '../../../shared/components/modals/OrderDetailModal.jsx';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import '../styles/admin.css';
@@ -38,16 +39,6 @@ export default function OrderManagementPage(){
 
   const token = localStorage.getItem('token');
   const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
-
-  const normalizeTr = (text) => String(text || '')
-    .replace(/İ/g, 'I').replace(/I/g, 'I')
-    .replace(/ı/g, 'i').replace(/i/g, 'i')
-    .replace(/Ş/g, 'S').replace(/ş/g, 's')
-    .replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-    .replace(/Ü/g, 'U').replace(/ü/g, 'u')
-    .replace(/Ö/g, 'O').replace(/ö/g, 'o')
-    .replace(/Ç/g, 'C').replace(/ç/g, 'c')
-    .toLowerCase();
 
   const fetchOrders = async()=>{
     setLoading(true);
@@ -101,7 +92,9 @@ export default function OrderManagementPage(){
         setSortModel(s.sortModel ?? []);
         setPaginationModel(s.paginationModel ?? { pageSize:10, page:0 });
       }
-    }catch{}
+    } catch {
+      /* localStorage okuma hatası yoksay */
+    }
     fetchOrders(); 
   },[]);
 
@@ -146,6 +139,26 @@ export default function OrderManagementPage(){
     setDetailModalOpen(true);
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!orderId) return;
+    if (!window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) return;
+    try {
+      const res = await axios.put(
+        `/api/admin/orders/${orderId}/cancel`,
+        { reason: 'Admin iptali' },
+        { headers }
+      );
+      mergeUpdated(res.data);
+      setSnack({ open: true, message: 'Sipariş iptal edildi', severity: 'success' });
+    } catch (e) {
+      setSnack({
+        open: true,
+        message: e.response?.data?.message || 'İptal edilemedi',
+        severity: 'error',
+      });
+    }
+  };
+
   // Durum güncelle
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
@@ -185,7 +198,7 @@ export default function OrderManagementPage(){
       const prevAll = allRows;
       const prevRow = prevAll.find(r => (r._id === orderId || r.id === orderId));
       if (prevRow) {
-        const optimistic = { ...prevRow, status: 'PAID' };
+        const optimistic = { ...prevRow, status: 'ödendi', paymentStatus: 'paid', paidAt: new Date().toISOString() };
         mergeUpdated(optimistic);
       }
       
@@ -388,15 +401,16 @@ export default function OrderManagementPage(){
       }
     },
     { field:'status', headerName:'Durum', width:160, renderCell:p=><StatusChip status={p.value}/> },
-    { 
-      field:'isPaid', 
-      headerName:'Ödeme Durumu', 
-      width:110,
+    {
+      field: 'paymentStatus',
+      headerName: 'Mobil ödeme',
+      width: 200,
+      sortable: false,
       renderCell: (params) => {
         const row = params.row || {};
         if (row.status === 'iptal' || row.status === 'CANCELED') return '—';
-        return row.status === 'tamamlandi' || row.status === 'PAID' ? 'Evet' : 'Hayır';
-      }
+        return <PaymentBadge order={row} />;
+      },
     },
     { 
       field:'createdAt', 
@@ -638,7 +652,7 @@ export default function OrderManagementPage(){
               order={selectedOrder}
         onMakeReady={(id) => id && handleUpdateStatus(id, 'serviste')}
         onMarkPaid={(id) => id && handleMarkAsPaid(id)}
-        onCancelOrder={(id) => id && handleUpdateStatus(id, 'iptal')}
+        onCancelOrder={(id) => id && handleCancelOrder(id)}
             />
 
       <Snackbar open={snack.open} autoHideDuration={2500} onClose={()=>setSnack({...snack, open:false})} anchorOrigin={{ vertical:'bottom', horizontal:'center' }}>

@@ -9,6 +9,9 @@ const Payment = require('../models/Payment');
 const Table = require('../models/Table');
 const OrderEvent = require('../models/OrderEvent');
 const StockMovement = require('../models/StockMovement');
+const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
+const { emitCustomerOrderUpdate } = require('../utils/customerOrderNotify');
+const { cancelOrder } = require('../utils/orderCancel');
 
 /**
  * GET /api/waiter/tables
@@ -648,115 +651,58 @@ router.post('/items/:itemId/served', auth, requireRole('garson', 'admin', 'yetki
  * POST /api/payments
  * Ödeme kaydı oluşturur ve order'ı PAID yapar
  */
-router.post('/payments', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
+router.post('/payments', auth, requireRole('garson', 'admin', 'yetkili', 'kasa'), async (req, res, next) => {
   try {
     const { orderId, method, amount } = req.body;
+    const { recordOrderPayment } = require('../utils/recordOrderPayment');
 
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
-    if (order.status === 'PAID') {
-      return res.status(409).json({ message: 'Sipariş zaten ödendi' });
-    }
-
-    if (order.status === 'CANCELED') {
-      return res.status(409).json({ message: 'İptal edilmiş sipariş ödenemez' });
-    }
-
-    // Payment oluştur
-    const payment = await Payment.create({
-      orderId,
-      method,
-      amount: amount || order.totalPrice,
-      status: 'PAID',
-      paidAt: new Date(),
-    });
-
-    // Order'ı PAID yap
-    const previousStatus = order.status;
-    order.status = 'PAID';
-    order.paidAt = new Date();
-    await order.save();
-
-    // OrderEvent kaydı
-    await OrderEvent.create({
-      orderId: order._id,
-      actorId: req.user.id,
-      type: 'payment',
-      from: previousStatus,
-      to: 'PAID',
-      metadata: { paymentId: payment._id, method, amount: payment.amount },
-    });
-
-    // DailyAggregate güncelle
-    const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
-    const DailyAggregate = require('../models/DailyAggregate');
-    await DailyAggregate.findOneAndUpdate(
-      { date },
-      { 
-        $inc: { revenue: order.totalPrice, orders: 1 },
-        $set: { updatedAt: new Date() }
-      },
-      { upsert: true }
-    );
-
-    // Socket.io emit: ödeme yapıldı, metrikler güncellendi
     const io = req.app.get('io');
-    if (io) {
-      const branchId = order.branchId || 'default';
-      io.to(`admin.metrics.${branchId}`).emit('metrics:updated', {
-        date,
-        revenue: order.totalPrice,
-        orders: 1,
-      });
-      
-      // Masa ile ilgili event'ler
-      const tableId = order.tableId?._id || order.tableId || order.table?._id || order.table;
-      if (tableId) {
-        // Masa durumunu kontrol et - aktif sipariş var mı?
-        const Table = require('../models/Table');
-        const activeOrders = await Order.countDocuments({
-          table: tableId,
-          status: { $in: ['hazirlaniyor', 'serviste', 'CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY'] }
-        });
-        
-        const table = await Table.findById(tableId);
-        if (table) {
-          // Aktif sipariş yoksa masayı müsait yap
-          if (activeOrders === 0 && table.status !== 'bos') {
-            table.status = 'bos';
-            await table.save();
-            
-            io.to('tables').emit('table:status:changed', {
-              tableId: table._id,
-              from: table.status,
-              to: 'bos',
-              table: table.toObject()
-            });
-          }
-          
-          // Ödeme yapıldı event'i
-          io.to('tables').emit('table:payment:completed', {
-            tableId: table._id,
-            orderId: order._id,
-            amount: payment.amount,
-            table: table.toObject()
-          });
-          
-          // Masa güncellendi
-          io.to('tables').emit('table:updated', {
-            type: 'payment_completed',
-            table: table.toObject()
-          });
-        }
-      }
-    }
+    const { payment, order: updated } = await recordOrderPayment({
+      order,
+      actorId: req.user.id,
+      method,
+      amount,
+      io,
+      channel: 'waiter_payment',
+    });
 
-    res.status(201).json(payment);
+    res.status(201).json({ payment, order: updated });
   } catch (e) {
+    if (e.status) return res.status(e.status).json({ message: e.message });
     next(e);
   }
 });
+
+/**
+ * POST /api/waiter/orders/:id/cancel
+ */
+router.post(
+  '/orders/:id/cancel',
+  auth,
+  requireRole('garson', 'admin', 'yetkili'),
+  async (req, res, next) => {
+    try {
+      const branchFilter = {};
+      if (req.user.role !== 'superadmin' && req.user.branchId) {
+        branchFilter.branchId = req.user.branchId;
+      }
+      const order = await cancelOrder({
+        orderId: req.params.id,
+        actorId: req.user.id,
+        reason: req.body?.reason,
+        io: req.app.get('io'),
+        branchFilter,
+      });
+      res.json(order);
+    } catch (e) {
+      if (e.statusCode) return res.status(e.statusCode).json({ message: e.message });
+      next(e);
+    }
+  }
+);
 
 module.exports = router;
 

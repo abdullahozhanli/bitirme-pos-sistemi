@@ -25,16 +25,13 @@ import './KitchenDisplayPage.css';
 const API = import.meta?.env?.VITE_API_URL || 'http://localhost:5001';
 
 export default function KitchenDisplayPage() {
-  const { isAuthenticated, user } = useAuth?.() || { isAuthenticated: true, user: null };
+  const { user } = useAuth?.() || { user: null };
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const socketRef = useRef(null);
   const fetchTimeoutRef = useRef(null);
   
-  // Kullanıcının branchId'sini al
-  const branchId = user?.branchId || user?.branch?._id || 'default';
-
   const fetchOrders = async () => {
     try {
       setError('');
@@ -190,33 +187,6 @@ export default function KitchenDisplayPage() {
     };
   }, [user]);
 
-  // İstatistikleri hesapla
-  const stats = useMemo(() => {
-    const activeOrders = orders.filter(o => {
-      const status = o.status || 'hazirlaniyor';
-      return ['CREATED', 'SENT_TO_KITCHEN', 'IN_PREP', 'READY', 'hazirlaniyor', 'serviste'].includes(status);
-    });
-    
-    const completedOrders = orders.filter(o => {
-      const status = o.status || '';
-      return ['tamamlandi', 'PAID', 'CANCELED', 'SERVED'].includes(status);
-    });
-
-    const pendingItems = activeOrders.reduce((sum, order) => {
-      const items = order.orderItems || order.items || [];
-      return sum + items.filter(item => {
-        const itemStatus = item.status || 'QUEUED';
-        return ['QUEUED', 'STARTED'].includes(itemStatus);
-      }).length;
-    }, 0);
-
-    return {
-      active: activeOrders.length,
-      completed: completedOrders.length,
-      pending: pendingItems
-    };
-  }, [orders]);
-
   // Siparişleri masa bazında grupla - tüm aktif siparişler gösterilecek
   const groupedOrders = useMemo(() => {
     // Tüm aktif siparişleri göster (filtreleme yok)
@@ -288,72 +258,6 @@ export default function KitchenDisplayPage() {
     }
   };
 
-  // Tüm ürünleri hazır yap
-  const markAllReady = async (order) => {
-    try {
-      const items = order.orderItems || order.items || [];
-      const token = localStorage.getItem('token');
-      
-      for (let idx = 0; idx < items.length; idx++) {
-        const item = items[idx];
-        const itemId = item._id 
-          ? String(item._id) 
-          : `${String(order._id)}-${idx}`;
-        const currentStatus = item.status;
-        
-        // Eğer status yoksa veya READY/SERVED değilse, işle
-        if (!currentStatus || (currentStatus !== 'READY' && currentStatus !== 'SERVED')) {
-          // Eğer status yoksa veya QUEUED ise, önce STARTED yap
-          if (!currentStatus || currentStatus === 'QUEUED') {
-            try {
-              await axios.post(
-                `${API}/api/kitchen/items/${itemId}/start`,
-                {},
-                { headers: token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {} }
-              );
-              // Kısa bir bekleme sonrası READY yap
-              await new Promise(resolve => setTimeout(resolve, 200));
-            } catch (startError) {
-              console.warn('Item start hatası (devam ediliyor):', startError);
-              // Hata olsa bile devam et, belki zaten STARTED durumunda
-            }
-          }
-          // READY yap
-          try {
-            await axios.post(
-              `${API}/api/kitchen/items/${itemId}/ready`,
-              {},
-              { headers: token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {} }
-            );
-          } catch (readyError) {
-            // Eğer item zaten READY ise, hata verme (idempotent)
-            if (readyError.response?.status === 409 && readyError.response?.data?.message?.includes('READY')) {
-              console.log('Item zaten READY durumunda, atlanıyor');
-              continue; // Bu item'ı atla, diğerlerine devam et
-            }
-            console.error('Item ready hatası:', readyError);
-            // Diğer hatalar için devam et, tüm item'ları işlemeye çalış
-            if (readyError.response?.status === 409) {
-              console.warn('Item durumu uygun değil, atlanıyor:', readyError.response?.data?.message);
-              continue;
-            }
-            throw readyError;
-          }
-        }
-      }
-      
-      // Tüm ürünler hazır olduktan sonra siparişi tamamlandı olarak işaretle
-      await updateOrderStatus(order._id, 'tamamlandi');
-      // Debounce ile fetchOrders çağrısını geciktir
-      setTimeout(() => {
-        fetchOrders();
-      }, 500);
-    } catch (e) {
-      console.error('Tüm ürünler hazır yapılamadı:', e);
-      setError(e.response?.data?.message || e.message || 'Güncelleme başarısız');
-    }
-  };
-
   // Sipariş durumunu al
   const getOrderStatus = (order) => {
     const status = order.status || 'hazirlaniyor';
@@ -365,19 +269,6 @@ export default function KitchenDisplayPage() {
       return { label: 'HAZIR', color: '#4CAF50', bg: '#E8F5E9' };
     }
     return { label: 'YENİ', color: '#FF9800', bg: '#FFF3E0' };
-  };
-
-  // Ürün durumunu al
-  const getItemStatus = (item) => {
-    const status = item.status || 'QUEUED';
-    if (status === 'QUEUED') {
-      return { label: 'Sırada', color: '#FF9800', bg: '#FFF3E0' };
-    } else if (status === 'STARTED') {
-      return { label: 'Hazırlanıyor', color: '#2196F3', bg: '#E3F2FD' };
-    } else if (status === 'READY' || status === 'SERVED') {
-      return { label: 'Hazır', color: '#4CAF50', bg: '#E8F5E9' };
-    }
-    return { label: 'Sırada', color: '#FF9800', bg: '#FFF3E0' };
   };
 
   // Timer hook - Geçen süreyi MM:SS formatında hesaplar ve toplam dakikayı döndürür
@@ -542,12 +433,10 @@ export default function KitchenDisplayPage() {
         if (order.orderItems?.length > 0) baseItems = order.orderItems;
         else if (order.items?.length > 0) baseItems = order.items;
         
-        let itemCurrentStatusForBackend = status;
         setOptimisticItems(prevOptimisticItems => {
           const currentItems = prevOptimisticItems || baseItems;
           const currentItem = currentItems[itemIndex];
           const itemCurrentStatus = currentItem?.status || 'QUEUED';
-          itemCurrentStatusForBackend = itemCurrentStatus;
           
           if (itemCurrentStatus === 'READY' || itemCurrentStatus === 'SERVED') {
             return prevOptimisticItems || baseItems;
@@ -720,7 +609,6 @@ export default function KitchenDisplayPage() {
               </Typography>
             )}
             {items.map((item, idx) => {
-              const itemStatus = getItemStatus(item);
               const itemId = (orderSource === 'qr' || !item._id) ? `${String(order._id)}-${idx}` : String(item._id);
               const itemStatusValue = item.status || 'QUEUED';
               const isItemReady = itemStatusValue === 'READY' || itemStatusValue === 'SERVED';
@@ -852,7 +740,7 @@ export default function KitchenDisplayPage() {
         </Box>
       ) : (
         <Box className="kitchen-items-grid" sx={{ px: { xs: 2, sm: 2, md: 3 }, mt: 6, pt: 2 }}>
-          {Object.entries(groupedOrders).map(([tableName, tableOrders]) => 
+          {Object.entries(groupedOrders).map(([, tableOrders]) =>
             tableOrders.map((order) => (
               <OrderCard key={order._id || order.id} order={order} />
             ))

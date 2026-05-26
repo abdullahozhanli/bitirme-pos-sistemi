@@ -1,16 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
-const Category = require('../models/Category');
 const Branch = require('../models/Branch');
-const { authMiddleware } = require('../middleware/authMiddleware');
 const { formatProductPricing } = require('../utils/pricing');
 
 const router = express.Router();
 
 /**
  * GET /api/products
- * Query: page, limit, q, category, inStock, sort, branchId
+ * Public menü (Query: page, limit, q, category, inStock, sort, branchId)
  */
 router.get('/', async (req, res, next) => {
   try {
@@ -26,7 +24,6 @@ router.get('/', async (req, res, next) => {
 
     const filter = {};
 
-    // Şube bazlı filtreleme (müşteri menüsü için)
     if (branchId) {
       if (!mongoose.Types.ObjectId.isValid(branchId)) {
         return res.status(400).json({ message: 'Geçersiz branchId' });
@@ -54,10 +51,7 @@ router.get('/', async (req, res, next) => {
     const itemsWithPricing = items.map((doc) => {
       const plain = doc.toObject ? doc.toObject() : doc;
       const pricing = formatProductPricing(plain, now);
-      return {
-        ...plain,
-        ...pricing,
-      };
+      return { ...plain, ...pricing };
     });
 
     res.json({
@@ -68,72 +62,6 @@ router.get('/', async (req, res, next) => {
       total,
       pages: Math.ceil(total / Number(limit)),
     });
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * POST /api/products
- * Body: { name, price, description?, imageUrl?, category, countInStock }
- */
-router.post('/', authMiddleware, async (req, res, next) => {
-  try {
-    const { name, price, description, imageUrl, category, countInStock } = req.body;
-
-    const cat = await Category.findById(category);
-    if (!cat) return res.status(404).json({ message: 'Kategori bulunamadı' });
-
-    const product = new Product({
-      name,
-      price,
-      description,
-      imageUrl,
-      category: cat._id,
-      countInStock: Number(countInStock ?? 0),
-    });
-    const saved = await product.save();
-    const populated = await saved.populate('category', 'name');
-    res.status(201).json(populated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * PUT /api/products/:id
- */
-router.put('/:id', authMiddleware, async (req, res, next) => {
-  try {
-    const payload = { ...req.body };
-    if (payload.countInStock != null) payload.countInStock = Number(payload.countInStock);
-    if (payload.price != null) payload.price = Number(payload.price);
-
-    if (payload.category) {
-      const cat = await Category.findById(payload.category);
-      if (!cat) return res.status(404).json({ message: 'Kategori bulunamadı' });
-    }
-
-    const updated = await Product.findByIdAndUpdate(req.params.id, payload, {
-      new: true,
-      runValidators: true,
-    }).populate('category', 'name');
-
-    if (!updated) return res.status(404).json({ message: 'Ürün bulunamadı' });
-    res.json(updated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * DELETE /api/products/:id
- */
-router.delete('/:id', authMiddleware, async (req, res, next) => {
-  try {
-    const deleted = await Product.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: 'Ürün bulunamadı' });
-    res.json({ message: 'Silindi' });
   } catch (e) {
     next(e);
   }

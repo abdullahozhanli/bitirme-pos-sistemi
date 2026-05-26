@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import React, { useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -66,45 +65,6 @@ function StatCard({ title, value, unit, icon, subtitle, trend, trendDirection, a
 }
 
 export default function AdminDashboard() {
-  const [summary, setSummary] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true); 
-      setError('');
-      try {
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('userData');
-        
-        console.log('🔍 AdminDashboard fetchData:', {
-          hasToken: !!token,
-          tokenPreview: token ? `${token.substring(0, 20)}...` : null,
-          userData: userData ? JSON.parse(userData) : null
-        });
-        
-        const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
-        
-        const [summaryRes, ordersRes] = await Promise.all([
-          axios.get('/api/admin/stats/today', { headers }),
-          axios.get('/api/admin/orders?limit=100', { headers }),
-        ]);
-
-        setSummary(summaryRes.data);
-        const ordersList = Array.isArray(ordersRes.data) ? ordersRes.data : (ordersRes.data?.items || []);
-        setOrders(ordersList);
-      } catch (err) {
-        console.error('Dashboard verileri yüklenemedi:', err);
-        setError(err.response?.data?.message || err.message || 'Veriler yüklenemedi');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []); 
-
   const { data: kpis, isLoading: kpisLoading, isError: kpisError, refetch: refetchKpis, error: kpisErrObj } = useQuery({
     queryKey: ['kpis'],
     queryFn: getKpis,
@@ -177,7 +137,7 @@ export default function AdminDashboard() {
     'isZeroData': isZeroData
   });
 
-  if (loading) {
+  if (kpisLoading && !kpis) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
@@ -185,10 +145,13 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
+  if (kpisError) {
+    return (
+      <Alert severity="error">
+        {kpisErrObj?.message || 'Dashboard verileri yüklenemedi'}
+      </Alert>
+    );
   }
-
 
   return (
     <Box

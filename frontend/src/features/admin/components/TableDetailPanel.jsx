@@ -21,18 +21,12 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../../../shared/components/ui/ConfirmDialog.jsx';
+import { getOrderPaymentDisplayText } from '../../../shared/utils/orderPayment';
 
 export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete, onRefresh }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const navigate = useNavigate();
-
-  const statusMap = {
-    bos: 'available',
-    dolu: 'full',
-    rezerve: 'reserved',
-    odeme_bekliyor: 'payment_pending',
-  };
 
   const statusColor = {
     bos: 'success',
@@ -77,6 +71,7 @@ export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete
           <IconButton
             size="small"
             color="error"
+            disabled={deleting}
             onClick={() => setDeleteConfirm(true)}
             title="Sil"
           >
@@ -152,7 +147,7 @@ export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete
                   <ReceiptIcon sx={{ fontSize: 20, mr: 1, color: 'primary.main' }} />
                   <ListItemText
                     primary={orderNumber}
-                    secondary={`${itemsCount} ürün • ₺${(order.total || 0).toFixed(2)}`}
+                    secondary={`${itemsCount} ürün • ₺${(order.total || order.totalPrice || 0).toFixed(2)} • ${getOrderPaymentDisplayText(order)}`}
                   />
                 </ListItem>
               );

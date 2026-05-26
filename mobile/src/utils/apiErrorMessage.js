@@ -5,6 +5,9 @@ import { API_BASE_URL } from '../constants/config';
  */
 export function apiErrorMessage(err, fallback) {
   const status = err.response?.status;
+  if (status === 401 || status === 403) {
+    return 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.';
+  }
   if (status === 404) {
     return 'Sunucuda bu işlem henüz aktif değil. Backend güncellenmeli veya uygulamayı yeniden başlatıp tekrar giriş yapın.';
   }

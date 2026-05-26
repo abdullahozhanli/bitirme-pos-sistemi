@@ -5,12 +5,23 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Branch = require('../models/Branch');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/authMiddleware');
+const requireRole = require('../middleware/requireRole');
 const Campaign = require('../models/Campaign');
 const {
   effectivePrice,
   isCampaignActive,
   campaignDiscountAmount,
 } = require('../utils/pricing');
+const { emitCustomerOrderUpdate } = require('../utils/customerOrderNotify');
+const {
+  computePointsEarned,
+  computePointsRedemption,
+} = require('../utils/loyaltyPoints');
+const {
+  buildInitialPaymentFromCheckout,
+  isOrderPaid,
+} = require('../utils/orderPayment');
+const { cancelOrder } = require('../utils/orderCancel');
 
 const router = express.Router();
 
@@ -124,43 +135,71 @@ router.get('/mine/branches', authMiddleware, async (req, res, next) => {
 });
 
 /**
- * GET /api/orders
- * Protected
+ * POST /api/orders/:id/cancel
  */
-router.get('/', authMiddleware, async (req, res, next) => {
+router.post(
+  '/:id/cancel',
+  authMiddleware,
+  requireRole('admin', 'yetkili', 'kasa', 'garson'),
+  async (req, res, next) => {
+    try {
+      const branchFilter = {};
+      if (req.user.role !== 'superadmin' && req.user.branchId) {
+        branchFilter.branchId = req.user.branchId;
+      }
+      const order = await cancelOrder({
+        orderId: req.params.id,
+        actorId: req.user.id,
+        reason: req.body?.reason,
+        io: req.app.get('io'),
+        branchFilter,
+      });
+      res.json(order);
+    } catch (e) {
+      if (e.statusCode) return res.status(e.statusCode).json({ message: e.message });
+      next(e);
+    }
+  }
+);
+
+/**
+ * GET /api/orders/:id
+ * Sipariş detayı — müşteri kendi siparişini veya personel (admin/garson/kasa) görebilir
+ */
+router.get('/:id', authMiddleware, async (req, res, next) => {
   try {
-    const {
-      page = 1,
-      limit = 50,
-      status,
-      tableNumber,
-      sort = '-createdAt',
-    } = req.query;
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Geçersiz sipariş id' });
+    }
 
-    const filter = {};
-    if (status) filter.status = status;
-    // tableNumber yeni Order modelinde yok, table populate ile alınacak
+    const order = await Order.findById(id)
+      .populate('table', 'name capacity')
+      .populate('items.menuItem', 'name price category imageUrl')
+      .lean();
 
-    const skip = (Number(page) - 1) * Number(limit);
+    if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
-    const [items, total] = await Promise.all([
-      Order.find(filter)
-        .populate('table', 'name capacity')
-        .populate('waiter', 'name email role')
-        .populate('items.menuItem', 'name price category')
-        .sort(sort)
-        .skip(skip)
-        .limit(Number(limit)),
-      Order.countDocuments(filter),
-    ]);
+    const actor = await User.findById(req.user.id).select('role branchId').lean();
+    const staffRoles = ['admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'superadmin'];
+    const isStaff = actor && staffRoles.includes(actor.role);
+    const isOwner =
+      actor?.role === 'musteri' &&
+      order.customer &&
+      String(order.customer) === String(req.user.id);
 
-    res.json({
-      items,
-      page: Number(page),
-      limit: Number(limit),
-      total,
-      pages: Math.ceil(total / Number(limit)),
-    });
+    if (!isStaff && !isOwner) {
+      return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
+    }
+
+    if (isStaff && actor.role !== 'superadmin' && actor.branchId) {
+      const orderBranch = order.branchId ? String(order.branchId) : null;
+      if (orderBranch && String(actor.branchId) !== orderBranch) {
+        return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
+      }
+    }
+
+    res.json(order);
   } catch (e) {
     next(e);
   }
@@ -174,10 +213,24 @@ router.get('/', authMiddleware, async (req, res, next) => {
  */
 router.post('/', optionalAuthMiddleware, async (req, res, next) => {
   try {
-    const { tableNumber, items, notes, campaignId } = req.body;
-    
+    const {
+      tableNumber,
+      items,
+      notes,
+      campaignId,
+      useLoyaltyPoints,
+      pointsDiscountTry,
+      paymentMethod,
+      paymentConfirmed,
+    } = req.body;
+
     if (!tableNumber || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Eksik veri' });
+    }
+
+    const paymentInit = buildInitialPaymentFromCheckout({ paymentMethod, paymentConfirmed });
+    if (paymentInit.error) {
+      return res.status(400).json({ message: paymentInit.error });
     }
 
     // BranchId'yi al (request body'den veya query'den)
@@ -352,6 +405,37 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
       appliedCampaign = campaign;
     }
 
+    let customerId = null;
+    let customerLoyaltyBalance = 0;
+    if (req.user && req.user.id) {
+      const customerUser = await User.findById(req.user.id).select('role loyaltyPoints').lean();
+      if (customerUser && customerUser.role === 'musteri') {
+        customerId = customerUser._id;
+        customerLoyaltyBalance = Math.max(0, Number(customerUser.loyaltyPoints) || 0);
+      }
+    }
+
+    let loyaltyDiscountTry = 0;
+    let pointsRedeemed = 0;
+    if (useLoyaltyPoints && customerId) {
+      const afterCampaign = Number(Math.max(0, subtotalRounded - discountTotal).toFixed(2));
+      const redemption = computePointsRedemption({
+        cartTotalAfterOtherDiscounts: afterCampaign,
+        loyaltyPointsBalance: customerLoyaltyBalance,
+        requestedDiscountTry: Number(pointsDiscountTry) || afterCampaign * 0.3,
+      });
+      if (redemption.error) {
+        return res.status(400).json({ message: redemption.error });
+      }
+      loyaltyDiscountTry = redemption.pointsDiscountTry;
+      pointsRedeemed = redemption.pointsRedeemed;
+      if (pointsRedeemed > 0) {
+        discountTotal = Number((discountTotal + loyaltyDiscountTry).toFixed(2));
+      }
+    } else if (useLoyaltyPoints && !customerId) {
+      return res.status(401).json({ message: 'Puan kullanmak için giriş yapmalısınız' });
+    }
+
     const total = Number(Math.max(0, subtotalRounded - discountTotal).toFixed(2));
 
     if (!table._id) {
@@ -366,12 +450,6 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
 
     // BranchId'yi belirle: Önce request'ten, yoksa masadan, yoksa null
     const finalBranchId = requestBranchId || table.branchId || null;
-
-    let customerId = null;
-    if (req.user && req.user.id) {
-      const u = await User.findById(req.user.id).select('role');
-      if (u && u.role === 'musteri') customerId = u._id;
-    }
 
     const StockMovement = require('../models/StockMovement');
     const productIdsForStock = items
@@ -403,6 +481,22 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
         if (appliedCampaign) {
           noteParts.push(`Kampanya: ${appliedCampaign.title}`);
         }
+        if (pointsRedeemed > 0) {
+          noteParts.push(
+            `Para puan: -${loyaltyDiscountTry.toFixed(2)} TL (${pointsRedeemed} puan)`
+          );
+        }
+
+        if (pointsRedeemed > 0 && customerId) {
+          const deducted = await User.findOneAndUpdate(
+            { _id: customerId, loyaltyPoints: { $gte: pointsRedeemed } },
+            { $inc: { loyaltyPoints: -pointsRedeemed } },
+            { new: true, session }
+          ).select('loyaltyPoints');
+          if (!deducted) {
+            throw new Error('Yetersiz parapuan');
+          }
+        }
 
         const created = await Order.create(
           [
@@ -415,8 +509,13 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
               totalPrice: Number(total),
               campaignId: appliedCampaign?._id,
               campaignTitle: appliedCampaign?.title,
+              loyaltyPointsRedeemed: pointsRedeemed,
+              loyaltyDiscountTry,
               notes: noteParts.filter(Boolean).join(' | '),
               status: 'hazirlaniyor',
+              paymentMethod: paymentInit.paymentMethod || null,
+              paymentStatus: paymentInit.paymentStatus,
+              ...(paymentInit.paidAt ? { paidAt: paymentInit.paidAt } : {}),
               branchId: finalBranchId,
               ...(customerId ? { customer: customerId } : {}),
             },
@@ -463,13 +562,18 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
     let pointsEarned = 0;
     let customerLoyaltyPoints = null;
     if (customerId) {
-      pointsEarned = Math.max(1, Math.floor(Number(total) / 10));
-      const updatedUser = await User.findByIdAndUpdate(
-        customerId,
-        { $inc: { loyaltyPoints: pointsEarned } },
-        { new: true }
-      ).select('loyaltyPoints');
-      if (updatedUser) customerLoyaltyPoints = updatedUser.loyaltyPoints;
+      pointsEarned = computePointsEarned(total);
+      if (pointsEarned > 0) {
+        const updatedUser = await User.findByIdAndUpdate(
+          customerId,
+          { $inc: { loyaltyPoints: pointsEarned } },
+          { new: true }
+        ).select('loyaltyPoints');
+        if (updatedUser) customerLoyaltyPoints = updatedUser.loyaltyPoints;
+      } else {
+        const current = await User.findById(customerId).select('loyaltyPoints').lean();
+        customerLoyaltyPoints = current?.loyaltyPoints ?? null;
+      }
     }
 
     if (productIdsForStock.length > 0) {
@@ -585,124 +689,22 @@ router.post('/', optionalAuthMiddleware, async (req, res, next) => {
     }
 
     const orderJson = populated.toObject ? populated.toObject() : populated;
-    if (pointsEarned > 0 && customerLoyaltyPoints != null) {
-      orderJson.pointsEarned = pointsEarned;
+    if (customerLoyaltyPoints != null) {
       orderJson.customerLoyaltyPoints = customerLoyaltyPoints;
     }
+    if (pointsEarned > 0) orderJson.pointsEarned = pointsEarned;
+    if (pointsRedeemed > 0) {
+      orderJson.pointsRedeemed = pointsRedeemed;
+      orderJson.loyaltyDiscountTry = loyaltyDiscountTry;
+    }
+    const io = req.app.get('io');
+    if (io && populated?.customer) {
+      emitCustomerOrderUpdate(io, populated);
+    }
+
     res.status(201).json(orderJson);
   } catch (e) {
     console.error('Sipariş oluşturma hatası:', e);
-    next(e);
-  }
-});
-
-/**
- * PUT /api/orders/:id/status
- * Protected
- * Body: { status }
- */
-router.put('/:id/status', authMiddleware, async (req, res, next) => {
-  try {
-    const { status } = req.body;
-    const allowed = ['Hazırlanıyor', 'Hazır', 'Servis Edildi', 'İptal Edildi'];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({ message: 'Geçersiz durum' });
-    }
-
-    const updated = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: 'Sipariş bulunamadı' });
-    res.json(updated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * PUT /api/orders/:id/pay
- * Protected
- * Body: {}
- */
-router.put('/:id/pay', authMiddleware, async (req, res, next) => {
-  try {
-    const updated = await Order.findByIdAndUpdate(
-      req.params.id,
-      { isPaid: true, paidAt: new Date() },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: 'Sipariş bulunamadı' });
-    res.json(updated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * PUT /api/orders/:id/cancel
- * Protected
- * Body: { reason }
- */
-router.put('/:id/cancel', authMiddleware, async (req, res, next) => {
-  try {
-    const { reason } = req.body;
-    const updated = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status: 'İptal Edildi', cancelReason: reason || '' },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: 'Sipariş bulunamadı' });
-    res.json(updated);
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * PUT /api/orders/:orderId/items/:itemIndex/kitchen-status
- * Protected (admin)
- * Body: { status: 'pending'|'in_progress'|'ready'|'served'|'cancelled' }
- */
-router.put('/:orderId/items/:itemIndex/kitchen-status', authMiddleware, async (req, res, next) => {
-  try {
-    const { orderId, itemIndex } = req.params;
-    const { status } = req.body || {};
-
-    const allowed = ['pending', 'in_progress', 'ready', 'served', 'cancelled'];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({ message: 'Geçersiz durum' });
-    }
-
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
-
-    const idx = Number(itemIndex);
-    if (!Number.isFinite(idx) || idx < 0 || idx >= order.orderItems.length) {
-      return res.status(400).json({ message: 'Geçersiz kalem index' });
-    }
-
-    // Array'i güncelle ve Mongoose'e bildir
-    order.orderItems[idx].kitchenStatus = status;
-    order.markModified('orderItems');
-
-    // Üst sipariş durumunu türet
-    const statuses = order.orderItems.map(i => i.kitchenStatus);
-    const allServed = statuses.every(s => s === 'served');
-    const allReady = statuses.every(s => s === 'ready' || s === 'served');
-
-    if (allServed) order.status = 'Servis Edildi';
-    else if (allReady) order.status = 'Hazır';
-    else order.status = 'Hazırlanıyor';
-
-    await order.save();
-
-    // Opsiyonel: SSE/event publish
-    try { req.app.get('events')?.emit('order:update', order); } catch (_) {}
-
-    res.json(order);
-  } catch (e) {
     next(e);
   }
 });

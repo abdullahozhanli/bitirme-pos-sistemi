@@ -76,7 +76,6 @@ export default function OrderCreateModal({ open, onClose, table, onSaved }) {
       setCategories([]);
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, table]);
 
   // Mouse wheel and drag horizontal scroll for category bar
@@ -261,10 +260,6 @@ export default function OrderCreateModal({ open, onClose, table, onSaved }) {
         ? { ...item, qty: Math.max(1, item.qty + change) }
         : item
     ).filter(item => item.qty > 0));
-  };
-
-  const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item._id !== productId));
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);

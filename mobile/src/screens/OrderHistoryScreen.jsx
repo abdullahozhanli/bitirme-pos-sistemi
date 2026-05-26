@@ -119,6 +119,16 @@ export default function OrderHistoryScreen({ navigation, route }) {
     }, [load])
   );
 
+  useEffect(() => {
+    const hasActive = items.some((o) => {
+      const s = String(o.status || '').toLowerCase();
+      return s === 'hazirlaniyor' || s === 'serviste' || s === 'in_prep';
+    });
+    if (!hasActive) return undefined;
+    const timer = setInterval(load, 8000);
+    return () => clearInterval(timer);
+  }, [items, load]);
+
   const addLineToCart = useCallback(
     (line) => {
       const p = lineToProduct(line);

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../../shared/context/CartContext.jsx';
+import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useMediaQuery, useTheme } from '@mui/material';
+import useOrderTracking from '../hooks/useOrderTracking.js';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -16,13 +17,18 @@ export default function CartPage() {
   const activeTableNumber = tableNumber;
   
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [message, setMessage] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [fullOrderId, setFullOrderId] = useState('');
+  const { token, user } = useAuth();
+  const { statusLabel: trackedStatus } = useOrderTracking(fullOrderId, {
+    token,
+    userId: user?.id,
+    enabled: orderSuccess && Boolean(fullOrderId) && Boolean(token),
+  });
 
   // Debug
   useEffect(() => {
@@ -81,7 +87,9 @@ export default function CartPage() {
       const res = await axios.post('/api/orders', orderPayload);
       const created = res.data;
 
-      setOrderId(String(created?._id || '').slice(-6));
+      const oid = String(created?._id || '');
+      setFullOrderId(oid);
+      setOrderId(oid.slice(-6));
       setOrderSuccess(true);
       clearCart();
     } catch (error) {
@@ -237,7 +245,12 @@ export default function CartPage() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={handleCloseSuccessModal}>
           <div className="cart-success-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cart-success-modal-title">localhost:5173 web sitesinin mesajı</div>
-            <div className="cart-success-modal-content">Siparişiniz alındı. Masa {tableNumber} • ID: ...{orderId}</div>
+            <div className="cart-success-modal-content">
+              Siparişiniz alındı. Masa {tableNumber} • ID: …{orderId}
+              {trackedStatus && token ? (
+                <div style={{ marginTop: 8, fontWeight: 600 }}>Durum: {trackedStatus}</div>
+              ) : null}
+            </div>
             <div className="cart-success-modal-actions">
               <button className="cart-success-modal-button" onClick={handleCloseSuccessModal}>Tamam</button>
             </div>

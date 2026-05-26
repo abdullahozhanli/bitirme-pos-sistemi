@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CircularProgress, Alert } from '@mui/material';
-import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import './WaiterDashboard.css';
 
 export default function WaiterDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [stats, setStats] = useState({
     activeTables: 0,
     pendingOrders: 0,
@@ -15,7 +13,6 @@ export default function WaiterDashboard() {
     todayServed: 0,
   });
   const [activeTables, setActiveTables] = useState([]);
-  const [readyOrders, setReadyOrders] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -65,7 +62,6 @@ export default function WaiterDashboard() {
           todayServed,
         });
         setActiveTables(activeTablesList);
-        setReadyOrders(readyOrdersData.slice(0, 5));
         setAllOrders(orders);
         setLastUpdate(new Date());
       } catch (err) {
@@ -128,7 +124,6 @@ export default function WaiterDashboard() {
           todayServed,
         });
         setActiveTables(activeTablesList);
-        setReadyOrders(readyOrdersData.slice(0, 5));
         setAllOrders(orders);
         setLastUpdate(new Date());
       } catch (err) {

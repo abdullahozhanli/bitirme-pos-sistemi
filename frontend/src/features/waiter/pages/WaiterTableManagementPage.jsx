@@ -83,7 +83,7 @@ export default function WaiterTableManagementPage() {
               hasActiveOrder: activeOrders.length > 0,
               activeOrders: activeOrders,
             };
-          } catch (err) {
+          } catch {
             return {
               ...table,
               activeOrderCount: 0,
@@ -241,7 +241,6 @@ export default function WaiterTableManagementPage() {
       socket.disconnect();
       console.log('🔌 Socket.io bağlantısı kapatıldı (Garson Masa Yönetimi)');
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounce arama terimi

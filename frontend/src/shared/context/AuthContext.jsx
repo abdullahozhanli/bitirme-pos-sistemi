@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
             }
             // userData'yı kullan (role bilgisi burada)
             return userData;
-          } catch (e) {
+          } catch {
             // Token decode edilemiyor, temizle
             localStorage.removeItem('token');
             localStorage.removeItem('userData');
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
           }
         }
         return userData;
-      } catch (e) {
+      } catch {
         // userData parse edilemiyor, temizle
         localStorage.removeItem('userData');
         return null;
@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
           return null;
         }
         return decoded;
-      } catch (e) {
+      } catch {
         localStorage.removeItem('token');
         return null;
       }
@@ -151,14 +151,14 @@ export function AuthProvider({ children }) {
           try {
             const userData = JSON.parse(storedUserData);
             setUser(userData);
-          } catch (e) {
+          } catch {
             // userData parse edilemiyor, decoded kullan
             setUser(decoded);
           }
         } else {
           setUser(decoded);
         }
-      } catch (e) {
+      } catch {
         // Token decode edilemiyor
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
@@ -199,7 +199,7 @@ export function AuthProvider({ children }) {
             if (!user || user.id !== userData.id) {
               setUser(userData);
             }
-          } catch (e) {
+          } catch {
             // userData parse edilemiyor, decoded kullan
             if (!user || user.id !== decoded.id) {
               setUser(decoded);
@@ -215,7 +215,7 @@ export function AuthProvider({ children }) {
             try {
               const userData = JSON.parse(storedUserData);
               setUser(userData);
-            } catch (e) {
+            } catch {
               // userData parse edilemiyor, decoded kullan
               setUser(decoded);
             }
@@ -224,7 +224,7 @@ export function AuthProvider({ children }) {
             setUser(decoded);
           }
         }
-      } catch (e) {
+      } catch {
         // Token decode edilemiyor
         localStorage.removeItem('token');
         localStorage.removeItem('userData');
@@ -264,7 +264,7 @@ export function AuthProvider({ children }) {
                 if (!user || user.id !== userData.id) {
                   setUser(userData);
                 }
-              } catch (e) {
+              } catch {
                 // userData parse edilemiyor, decoded kullan
                 if (!user || user.id !== decoded.id) {
                   setUser(decoded);
@@ -277,7 +277,7 @@ export function AuthProvider({ children }) {
               }
             }
           }
-        } catch (e) {
+        } catch {
           // Token decode edilemiyor
           localStorage.removeItem('token');
           localStorage.removeItem('userData');
@@ -365,8 +365,8 @@ export function AuthProvider({ children }) {
         setToken(tokenValue);
         localStorage.removeItem('userData');
       }
-    } catch (e) {
-      console.error('Token decode hatası:', e);
+    } catch (err) {
+      console.error('Token decode hatası:', err);
       setToken(null);
       setUser(null);
       localStorage.removeItem('token');

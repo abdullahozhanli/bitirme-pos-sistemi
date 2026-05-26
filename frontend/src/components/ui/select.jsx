@@ -59,7 +59,7 @@ export const Select = ({ children, value, onValueChange, ...props }) => {
   );
 };
 
-export const SelectTrigger = React.forwardRef(({ children, className = '', onClick, value, ...props }, ref) => (
+export const SelectTrigger = React.forwardRef(({ children, className = '', onClick, value: _value, ...props }, ref) => (
   <button
     ref={ref}
     onClick={onClick}
@@ -75,7 +75,7 @@ export const SelectValue = ({ placeholder, value, children }) => (
   <span className="block truncate">{children || value || placeholder || 'Select...'}</span>
 );
 
-export const SelectContent = ({ children, className = '', onClose, onValueChange, ...props }) => (
+export const SelectContent = ({ children, className = '', onClose: _onClose, onValueChange, ...props }) => (
   <div
     className={['absolute z-50 mt-1 max-h-[300px] w-full overflow-y-auto rounded-md border bg-white p-1 shadow-lg', className].join(' ')}
     {...props}
@@ -91,7 +91,7 @@ export const SelectContent = ({ children, className = '', onClose, onValueChange
   </div>
 );
 
-export const SelectItem = ({ children, value, className = '', onClick, ...props }) => (
+export const SelectItem = ({ children, value: _value, className = '', onClick, ...props }) => (
   <button
     onClick={onClick}
     className={['relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-gray-100 focus:bg-gray-100', className].join(' ')}

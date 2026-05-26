@@ -88,8 +88,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// İndeksler
-userSchema.index({ email: 1 });
+// İndeksler (email: unique:true ile zaten indekslenir)
 userSchema.index({ branchId: 1 });
 userSchema.index({ role: 1 });
 

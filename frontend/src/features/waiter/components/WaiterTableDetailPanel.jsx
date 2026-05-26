@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Paper,
   Typography,
@@ -23,6 +23,7 @@ import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import PeopleIcon from '@mui/icons-material/People';
 import { useNavigate } from 'react-router-dom';
 import { TABLE_STATUS, STATUS_LABELS, STATUS_COLORS } from '../constants/tableStatus.js';
+import { getOrderPaymentDisplayText } from '../../../shared/utils/orderPayment';
 import './WaiterTableDetailPanel.css';
 
 export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOrder, onRefresh, onClose }) {
@@ -36,13 +37,6 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
     [TABLE_STATUS.PAYMENT_PENDING]: 'payment_pending',
   };
   const statusClass = statusClassMap[table.status] || 'available';
-
-  const statusColor = {
-    [TABLE_STATUS.AVAILABLE]: 'success',
-    [TABLE_STATUS.OCCUPIED]: 'error',
-    [TABLE_STATUS.RESERVED]: 'warning',
-    [TABLE_STATUS.PAYMENT_PENDING]: 'info',
-  };
 
   const activeOrders = table.activeOrders || [];
   const allOrders = table.orders || [];
@@ -230,7 +224,7 @@ export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOr
                   <ReceiptIcon sx={{ fontSize: { xs: '18px', lg: '20px' }, mr: { xs: 1, lg: 1.5 }, color: '#6B7280' }} />
                   <ListItemText
                     primary={orderNumber}
-                    secondary={`${totalItemsCount} ürün • ₺${orderTotal.toFixed(2)}`}
+                    secondary={`${totalItemsCount} ürün • ₺${orderTotal.toFixed(2)} • ${getOrderPaymentDisplayText(order)}`}
                     primaryTypographyProps={{ 
                       fontWeight: 600, 
                       fontSize: { xs: '13px', lg: '14px' },

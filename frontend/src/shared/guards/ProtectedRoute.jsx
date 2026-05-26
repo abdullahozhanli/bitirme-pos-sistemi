@@ -49,7 +49,7 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
         // Token geçerli
         setIsValid(true);
         setIsValidating(false);
-      } catch (e) {
+      } catch {
         // Token decode edilemiyor
         localStorage.removeItem('token');
         setIsValid(false);

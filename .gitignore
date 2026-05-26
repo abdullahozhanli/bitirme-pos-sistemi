@@ -55,6 +55,7 @@ Temporary Items
 .apdisk
 __MACOSX/
 **/__MACOSX/**
+frontend/__MACOSX/
 
 # Windows
 Thumbs.db
@@ -68,6 +69,12 @@ Desktop.ini
 # Expo (kökten çalıştırma / monorepo)
 .expo/
 **/web-build/
+
+# Windows NUL redirect artifact (mobile build)
+mobile/nul/
+
+# Yerel veri yedekleri (commit etmeyin)
+backups/*.json
 
 # Yüklenen profil görselleri (klasör yapısı repoda kalır)
 backend/uploads/*

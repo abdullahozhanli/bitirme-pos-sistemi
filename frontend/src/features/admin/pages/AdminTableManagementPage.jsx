@@ -21,7 +21,7 @@ import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import PageHeader from '../../../shared/components/layout/PageHeader';
 import TableCard from '../components/TableCard';
 import TableDetailPanel from '../components/TableDetailPanel';
-import TableFormModal from '../components/TableFormModal';
+import TableFormModal from '../components/TableFormModal.jsx';
 import './AdminTableManagementPage.css';
 
 export default function AdminTableManagementPage() {
@@ -35,19 +35,7 @@ export default function AdminTableManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [qrTableNumber, setQrTableNumber] = useState('');
-  const [qrCapacity, setQrCapacity] = useState('');
-  const [generatingQR, setGeneratingQR] = useState(false);
   const socketRef = useRef(null);
-
-  // Durum mapping
-  const statusMap = {
-    bos: 'available',
-    dolu: 'full',
-    rezerve: 'reserved',
-    odeme_bekliyor: 'payment_pending',
-  };
 
   const statusLabels = {
     bos: 'Müsait',
@@ -258,9 +246,14 @@ export default function AdminTableManagementPage() {
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%' }}>
-      <PageHeader 
-        title="Masa Yönetimi" 
+      <PageHeader
+        title="Masa Yönetimi"
         subtitle="Tüm masaların anlık durumu ve yönetimi"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddTable}>
+            Yeni Masa
+          </Button>
+        }
       />
 
       {error && (
@@ -386,10 +379,8 @@ export default function AdminTableManagementPage() {
                 <TableCard
                   key={table._id}
                   table={table}
-                  statusLabels={statusLabels}
                   isSelected={selectedTable?._id === table._id}
                   onClick={() => handleSelectTable(table)}
-                  onEdit={() => handleEditTable(table)}
                 />
               ))}
             </Box>
@@ -414,6 +405,13 @@ export default function AdminTableManagementPage() {
           </Paper>
         )}
       </Box>
+
+      <TableFormModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        table={editingTable}
+        onSaved={handleTableSaved}
+      />
 
       {/* Toast Bildirimleri */}
       <Snackbar

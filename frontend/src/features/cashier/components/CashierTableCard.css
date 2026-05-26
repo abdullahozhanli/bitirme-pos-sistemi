@@ -1,0 +1,306 @@
+@import '../../../shared/constants/menuTheme.css';
+
+/**
+ * Menü ürün satırı (itemCard) mantığı — yatay, tek satır odaklı, az gürültü
+ */
+.cashier-bill-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 88px;
+  padding: 10px 12px 10px 10px;
+  background: var(--menu-card);
+  border: 1px solid var(--menu-border-card);
+  border-radius: var(--menu-radius-card);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.cashier-bill-row:hover {
+  border-color: var(--menu-border-soft);
+  box-shadow: 0 4px 14px rgba(26, 26, 26, 0.08);
+}
+
+.cashier-bill-row:active {
+  transform: scale(0.995);
+}
+
+.cashier-bill-row.is-selected {
+  border-color: var(--menu-primary);
+  background: #f9fcf9;
+  box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.35);
+}
+
+.cashier-bill-row.is-priority {
+  border-color: #a5d6a7;
+  background: linear-gradient(90deg, #f1f8f2 0%, #ffffff 28%);
+}
+
+/* Ödeme bekleyen — vurgulu */
+.cashier-bill-row.has-pending {
+  border-color: #81c784;
+  background: #ffffff;
+}
+
+.cashier-bill-row.has-pending:hover {
+  border-color: var(--menu-primary);
+  background: #f9fcf9;
+}
+
+.cashier-bill-row.has-pending .cashier-bill-table-badge {
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+}
+
+.cashier-bill-row.has-pending .cashier-bill-table-num {
+  color: var(--menu-text-green-dark);
+}
+
+/* Müsait masa — soluk */
+.cashier-bill-row.is-idle {
+  border-color: #ece6dc;
+  background: #fafafa;
+  opacity: 0.92;
+  cursor: default;
+}
+
+.cashier-bill-row.is-idle:hover {
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.04);
+  transform: none;
+}
+
+.cashier-bill-row.is-idle .cashier-bill-table-badge {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+}
+
+.cashier-bill-row.is-idle .cashier-bill-table-num {
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.cashier-bill-row.is-idle .cashier-bill-sub {
+  color: #9ca3af;
+}
+
+.cashier-bill-tag--idle {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.cashier-bill-idle-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: #d1d5db;
+  padding-right: 8px;
+}
+
+/* Sol: büyük masa numarası — menü thumb boyutu */
+.cashier-bill-table-badge {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: var(--menu-search-bg);
+  border: 1px solid var(--menu-border-search);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.cashier-bill-row.is-priority .cashier-bill-table-badge {
+  background: #e8f5e9;
+  border-color: #81c784;
+}
+
+.cashier-bill-table-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--menu-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.cashier-bill-table-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--menu-text-green-dark);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+/* Orta: tek etiket + özet */
+.cashier-bill-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.cashier-bill-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cashier-bill-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--menu-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cashier-bill-tag--default {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.cashier-bill-tag--priority {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+}
+
+.cashier-bill-tag--done {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.cashier-bill-chevron {
+  flex-shrink: 0;
+  color: #c4c4c4 !important;
+  font-size: 20px !important;
+}
+
+.cashier-bill-row:hover .cashier-bill-chevron {
+  color: var(--menu-primary) !important;
+}
+
+.cashier-bill-sub {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--menu-text-secondary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sağ: tutar + menü "Sepete Ekle" tarzı buton */
+.cashier-bill-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  padding-left: 4px;
+}
+
+.cashier-bill-total {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--menu-text-green-price);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.cashier-bill-pay {
+  min-height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--menu-soft-green-btn);
+  color: var(--menu-text-green-dark);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.cashier-bill-pay:hover:not(:disabled) {
+  background: #dceedc;
+  color: #1b5e20;
+}
+
+.cashier-bill-pay:active:not(:disabled) {
+  background: var(--menu-primary);
+  color: #fff;
+}
+
+.cashier-bill-pay:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (min-width: 640px) {
+  .cashier-bill-row {
+    min-height: 92px;
+    padding: 12px 16px 12px 12px;
+    gap: 16px;
+  }
+
+  .cashier-bill-table-badge {
+    width: 82px;
+    height: 82px;
+    border-radius: 10px;
+  }
+
+  .cashier-bill-table-num {
+    font-size: 32px;
+  }
+
+  .cashier-bill-total {
+    font-size: 19px;
+  }
+
+  .cashier-bill-pay {
+    min-height: 34px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 400px) {
+  .cashier-bill-table-badge {
+    width: 64px;
+    height: 64px;
+  }
+
+  .cashier-bill-table-num {
+    font-size: 24px;
+  }
+
+  .cashier-bill-total {
+    font-size: 15px;
+  }
+
+  .cashier-bill-pay {
+    padding: 0 10px;
+    font-size: 11px;
+  }
+}

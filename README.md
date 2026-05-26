@@ -1,180 +1,170 @@
-# Self-Servis POS Sistemi
+# Self-Servis POS Sistemi (Self Kasa)
 
-Restoranlar için QR kod tabanlı self-servis sipariş sistemi.
+Restoranlar için QR kod tabanlı self-servis sipariş ve çok rollü operasyon yönetimi.
 
-## 🚀 Özellikler
+## Özellikler
 
-- 📱 Müşteri Kiosk Arayüzü: QR kodla masa seçimi, menü görüntüleme, sepete ekleme
-- 🔐 Admin Paneli: Dashboard istatistikleri, sipariş yönetimi, ürün/kategori CRUD
-- 💳 Sipariş Takibi: Hazırlanıyor/Hazır/Servis Edildi durumları, ödeme işaretleme
-- 📊 Analytics: Toplam ciro, sipariş sayıları, bekleyen masalar, iptal edilenler
-- 🔒 JWT Authentication: Token tabanlı güvenli admin girişi
-- 📦 Stok Yönetimi: Ürün stok takibi, tükenen ürünlerde otomatik uyarı
+- **Müşteri:** Web kiosk ve mobil uygulama ile QR/masa, menü, sepet, sipariş, sipariş geçmişi, sadakat puanı
+- **Admin:** Dashboard, sipariş/masa/ürün/kategori/kampanya/QR yönetimi
+- **Garson / Mutfak / Kasa:** Rol bazlı operasyon ekranları
+- **Süper admin:** Çok şubeli yapı, kullanıcı ve şube yönetimi
+- **Gerçek zamanlı:** Socket.io ile mutfak, masa ve müşteri sipariş güncellemeleri
+- **Güvenlik:** JWT, rate limit, production CORS, opsiyonel kayıt kilidi
 
-## 🛠️ Teknolojiler
+Detaylı mimari: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-### Backend
-- Node.js + Express.js
-- MongoDB + Mongoose
-- JWT Authentication
-- bcryptjs
+## Teknolojiler
 
-### Frontend
-- React 19
-- Material UI v7
-- React Router v7
-- Axios
-- Vite
+| Katman | Stack |
+|--------|--------|
+| Backend | Node.js, Express 5, MongoDB, Mongoose, Socket.io, JWT, bcrypt |
+| Web | React 19, Vite 7, MUI 7, React Router 7, TanStack Query, Axios |
+| Mobil | Expo 54, React Native, React Navigation |
 
-## 📋 Gereksinimler
+## Gereksinimler
 
 - Node.js >= 18
 - MongoDB (yerel veya Atlas)
-- npm veya yarn
+- npm
 
-## 🏃 Hızlı Başlangıç
+## Hızlı başlangıç
 
-### 1. Repository'yi klonlayın
+### 1. Klonlama
+
 ```bash
 git clone <repository-url>
-cd bitirme
+cd bitirme-pos-sistemi
 ```
 
-### 2. Backend Kurulumu
+### 2. Backend
 
 ```bash
 cd backend
+cp .env.example .env
+# .env içinde MONGO_URI ve JWT_SECRET (en az 32 karakter) doldurun
 npm install
+npm start
 ```
 
-`.env` dosyası oluşturun:
+Örnek `.env`:
+
 ```
 MONGO_URI=mongodb://localhost:27017/bitirme
-JWT_SECRET=supersecretkey123456789changeinproduction
+JWT_SECRET=<en-az-32-karakter-rastgele-deger>
 PORT=5001
+NODE_ENV=development
 FRONTEND_ORIGIN=http://localhost:5173
+ALLOW_PUBLIC_REGISTER=true
 ```
 
-Backend'i başlatın:
-```bash
-npm start
-# veya: node server.js
-```
+### 3. Web (frontend)
 
-### 3. Frontend Kurulumu
-
-Yeni terminal'de:
 ```bash
 cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-### 4. Tarayıcıda Açın
+- Uygulama: http://localhost:5173
+- API: http://localhost:5001
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5001
-
-## 📝 İlk Kurulum
-
-### Admin Kullanıcı Oluşturma
-
-Backend'de `.env` dosyası hazır olduktan sonra:
+### 4. Mobil (Expo)
 
 ```bash
-# Backend klasöründe
-curl -X POST http://localhost:5001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"admin123"}'
+cd mobile
+cp .env.example .env
+npm install
+npm start
 ```
 
-Sonra `/login` sayfasından giriş yapabilirsiniz.
+`EXPO_PUBLIC_API_URL` backend adresinize işaret etmeli (fiziksel cihazda PC IP’si).
 
-### İlk Ürün/Kategori Ekleme
+## Roller
 
-Admin paneline giriş yaptıktan sonra:
-1. `/admin/kategoriler` → Kategori ekleyin
-2. `/admin/urunler` → Ürün ekleyin (stok adedi girin)
+| Rol | Açıklama |
+|-----|----------|
+| `superadmin` | Tüm şubeler |
+| `admin` | Tek şube yönetimi |
+| `yetkili` | Geniş personel yetkisi |
+| `garson` | Masa / sipariş |
+| `mutfak` | Mutfak ekranı |
+| `kasa` | Ödeme |
+| `musteri` | Self-servis (mobil kayıt) |
 
-## 📁 Proje Yapısı
+Web giriş: http://localhost:5173/login
+
+### İlk admin / personel
+
+- **İlk admin:** Veritabanında admin yoksa, ilk giriş yapan kullanıcı otomatik `admin` olur (geliştirme).
+- **Süper admin:** `node backend/scripts/createSuperAdmin.js`
+- **Garson / kasa:** `backend/scripts/createGarsonUser.js`, `createKasaUser.js`
+
+Müşteri kaydı (`musteri`): `POST /api/auth/register` — production’da `ALLOW_PUBLIC_REGISTER=false` ile kapatılabilir.
+
+## Demo senaryosu (savunma — 5 adım)
+
+1. **Masa bağla:** Müşteri QR okutur (web `/qr-scan` veya mobil) → masa numarası atanır.
+2. **Sipariş ver:** Menüden ürün seçilir, sepet tamamlanır → `POST /api/orders`.
+3. **Mutfak:** `/kitchen` ekranında sipariş kalemleri görünür (Socket.io).
+4. **Operasyon:** Garson/admin sipariş durumunu günceller.
+5. **Ödeme:** `/cashier` — nakit/kart seçimi, masa toplu tahsilat; `Gün özeti` sekmesi. Kasa kullanıcısı: `node backend/scripts/createKasaUser.js`
+
+Müşteri tarafında sipariş durumu: `GET /api/orders/:id` ve Socket.io `customer.{userId}` odası.
+
+## Proje yapısı
 
 ```
-bitirme/
-├── backend/
-│   ├── models/         # MongoDB şemaları
-│   ├── routes/         # API endpoint'leri
-│   ├── middleware/     # authMiddleware
-│   ├── server.js       # Ana sunucu dosyası
-│   └── .env           # Ortam değişkenleri
-├── frontend/
-│   ├── src/
-│   │   ├── pages/      # Sayfa bileşenleri
-│   │   ├── components/ # Layout bileşenleri
-│   │   ├── context/    # Global state (Auth, Cart)
-│   │   ├── App.jsx     # Ana routing
-│   │   └── main.jsx    # Entry point
-│   └── vite.config.js
+bitirme-pos-sistemi/
+├── backend/          # API + Socket.io
+├── frontend/         # Web (müşteri + personel)
+├── mobile/           # Expo müşteri uygulaması
+├── docs/             # ARCHITECTURE.md, DEPLOY.md
+├── docker-compose.yml
 └── README.md
 ```
 
-## 🔑 API Endpoint'leri
+## API özeti
 
-### Public
-- `GET /api/products` - Ürünleri listele
-- `GET /api/categories` - Kategorileri listele
-- `POST /api/auth/login` - Admin girişi
-- `POST /api/auth/register` - Admin kaydı
-- `POST /api/orders` - Sipariş oluştur
+### Herkese açık (okuma / sipariş)
 
-### Protected (Admin)
-- `GET /api/orders` - Siparişleri listele
-- `PUT /api/orders/:id/status` - Durum güncelle
-- `PUT /api/orders/:id/pay` - Ödeme işaretle
-- `GET /api/analytics/summary` - Dashboard istatistikleri
-- `POST /api/products` - Ürün ekle
-- `PUT /api/products/:id` - Ürün güncelle
-- `DELETE /api/products/:id` - Ürün sil
-- `POST /api/categories` - Kategori ekle
-- `PUT /api/categories/:id` - Kategori güncelle
-- `DELETE /api/categories/:id` - Kategori sil
+- `GET /api/products`, `GET /api/categories`
+- `POST /api/orders` — sipariş oluştur
+- `GET /api/orders/:id` — sipariş detayı (sahiplik kontrolü)
+- `POST /api/auth/login`, `POST /api/auth/register` (müşteri, `ALLOW_PUBLIC_REGISTER` ile)
 
-## 🎯 Kullanım Senaryosu
+### Müşteri (JWT, rol: musteri)
 
-1. Müşteri QR kodu okutur → Masa numarası belirlenir
-2. Menüden ürün seçer → Sepete ekler
-3. Sipariş notu ekler → Siparişi tamamlar
-4. Admin paneline sipariş gelir → Durum günceller
-5. Müşteriye servis edilir → Ödeme işaretlenir
+- `GET /api/orders/mine`, `GET /api/orders/mine/branches`
 
-## 🔧 Geliştirme
+### Personel / admin
 
-### Backend Test
+- `/api/admin/*`, `/api/waiter/*`, `/api/kitchen/*`, `/api/cashier/*`, `/api/superadmin/*`
+
+Tam liste için `backend/routes/` klasörüne bakın.
+
+## Geliştirme
+
 ```bash
-cd backend
-npm start
+# Backend testleri
+cd backend && npm test
+
+# Frontend lint + build
+cd frontend && npm run lint && npm run build
+
+# Mobil birim testleri (QR, auth, fiyat, puan yardımcıları)
+cd mobile && npm test
+
+# Docker (yerel)
+docker compose up --build
 ```
 
-### Frontend Dev Mode
-```bash
-cd frontend
-npm run dev
-```
+Production dağıtım: [docs/DEPLOY.md](docs/DEPLOY.md)
 
-### Production Build
-```bash
-cd frontend
-npm run build
-```
+## Yedekler
 
-## 📄 Lisans
+`backups/` klasöründeki JSON dosyaları yerel veri yedekleridir; repoya commit etmeyin (`.gitignore`).
 
-Bu proje öğrenme amaçlı geliştirilmiştir.
+## Lisans
 
-## 👤 Yazar
-
-Bitirme Projesi - Self-Servis POS Sistemi
-
----
-
-**Not:** Production'da `.env` dosyasındaki JWT_SECRET ve MongoDB URI'yi güvenli değerlerle değiştirmeyi unutmayın!
-
+Öğrenme / bitirme projesi amaçlıdır.

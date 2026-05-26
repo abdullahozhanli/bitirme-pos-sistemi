@@ -31,7 +31,7 @@ export default function QRScannerPage() {
       }
       
       return null;
-    } catch (e) {
+    } catch {
       // URL değilse direkt sayı olabilir
       if (/^\d+$/.test(qrText.trim())) {
         return { tableNumber: qrText.trim(), branchId: null };
@@ -56,11 +56,11 @@ export default function QRScannerPage() {
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         },
-        (decodedText, decodedResult) => {
+        (decodedText) => {
           // QR kod başarıyla okundu
           handleQRCodeScanned(decodedText);
         },
-        (errorMessage) => {
+        (_errorMessage) => {
           // Hata mesajı (genellikle okutma devam ederken görünür)
           // Sessizce devam et
         }

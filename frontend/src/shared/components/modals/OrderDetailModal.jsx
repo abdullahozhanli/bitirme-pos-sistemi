@@ -1,6 +1,8 @@
 import React from 'react';
-import { Modal, Box, IconButton, Divider, Button } from '@mui/material';
+import { Modal, Box, IconButton, Divider, Button, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import PaymentBadge from '../ui/PaymentBadge';
+import { canCancelOrderUi, isOrderPaid } from '../../utils/orderPayment';
 
 const style = {
   position: 'absolute',
@@ -12,17 +14,6 @@ const style = {
   borderRadius: 2,
   boxShadow: 24,
   p: 3,
-};
-
-const pill = {
-  px: 2.4,
-  py: 1.2,
-  borderRadius: 10000,
-  border: '1px solid #D0D5DD',
-  background: '#fff',
-  fontWeight: 600,
-  cursor: 'pointer',
-  transition: 'background 120ms ease, border-color 120ms ease',
 };
 
 export default function OrderDetailModal({
@@ -48,11 +39,11 @@ export default function OrderDetailModal({
   const statusNorm = normalizeTr(order.status);
   const isCancelled = statusNorm === 'iptal' || order.status === 'CANCELED';
   const isPreparing = statusNorm === 'hazirlaniyor' || order.status === 'CREATED' || order.status === 'IN_PREP';
-  const isPaid = statusNorm === 'tamamlandi' || statusNorm === 'odendi' || order.status === 'ödendi' || order.status === 'PAID';
+  const isPaid = isOrderPaid(order);
 
   const disabledPaid = isPaid || isCancelled;
   const disabledReady = !isPreparing;
-  const disabledCancel = isCancelled;
+  const disabledCancel = isCancelled || !canCancelOrderUi(order);
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -67,7 +58,17 @@ export default function OrderDetailModal({
         <div style={{ lineHeight: 1.6, fontSize: 16 }}>
           <div><strong>Masa:</strong> {order.table?.name || '—'}</div>
           <div><strong>Durum:</strong> {order.status}</div>
-          <div><strong>Toplam:</strong> {Number(order.total || 0).toFixed(2)} TL</div>
+          <div><strong>Toplam:</strong> {Number(order.total || order.totalPrice || 0).toFixed(2)} TL</div>
+          {order.paymentMethod ? (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Müşteri ödeme tercihi (mobil):
+              </Typography>
+              <Box sx={{ mt: 0.5 }}>
+                <PaymentBadge order={order} />
+              </Box>
+            </Box>
+          ) : null}
         </div>
 
         <Divider sx={{ my: 2 }} />

@@ -14,6 +14,11 @@ import {
   deleteProfileAvatarRequest,
   uploadProfileAvatarFile,
 } from '../api/profileAvatarApi';
+import {
+  isUnauthorizedError,
+  notifyUnauthorized,
+  registerUnauthorizedHandler,
+} from '../api/authSession';
 import { API_BASE_URL_CANDIDATES } from '../constants/config';
 import { isStrongPassword } from '../utils/authValidation';
 import { coerceUserPoints, mergeUserFromMe } from '../utils/loyaltyPoints';
@@ -83,7 +88,11 @@ export function AuthProvider({ children }) {
             setUser(merged);
             await AsyncStorage.setItem(USER_KEY, JSON.stringify(merged));
           } catch (meErr) {
-            console.warn('auth /me ilk senkron', meErr?.message || meErr);
+            if (isUnauthorizedError(meErr)) {
+              await notifyUnauthorized({ silent: true });
+            } else {
+              console.warn('auth /me ilk senkron', meErr?.message || meErr);
+            }
           }
         }
       } catch (e) {
@@ -151,6 +160,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  useEffect(() => {
+    registerUnauthorizedHandler(async ({ silent } = {}) => {
+      await removeToken();
+      await AsyncStorage.removeItem(USER_KEY);
+      applyAxiosToken(null);
+      setToken(null);
+      setUser(null);
+      if (!silent) {
+        Alert.alert(
+          'Oturum sona erdi',
+          'Güvenlik için tekrar giriş yapmanız gerekiyor. (Backend yeniden başlatıldıysa veya uzun süre açık kaldıysa normaldir.)'
+        );
+      }
+    });
+    return () => registerUnauthorizedHandler(null);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const t = await readToken();
@@ -163,7 +189,11 @@ export function AuthProvider({ children }) {
         return merged;
       });
     } catch (e) {
-      console.warn('refreshUser', e?.message || e);
+      if (isUnauthorizedError(e)) {
+        await notifyUnauthorized({ silent: true });
+      } else {
+        console.warn('refreshUser', e?.message || e);
+      }
     }
   }, []);
 
@@ -201,7 +231,10 @@ export function AuthProvider({ children }) {
           const err = new Error(data.message || `HTTP ${res.status}`);
           err.response = { status: res.status, data };
           lastErr = err;
-          if (res.status === 401 || res.status === 403) throw err;
+          if (res.status === 401 || res.status === 403) {
+            await notifyUnauthorized();
+            throw err;
+          }
           continue;
         }
         setUser((prev) => {
@@ -212,7 +245,10 @@ export function AuthProvider({ children }) {
         return data;
       } catch (e) {
         lastErr = e;
-        if (e?.response?.status === 401 || e?.response?.status === 403) throw e;
+        if (isUnauthorizedError(e)) {
+          await notifyUnauthorized();
+          throw e;
+        }
         if (e?.message && !String(e.message).includes('Network')) throw e;
       }
     }
@@ -258,6 +294,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
+      applyMeToUser,
       updateProfile,
       uploadProfileAvatar,
       removeProfileAvatar,
@@ -271,6 +308,7 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
+      applyMeToUser,
       updateProfile,
       uploadProfileAvatar,
       removeProfileAvatar,

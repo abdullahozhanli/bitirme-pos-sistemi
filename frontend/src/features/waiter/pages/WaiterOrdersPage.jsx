@@ -21,8 +21,6 @@ import {
   Divider,
   IconButton,
   Snackbar,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ReceiptIcon from '@mui/icons-material/Receipt';
@@ -37,9 +35,6 @@ import './WaiterOrdersPage.css';
 export default function WaiterOrdersPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +50,6 @@ export default function WaiterOrdersPage() {
   const tableId = searchParams.get('tableId');
   const orderId = searchParams.get('orderId');
   const statusParam = searchParams.get('status');
-  const paymentMode = searchParams.get('payment') === 'true';
-
   useEffect(() => {
     // URL'den gelen status parametresini filtreye uygula
     if (statusParam) {
@@ -227,7 +220,7 @@ export default function WaiterOrdersPage() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
       
-      await axios.post('/api/payments', {
+      await axios.post('/api/waiter/payments', {
         orderId: order._id || order.id,
         method: 'cash',
         amount: order.totalPrice || order.total || 0,
@@ -484,16 +477,29 @@ export default function WaiterOrdersPage() {
           setSelectedOrder(null);
         }}
         order={selectedOrder}
-        onMakeReady={(id) => {
-          // Garson için hazır yapma işlemi yok, sadece servis edebilir
+        onMakeReady={() => {
           fetchOrders();
         }}
-        onMarkPaid={(id) => {
+        onMarkPaid={() => {
           if (selectedOrder) handlePayment(selectedOrder);
         }}
-        onCancelOrder={(id) => {
-          // Garson sipariş iptal edemez
-          setSnack({ open: true, message: 'Sipariş iptal etme yetkiniz yok', severity: 'warning' });
+        onCancelOrder={async (orderId) => {
+          if (!orderId) return;
+          try {
+            const token = localStorage.getItem('token');
+            const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+            await axios.post(`/api/waiter/orders/${orderId}/cancel`, { reason: 'Garson iptali' }, { headers });
+            setSnack({ open: true, message: 'Sipariş iptal edildi', severity: 'success' });
+            setDetailModalOpen(false);
+            setSelectedOrder(null);
+            fetchOrders();
+          } catch (err) {
+            setSnack({
+              open: true,
+              message: err.response?.data?.message || 'İptal edilemedi',
+              severity: 'error',
+            });
+          }
         }}
       />
 

@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/bitirme
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_min_32_chars}
+      NODE_ENV: production
+      PORT: 5001
+      FRONTEND_ORIGIN: http://localhost:5173
+      ALLOW_PUBLIC_REGISTER: "true"
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:5001
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:

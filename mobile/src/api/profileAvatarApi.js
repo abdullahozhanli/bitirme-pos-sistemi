@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL_CANDIDATES } from '../constants/config';
+import { isUnauthorizedError, notifyUnauthorized } from './authSession';
 
 const TOKEN_KEY = 'selfkasa_token';
 
@@ -52,13 +53,19 @@ async function authFetchWithFallback(path, init) {
         const err = new Error(data.message || `HTTP ${res.status}`);
         err.response = { status: res.status, data };
         lastErr = err;
-        if (res.status === 401 || res.status === 403) throw err;
+        if (res.status === 401 || res.status === 403) {
+          await notifyUnauthorized();
+          throw err;
+        }
         continue;
       }
       return data;
     } catch (e) {
       lastErr = e;
-      if (e?.response?.status === 401 || e?.response?.status === 403) throw e;
+      if (isUnauthorizedError(e)) {
+        await notifyUnauthorized();
+        throw e;
+      }
       if (e?.message && !String(e.message).includes('Network')) throw e;
     }
   }

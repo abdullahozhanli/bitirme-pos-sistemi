@@ -32,6 +32,7 @@ export default function SuperAdminBranchManagement() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
   const [formData, setFormData] = useState({
@@ -112,6 +113,8 @@ export default function SuperAdminBranchManagement() {
 
       handleCloseDialog();
       fetchBranches();
+      setSuccess(editingBranch ? 'Şube güncellendi.' : 'Şube oluşturuldu.');
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'İşlem başarısız');
     }
@@ -148,7 +151,7 @@ export default function SuperAdminBranchManagement() {
       let fullErrorMessage = errorMessage;
       if (errorDetails) {
         const detailsText = Object.entries(errorDetails)
-          .filter(([_, count]) => count > 0)
+          .filter(([, count]) => count > 0)
           .map(([key, count]) => `${key}: ${count} adet`)
           .join(', ');
         if (detailsText) {
@@ -184,6 +187,12 @@ export default function SuperAdminBranchManagement() {
           </Button>
         }
       />
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>

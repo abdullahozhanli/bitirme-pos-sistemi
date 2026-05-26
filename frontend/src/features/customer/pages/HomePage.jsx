@@ -38,7 +38,6 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [totalProducts, setTotalProducts] = useState(0);
   const [flippedCards, setFlippedCards] = useState(new Set());
   const { addToCart, cartItems, branchId } = useCart();
   const navigate = useNavigate();
@@ -91,10 +90,8 @@ export default function HomePage() {
         ]);
 
         const prodList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.items || [];
-        const total = prodRes.data?.total || prodRes.data?.pages || prodList.length;
-        
+
         setAllProducts(prodList);
-        setTotalProducts(total);
 
         const catList = Array.isArray(catRes.data) ? catRes.data : catRes.data?.items || [];
         setCategories(catList);
@@ -172,14 +169,12 @@ export default function HomePage() {
       const prodRes = await axios.get('/api/products', { params });
       
       const prodList = Array.isArray(prodRes.data) ? prodRes.data : prodRes.data?.items || [];
-      const total = prodRes.data?.total || prodRes.data?.pages || 0;
-      
+
       if (prodList.length > 0) {
         setAllProducts(prev => {
           const newList = [...prev, ...prodList];
           return newList;
         });
-        setTotalProducts(total);
         setPage(nextPage);
         setHasMore(prodList.length >= 12);
       } else {

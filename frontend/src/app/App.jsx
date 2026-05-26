@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 
 // Global hafızaları import et
-import { useAuth } from '../shared/context/AuthContext.jsx'; 
 import { useCart } from '../shared/context/CartContext.jsx'; 
 
 // Layout'ları import et

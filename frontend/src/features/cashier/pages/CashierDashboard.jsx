@@ -4,15 +4,10 @@ import { io } from 'socket.io-client';
 import {
   Box,
   Typography,
-  Paper,
   CircularProgress,
   Alert,
   Button,
-  Grid,
-  Card,
-  CardContent,
   Chip,
-  Stack,
   Divider,
   Snackbar,
   Dialog,
@@ -22,25 +17,31 @@ import {
   List,
   ListItem,
   ListItemText,
-  Tabs,
-  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import PaymentsIcon from '@mui/icons-material/Payments';
 import PaymentIcon from '@mui/icons-material/Payment';
 import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { useAuth } from '../../../shared/context/AuthContext.jsx';
 import OrderDetailModal from '../../../shared/components/modals/OrderDetailModal.jsx';
+import CashierTableCard from '../components/CashierTableCard.jsx';
+import { getOrderPaymentDisplayText } from '../../../shared/utils/orderPayment';
 import './CashierDashboard.css';
 
 export default function CashierDashboard() {
-  const { user } = useAuth();
+  useAuth();
   const [tables, setTables] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
@@ -52,8 +53,31 @@ export default function CashierDashboard() {
   const [processing, setProcessing] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, table: null });
+  const [singlePayDialog, setSinglePayDialog] = useState({ open: false, orderId: null });
+  const [payMethod, setPayMethod] = useState('cash');
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const socketRef = useRef(null);
+
+  const PaymentMethodPicker = ({ value, onChange }) => (
+    <ToggleButtonGroup
+      value={value}
+      exclusive
+      onChange={(_, v) => v && onChange(v)}
+      fullWidth
+      sx={{ mt: 2 }}
+    >
+      <ToggleButton value="cash" sx={{ textTransform: 'none', fontWeight: 600, gap: 0.5 }}>
+        <PaymentsIcon sx={{ fontSize: 18 }} />
+        Nakit
+      </ToggleButton>
+      <ToggleButton value="card" sx={{ textTransform: 'none', fontWeight: 600, gap: 0.5 }}>
+        <CreditCardIcon sx={{ fontSize: 18 }} />
+        Kart
+      </ToggleButton>
+    </ToggleButtonGroup>
+  );
 
   const fetchPendingTables = async () => {
     try {
@@ -62,57 +86,20 @@ export default function CashierDashboard() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
-      const response = await axios.get('/api/cashier/pending', { headers });
+      const response = await axios.get('/api/cashier/tables', { headers });
       const tablesData = Array.isArray(response.data) ? response.data : [];
-      
-      // Her masa için siparişleri çek
-      const tablesWithOrders = await Promise.all(
-        tablesData.map(async (table) => {
-          try {
-            const ordersRes = await axios.get('/api/waiter/orders', {
-              headers,
-              params: { 
-                limit: 100 
-              }
-            });
-            
-            const orders = Array.isArray(ordersRes.data) 
-              ? ordersRes.data 
-              : (ordersRes.data?.items || []);
-            
-            const tableOrders = orders.filter(order => {
-              const orderTable = order.tableId || order.table;
-              const orderTableId = typeof orderTable === 'object' ? orderTable?._id : orderTable;
-              const matchesTable = String(orderTableId) === String(table._id);
-              // Ödeme bekleyen siparişler: serviste, hazirlaniyor, READY, tamamlandi (henüz ödenmemiş)
-              const isPendingPayment = ['serviste', 'hazirlaniyor', 'READY', 'tamamlandi'].includes(order.status) &&
-                                      order.status !== 'ödendi' && order.status !== 'PAID' && order.status !== 'SERVED';
-              return matchesTable && isPendingPayment;
-            });
 
-            const totalAmount = tableOrders.reduce((sum, order) => {
-              return sum + (order.total || order.totalPrice || 0);
-            }, 0);
-
-            return {
-              ...table,
-              orders: tableOrders,
-              totalAmount,
-              orderCount: tableOrders.length,
-            };
-          } catch (err) {
-            console.error(`Masa ${table._id} siparişleri yüklenemedi:`, err);
-            return {
-              ...table,
-              orders: [],
-              totalAmount: 0,
-              orderCount: 0,
-            };
-          }
-        })
+      setTables(
+        tablesData.map((table) => ({
+          ...table,
+          orders: table.orders || [],
+          orderCount: table.orderCount ?? (table.orders?.length || 0),
+          totalAmount: table.totalAmount ?? 0,
+          hasPendingPayment: Boolean(
+            table.hasPendingPayment ?? ((table.orders?.length || 0) > 0 || (table.orderCount || 0) > 0)
+          ),
+        }))
       );
-
-      setTables(tablesWithOrders);
     } catch (err) {
       console.error('Masalar yüklenemedi:', err);
       setError(err.response?.data?.message || err.message || 'Masalar yüklenemedi');
@@ -129,7 +116,7 @@ export default function CashierDashboard() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
-      await axios.post(`/api/cashier/checkout/${table._id}`, {}, { headers });
+      await axios.post(`/api/cashier/checkout/${table._id}`, { method: payMethod }, { headers });
       
       setNotification({
         open: true,
@@ -151,7 +138,27 @@ export default function CashierDashboard() {
     }
   };
 
+  const fetchSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
+      const response = await axios.get('/api/cashier/summary', { headers });
+      setSummary(response.data);
+    } catch (err) {
+      console.error('Gün özeti yüklenemedi:', err);
+      setNotification({
+        open: true,
+        message: err.response?.data?.message || 'Gün özeti yüklenemedi',
+        severity: 'error',
+      });
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   const openConfirmDialog = (table) => {
+    setPayMethod('cash');
     setConfirmDialog({ open: true, table });
   };
 
@@ -195,7 +202,7 @@ export default function CashierDashboard() {
   };
 
   // Siparişi ödendi yap
-  const handleMarkAsPaid = async (orderId) => {
+  const handleMarkAsPaid = async (orderId, method = payMethod) => {
     if (processing) return;
     
     try {
@@ -203,7 +210,7 @@ export default function CashierDashboard() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
-      await axios.put(`/api/admin/orders/${orderId}/pay`, {}, { headers });
+      await axios.put(`/api/admin/orders/${orderId}/pay`, { method }, { headers });
       
       setNotification({
         open: true,
@@ -213,10 +220,10 @@ export default function CashierDashboard() {
       
       setOrderDetailModalOpen(false);
       setSelectedOrder(null);
+      setSinglePayDialog({ open: false, orderId: null });
       fetchPendingTables();
-      if (activeTab === 1) {
-        fetchAllOrders();
-      }
+      if (activeTab === 1) fetchAllOrders();
+      if (activeTab === 2) fetchSummary();
     } catch (err) {
       console.error('Ödeme işaretlenemedi:', err);
       setNotification({
@@ -242,7 +249,7 @@ export default function CashierDashboard() {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
 
-      await axios.put(`/api/admin/orders/${orderId}/status`, { status: 'iptal' }, { headers });
+      await axios.put(`/api/admin/orders/${orderId}/cancel`, { reason: 'Kasa iptali' }, { headers });
       
       setNotification({
         open: true,
@@ -306,12 +313,10 @@ export default function CashierDashboard() {
         }
       });
 
-      socket.on('table:payment:completed', (data) => {
-        console.log('📡 Ödeme tamamlandı:', data);
+      socket.on('table:payment:completed', () => {
         fetchPendingTables();
-        if (activeTab === 1) {
-          fetchAllOrders();
-        }
+        if (activeTab === 1) fetchAllOrders();
+        if (activeTab === 2) fetchSummary();
       });
 
       socket.on('order:status:changed', (data) => {
@@ -378,26 +383,33 @@ export default function CashierDashboard() {
       if (!loading) {
         fetchPendingTables();
       }
-      if (!ordersLoading && activeTab === 1) {
-        fetchAllOrders();
-      }
+      if (!ordersLoading && activeTab === 1) fetchAllOrders();
+      if (!summaryLoading && activeTab === 2) fetchSummary();
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [loading, ordersLoading, activeTab]);
+  }, [loading, ordersLoading, summaryLoading, activeTab]);
 
-  // Tab değiştiğinde siparişleri yükle
   useEffect(() => {
-    if (activeTab === 1) {
-      fetchAllOrders();
-    }
+    if (activeTab === 1) fetchAllOrders();
+    if (activeTab === 2) fetchSummary();
   }, [activeTab]);
+
+  const pendingTables = tables.filter((t) => t.hasPendingPayment);
+  const pendingTotal = pendingTables.reduce((sum, t) => sum + (t.totalAmount || 0), 0);
+  const pendingOrderCount = pendingTables.reduce((sum, t) => sum + (t.orderCount || 0), 0);
+
+  const handleRefresh = () => {
+    fetchPendingTables();
+    if (activeTab === 1) fetchAllOrders();
+    if (activeTab === 2) fetchSummary();
+  };
 
   if (loading && tables.length === 0) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <div className="cashier-loading-wrap">
         <CircularProgress />
-      </Box>
+      </div>
     );
   }
 
@@ -437,109 +449,128 @@ export default function CashierDashboard() {
 
   return (
     <div className="cashier-dashboard">
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-          Kasa Ekranı
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Ödeme bekleyen masalar ve tüm siparişler
-        </Typography>
-      </Box>
+      <header className="cashier-hero-card">
+        <h1>Tüm masalar</h1>
+        <p>Ödeme bekleyen masalar yeşil ile vurgulanır; müsait masalar soluk görünür.</p>
+      </header>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="Ödeme Bekleyen Masalar" />
-          <Tab label="Tüm Siparişler" />
-        </Tabs>
-      </Box>
+      {activeTab === 0 && (
+        <div className="cashier-stats-row">
+          <span className="cashier-stat-pill">
+            <TableRestaurantIcon />
+            <span><strong>{tables.length}</strong> masa</span>
+          </span>
+          <span className="cashier-stat-pill cashier-stat-pill--highlight">
+            <ReceiptIcon />
+            <span><strong>{pendingTables.length}</strong> ödeme bekliyor</span>
+          </span>
+          <span className="cashier-stat-pill">
+            <AccountBalanceWalletIcon />
+            <span><strong>{pendingTotal.toFixed(2).replace('.', ',')} ₺</strong> tahsil edilecek</span>
+          </span>
+        </div>
+      )}
+
+      <div className="cashier-toolbar">
+        <div className="cashier-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            className={`cashier-tab ${activeTab === 0 ? 'active' : ''}`}
+            onClick={() => setActiveTab(0)}
+          >
+            Masalar
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`cashier-tab ${activeTab === 1 ? 'active' : ''}`}
+            onClick={() => setActiveTab(1)}
+          >
+            Tüm siparişler
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`cashier-tab ${activeTab === 2 ? 'active' : ''}`}
+            onClick={() => setActiveTab(2)}
+          >
+            Gün özeti
+          </button>
+        </div>
+        <button type="button" className="cashier-refresh-btn" onClick={handleRefresh} disabled={loading || ordersLoading || summaryLoading}>
+          <RefreshIcon sx={{ fontSize: 18 }} />
+          Yenile
+        </button>
+      </div>
 
       {activeTab === 0 && (
         <>
           {tables.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <TableRestaurantIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Ödeme Bekleyen Masa Yok
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Şu anda ödeme bekleyen masa bulunmuyor.
-              </Typography>
-            </Paper>
+            <div className="cashier-empty-state">
+              <TableRestaurantIcon />
+              <h3>Masa tanımlı değil</h3>
+              <p>Admin panelinden masa ekleyin.</p>
+            </div>
           ) : (
-            <Grid container spacing={3}>
+            <div className="cashier-table-grid">
               {tables.map((table) => (
-                <Grid item xs={12} sm={6} md={4} key={table._id}>
-                  <Card 
-                    className="cashier-table-card"
-                    sx={{ 
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        boxShadow: 4,
-                        transform: 'translateY(-2px)',
-                      },
-                    }}
-                    onClick={() => setSelectedTable(table)}
-                  >
-                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="h5" component="h2" sx={{ fontWeight: 700 }}>
-                          Masa {table.name}
-                        </Typography>
-                        <Chip 
-                          label="Ödeme Bekliyor" 
-                          color="warning" 
-                          size="small"
-                        />
-                      </Box>
-
-                      <Divider sx={{ my: 2 }} />
-
-                      <Stack spacing={1} sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Sipariş Sayısı:
-                          </Typography>
-                          <Typography variant="body2" fontWeight={600}>
-                            {table.orderCount}
-                          </Typography>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Toplam Tutar:
-                          </Typography>
-                          <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
-                            {table.totalAmount.toFixed(2).replace('.', ',')} ₺
-                          </Typography>
-                        </Box>
-                      </Stack>
-
-                      <Divider sx={{ my: 2 }} />
-
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color="success"
-                        startIcon={<PaymentIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openConfirmDialog(table);
-                        }}
-                        disabled={processing}
-                        size="large"
-                        sx={{ mt: 'auto', py: 1.5, fontWeight: 600 }}
-                      >
-                        Ödeme Al
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <CashierTableCard
+                  key={table._id}
+                  table={table}
+                  isSelected={selectedTable?._id === table._id}
+                  processing={processing}
+                  onClick={() => setSelectedTable(table)}
+                  onPayClick={openConfirmDialog}
+                />
               ))}
-            </Grid>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 2 && (
+        <>
+          {summaryLoading && !summary ? (
+            <div className="cashier-loading-wrap">
+              <CircularProgress />
+            </div>
+          ) : (
+            <div className="cashier-summary-panel">
+              <Typography variant="subtitle2" sx={{ color: '#7A7168', mb: 2 }}>
+                Bugün ({summary?.date || '—'})
+              </Typography>
+              <div className="cashier-summary-grid">
+                <div className="cashier-summary-card">
+                  <span className="cashier-summary-label">Tahsil edilen</span>
+                  <span className="cashier-summary-value">
+                    {(summary?.totalCollected ?? 0).toFixed(2).replace('.', ',')} ₺
+                  </span>
+                  <span className="cashier-summary-meta">{summary?.paymentCount ?? 0} işlem</span>
+                </div>
+                <div className="cashier-summary-card">
+                  <span className="cashier-summary-label">Nakit</span>
+                  <span className="cashier-summary-value cashier-summary-value-sm">
+                    {(summary?.cashTotal ?? 0).toFixed(2).replace('.', ',')} ₺
+                  </span>
+                </div>
+                <div className="cashier-summary-card">
+                  <span className="cashier-summary-label">Kart</span>
+                  <span className="cashier-summary-value cashier-summary-value-sm">
+                    {(summary?.cardTotal ?? 0).toFixed(2).replace('.', ',')} ₺
+                  </span>
+                </div>
+                <div className="cashier-summary-card cashier-summary-card-pending">
+                  <span className="cashier-summary-label">Bekleyen</span>
+                  <span className="cashier-summary-value cashier-summary-value-sm">
+                    {(summary?.pendingAmount ?? 0).toFixed(2).replace('.', ',')} ₺
+                  </span>
+                  <span className="cashier-summary-meta">
+                    {summary?.pendingTableCount ?? 0} masa · {summary?.pendingOrderCount ?? 0} sipariş
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
         </>
       )}
@@ -547,21 +578,17 @@ export default function CashierDashboard() {
       {activeTab === 1 && (
         <>
           {ordersLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+            <div className="cashier-loading-wrap">
               <CircularProgress />
-            </Box>
+            </div>
           ) : allOrders.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <ReceiptIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                Sipariş Bulunamadı
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Henüz sipariş bulunmuyor.
-              </Typography>
-            </Paper>
+            <div className="cashier-empty-state">
+              <ReceiptIcon />
+              <h3>Sipariş bulunamadı</h3>
+              <p>Henüz kayıtlı sipariş yok.</p>
+            </div>
           ) : (
-            <TableContainer component={Paper}>
+            <TableContainer className="cashier-orders-panel">
               <Table>
                 <TableHead>
                   <TableRow>
@@ -631,28 +658,33 @@ export default function CashierDashboard() {
 
       {/* Masa Detay Dialog */}
       <Dialog
+        className="cashier-detail-dialog"
         open={!!selectedTable}
         onClose={() => setSelectedTable(null)}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Masa {selectedTable?.name} - Sipariş Detayları</Typography>
-            <Chip label="Ödeme Bekliyor" color="warning" size="small" />
+        <div className="cashier-detail-header">
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1F6B38' }}>
+              Masa {selectedTable?.name}
+            </Typography>
+            <Chip
+              label="Ödeme bekliyor"
+              size="small"
+              sx={{ bgcolor: '#E8F5E9', color: '#2E7D32', fontWeight: 700, border: '1px solid #D7E7D8' }}
+            />
           </Box>
-        </DialogTitle>
-        <DialogContent>
+          <Typography variant="body2" sx={{ color: '#7A7168', mb: 0.5 }}>
+            Tahsil edilecek tutar
+          </Typography>
+          <div className="cashier-detail-total">
+            {selectedTable?.totalAmount?.toFixed(2).replace('.', ',')} ₺
+          </div>
+        </div>
+        <DialogContent sx={{ pt: 2 }}>
           {selectedTable && (
             <Box>
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Toplam Tutar
-                </Typography>
-                <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
-                  {selectedTable.totalAmount.toFixed(2).replace('.', ',')} ₺
-                </Typography>
-              </Box>
 
               <Divider sx={{ my: 2 }} />
 
@@ -669,15 +701,7 @@ export default function CashierDashboard() {
                   {selectedTable.orders.map((order, index) => (
                     <React.Fragment key={order._id || index}>
                       <ListItem
-                        sx={{
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
-                        }}
+                        className="cashier-order-list-item"
                         secondaryAction={
                           <Button
                             variant="outlined"
@@ -708,6 +732,7 @@ export default function CashierDashboard() {
                             <Box sx={{ mt: 1 }}>
                               <Typography variant="body2" color="text.secondary">
                                 {new Date(order.createdAt || order.created_at).toLocaleString('tr-TR')}
+                                {order.paymentMethod ? ` · ${getOrderPaymentDisplayText(order)}` : ''}
                               </Typography>
                               {order.orderItems && order.orderItems.length > 0 && (
                                 <Box sx={{ mt: 1 }}>
@@ -735,11 +760,12 @@ export default function CashierDashboard() {
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSelectedTable(null)}>Kapat</Button>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button onClick={() => setSelectedTable(null)} sx={{ color: '#7A7168' }}>
+            Kapat
+          </Button>
           <Button
             variant="contained"
-            color="success"
             startIcon={<PaymentIcon />}
             onClick={() => {
               if (selectedTable) {
@@ -748,6 +774,14 @@ export default function CashierDashboard() {
               }
             }}
             disabled={processing}
+            sx={{
+              background: 'linear-gradient(90deg, #2F8F39, #4CAF50, #67C96B)',
+              fontWeight: 700,
+              borderRadius: '20px',
+              px: 3,
+              boxShadow: '0 4px 12px rgba(46, 125, 50, 0.25)',
+              '&:hover': { background: 'linear-gradient(90deg, #2E7D32, #43A047, #5CBF6A)' },
+            }}
           >
             Ödeme Al
           </Button>
@@ -764,12 +798,13 @@ export default function CashierDashboard() {
           <Typography>
             Masa <strong>{confirmDialog.table?.name}</strong> için ödeme alınacak.
           </Typography>
-          <Typography variant="h6" color="primary" sx={{ mt: 2, fontWeight: 700 }}>
-            Toplam: {confirmDialog.table?.totalAmount.toFixed(2).replace('.', ',')} ₺
+          <Typography variant="h6" sx={{ mt: 2, fontWeight: 700, color: '#3A7F3D' }}>
+            Toplam: {confirmDialog.table?.totalAmount?.toFixed(2).replace('.', ',')} ₺
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Bu işlem geri alınamaz.
+            Ödeme yöntemi seçin. Bu işlem geri alınamaz.
           </Typography>
+          <PaymentMethodPicker value={payMethod} onChange={setPayMethod} />
         </DialogContent>
         <DialogActions>
           <Button onClick={closeConfirmDialog} disabled={processing}>
@@ -787,6 +822,34 @@ export default function CashierDashboard() {
         </DialogActions>
       </Dialog>
 
+      {/* Tek sipariş ödeme */}
+      <Dialog open={singlePayDialog.open} onClose={() => setSinglePayDialog({ open: false, orderId: null })}>
+        <DialogTitle>Tek sipariş tahsilat</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Ödeme yöntemini seçin.
+          </Typography>
+          <PaymentMethodPicker value={payMethod} onChange={setPayMethod} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSinglePayDialog({ open: false, orderId: null })} disabled={processing}>
+            İptal
+          </Button>
+          <Button
+            variant="contained"
+            disabled={processing}
+            onClick={() => handleMarkAsPaid(singlePayDialog.orderId, payMethod)}
+            sx={{
+              background: 'linear-gradient(90deg, #2F8F39, #4CAF50)',
+              fontWeight: 700,
+              borderRadius: '20px',
+            }}
+          >
+            {processing ? 'İşleniyor...' : 'Ödendi işaretle'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Sipariş Detay Modal */}
       <OrderDetailModal
         open={orderDetailModalOpen}
@@ -795,7 +858,10 @@ export default function CashierDashboard() {
           setSelectedOrder(null);
         }}
         order={selectedOrder}
-        onMarkPaid={handleMarkAsPaid}
+        onMarkPaid={(orderId) => {
+          setPayMethod('cash');
+          setSinglePayDialog({ open: true, orderId });
+        }}
         onCancelOrder={handleCancelOrder}
       />
 
