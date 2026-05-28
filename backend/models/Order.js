@@ -57,4 +57,6 @@ const orderSchema = new mongoose.Schema({
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
 }, { timestamps: true, strict: false }); // strict: false - eski ve yeni field'ları destekle
 
+orderSchema.index({ customer: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Order', orderSchema);

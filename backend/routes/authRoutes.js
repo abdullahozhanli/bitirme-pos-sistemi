@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs'); // Şifre karşılaştırma için
 const jwt = require('jsonwebtoken'); // Token (Giriş Kartı) oluşturmak için
 
 const User = require('../models/User');
+const Order = require('../models/Order');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { uploadAvatar } = require('../middleware/uploadAvatar');
 const {
@@ -63,7 +64,13 @@ router.get('/me', authMiddleware, async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
-    res.json(meResponse(req, user));
+    const payload = meResponse(req, user);
+    if (user.role === 'musteri') {
+      payload.orderCount = await Order.countDocuments({ customer: user._id });
+    } else {
+      payload.orderCount = 0;
+    }
+    res.json(payload);
   } catch (e) {
     next(e);
   }
@@ -351,15 +358,10 @@ router.post('/login', authLoginLimiter, async (req, res, next) => {
       }
     }
 
-    const adminCount = await User.countDocuments({ role: 'admin' });
     const validRoles = ['superadmin', 'admin', 'yetkili', 'garson', 'mutfak', 'kasa', 'musteri'];
 
     if (user.role === 'superadmin') {
       console.log(`✅ ${user.email} superadmin olarak giriş yapıyor`);
-    } else if (adminCount === 0) {
-      user.role = 'admin';
-      await user.save();
-      console.log(`✅ ${user.email} kullanıcısı ilk admin olarak ayarlandı`);
     } else if (!user.role || !validRoles.includes(user.role)) {
       user.role = 'garson';
       await user.save();

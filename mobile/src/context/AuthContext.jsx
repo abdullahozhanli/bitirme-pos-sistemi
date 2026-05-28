@@ -125,8 +125,7 @@ export function AuthProvider({ children }) {
       const { token: t, user: u } = res.data;
       const normalized = {
         ...u,
-        passwordMeetsPolicy:
-          u?.passwordMeetsPolicy === true || isStrongPassword(password),
+        passwordMeetsPolicy: u?.passwordMeetsPolicy === true,
       };
       await persistSession(t, normalized);
       return normalized;
@@ -144,7 +143,7 @@ export function AuthProvider({ children }) {
       const { token: t, user: u } = res.data;
       const normalized = {
         ...u,
-        passwordMeetsPolicy: u?.passwordMeetsPolicy === true || isStrongPassword(password),
+        passwordMeetsPolicy: u?.passwordMeetsPolicy === true,
       };
       await persistSession(t, normalized);
       return normalized;
@@ -180,20 +179,23 @@ export function AuthProvider({ children }) {
   const refreshUser = useCallback(async () => {
     try {
       const t = await readToken();
-      if (!t) return;
+      if (!t) return null;
       applyAxiosToken(t);
       const res = await client.get('/api/auth/me');
+      let merged;
       setUser((prev) => {
-        const merged = mergeUserFromMe(prev || {}, res.data);
+        merged = mergeUserFromMe(prev || {}, res.data);
         AsyncStorage.setItem(USER_KEY, JSON.stringify(merged)).catch(() => {});
         return merged;
       });
+      return merged;
     } catch (e) {
       if (isUnauthorizedError(e)) {
         await notifyUnauthorized({ silent: true });
       } else {
         console.warn('refreshUser', e?.message || e);
       }
+      return null;
     }
   }, []);
 

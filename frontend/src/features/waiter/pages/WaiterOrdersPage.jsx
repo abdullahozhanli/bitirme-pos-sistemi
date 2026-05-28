@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket, getStaffSocketToken } from '../../../shared/utils/socketClient';
 import {
   Box,
   Typography,
@@ -103,22 +103,15 @@ export default function WaiterOrdersPage() {
   useEffect(() => {
     const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
-    const socket = io(baseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      forceNew: false,
-    });
+    const token = getStaffSocketToken();
+    if (!token) return undefined;
+
+    const socket = createAuthenticatedSocket(baseURL, token);
+    if (!socket) return undefined;
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ Socket.io bağlandı (Garson Siparişler)');
-      
-      // Garson odasına abone ol (bildirimler için)
-      const token = localStorage.getItem('token');
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split('.')[1]));

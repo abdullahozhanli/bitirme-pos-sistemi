@@ -278,12 +278,17 @@ router.get('/reports/daily', auth, requireRole('admin'), async (req, res, next) 
     toDate.setHours(23, 59, 59, 999);
 
     // DailyAggregate'lerden veri çek
-    const aggregates = await DailyAggregate.find({
+    const aggQuery = {
       date: {
         $gte: from.replace(/-/g, ''),
-        $lte: to.replace(/-/g, '')
-      }
-    }).sort({ date: 1 });
+        $lte: to.replace(/-/g, ''),
+      },
+    };
+    if (req.user?.branchId) {
+      aggQuery.branchId = req.user.branchId;
+    }
+
+    const aggregates = await DailyAggregate.find(aggQuery).sort({ date: 1 });
 
     // CSV format
     const csvRows = ['Tarih,Gelir (TL),Sipariş Sayısı,İptal Sayısı'];
@@ -666,7 +671,27 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
     const saleErr = validateProductSaleFields(req.body, existing.price);
     if (saleErr) return res.status(400).json({ message: saleErr });
 
-    const patch = { ...req.body };
+    const allowedKeys = [
+      'name',
+      'description',
+      'price',
+      'category',
+      'categoryId',
+      'imageUrl',
+      'isActive',
+      'station',
+      'salePrice',
+      'saleStartsAt',
+      'saleEndsAt',
+      'stock',
+      'unit',
+      'ingredients',
+      'allergens',
+    ];
+    const patch = {};
+    for (const key of allowedKeys) {
+      if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
     if (patch.salePrice === '' || patch.salePrice == null) patch.salePrice = null;
     if (patch.saleStartsAt === '') patch.saleStartsAt = null;
     if (patch.saleEndsAt === '') patch.saleEndsAt = null;

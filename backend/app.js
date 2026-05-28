@@ -5,12 +5,10 @@ const http = require('http');
 
 const authRoutes = require('./routes/authRoutes');
 const waiterRoutes = require('./routes/waiterRoutes');
-const waiter = require('./routes/waiter');
 const kitchenRoutes = require('./routes/kitchenRoutes');
-const kitchen = require('./routes/kitchen');
 const cashierRoutes = require('./routes/cashier');
 const adminRoutes = require('./routes/adminRoutes');
-const admin = require('./routes/admin');
+const { attachSocketAuth } = require('./middleware/socketAuth');
 const qrRoutes = require('./routes/qrRoutes');
 const calorieRoutes = require('./routes/calorieRoutes');
 const superAdminRoutes = require('./routes/superAdminRoutes');
@@ -60,11 +58,13 @@ function createApp() {
         if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin)) return callback(null, true);
 
-        const isLocalNetwork =
-          /^http:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+)(:\d+)?$/.test(
-            origin
-          );
-        if (isLocalNetwork) return callback(null, true);
+        if (isDevelopment) {
+          const isLocalNetwork =
+            /^http:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+)(:\d+)?$/.test(
+              origin
+            );
+          if (isLocalNetwork) return callback(null, true);
+        }
 
         callback(new Error('CORS policy tarafından izin verilmedi'));
       },
@@ -109,40 +109,7 @@ function createApp() {
       allowEIO3: true,
     });
 
-    io.on('connection', (socket) => {
-      socket.on('subscribe:kitchen', (data) => {
-        const { branchId, station } = data || {};
-        const branch = branchId || 'default';
-        if (station === '*' || !station) {
-          ['hot', 'cold', 'bar', 'dessert'].forEach((st) => {
-            socket.join(`kitchen.${branch}.${st}`);
-          });
-          socket.join(`kitchen.${branch}`);
-        } else {
-          socket.join(`kitchen.${branch}.${station}`);
-          socket.join(`kitchen.${branch}`);
-        }
-      });
-
-      socket.on('subscribe:waiter', (data) => {
-        const { waiterId } = data;
-        if (waiterId) socket.join(`waiter.${waiterId}`);
-      });
-
-      socket.on('subscribe:admin', (data) => {
-        const { branchId } = data;
-        socket.join(`admin.metrics.${branchId || 'default'}`);
-      });
-
-      socket.on('subscribe:tables', () => {
-        socket.join('tables');
-      });
-
-      socket.on('subscribe:customer', (data) => {
-        const userId = data?.userId;
-        if (userId) socket.join(`customer.${userId}`);
-      });
-    });
+    attachSocketAuth(io);
   } catch (err) {
     console.warn('Socket.io yüklenemedi:', err.message);
   }
@@ -162,12 +129,9 @@ function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/superadmin', superAdminRoutes);
   app.use('/api/waiter', waiterRoutes);
-  app.use('/api/waiter', waiter);
   app.use('/api/kitchen', kitchenRoutes);
-  app.use('/api/kitchen', kitchen);
   app.use('/api/cashier', cashierRoutes);
   app.use('/api/admin', adminRoutes);
-  app.use('/api/admin', admin);
   app.use('/api/qr', qrRoutes);
   app.use('/api/calorie', calorieRoutes);
   app.use('/api/campaigns', campaignRoutes);

@@ -12,6 +12,7 @@ const StockMovement = require('../models/StockMovement');
 const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
 const { emitCustomerOrderUpdate } = require('../utils/customerOrderNotify');
 const { cancelOrder } = require('../utils/orderCancel');
+const { branchFilterForUser, loadOrderForStaff, requireStaffBranch } = require('../utils/branchAccess');
 
 /**
  * GET /api/waiter/tables
@@ -19,12 +20,12 @@ const { cancelOrder } = require('../utils/orderCancel');
  */
 router.get('/tables', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
-    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
-    const branchFilter = {};
-    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
-      branchFilter.branchId = req.user.branchId;
+    const branchFilter = branchFilterForUser(req.user);
+    if (branchFilter.__forbidden) {
+      return res.status(403).json({ message: 'Şube atanmamış hesap bu işlemi yapamaz' });
     }
-    
+    delete branchFilter.__forbidden;
+
     const tables = await Table.find(branchFilter).sort({ name: 1 }).lean();
     
     // Her masa için aktif siparişleri kontrol et ve durumları güncelle
@@ -496,8 +497,9 @@ router.post('/orders', auth, requireRole('garson', 'admin', 'yetkili'), async (r
  */
 router.post('/orders/:id/send', auth, requireRole('garson', 'admin', 'yetkili'), async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
+    const loaded = await loadOrderForStaff(req.user, req.params.id, Order);
+    if (loaded.error) return res.status(loaded.error.status).json({ message: loaded.error.message });
+    const order = loaded.order;
 
     if (order.status !== 'CREATED') {
       return res.status(409).json({ message: `Sipariş zaten ${order.status} durumunda` });
@@ -590,6 +592,10 @@ router.post('/items/:itemId/served', auth, requireRole('garson', 'admin', 'yetki
   try {
     const order = await Order.findOne({ 'orderItems._id': req.params.itemId });
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
+    const { assertDocumentBranch } = require('../utils/branchAccess');
+    if (!assertDocumentBranch(req.user, order)) {
+      return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
+    }
 
     const item = order.orderItems.id(req.params.itemId);
     if (!item) return res.status(404).json({ message: 'Sipariş kalemi bulunamadı' });
@@ -656,8 +662,9 @@ router.post('/payments', auth, requireRole('garson', 'admin', 'yetkili', 'kasa')
     const { orderId, method, amount } = req.body;
     const { recordOrderPayment } = require('../utils/recordOrderPayment');
 
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
+    const loaded = await loadOrderForStaff(req.user, orderId, Order);
+    if (loaded.error) return res.status(loaded.error.status).json({ message: loaded.error.message });
+    const order = loaded.order;
 
     const io = req.app.get('io');
     const { payment, order: updated } = await recordOrderPayment({

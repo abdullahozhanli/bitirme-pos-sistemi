@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket } from '../../../shared/utils/socketClient';
 import { useCart } from '../../../shared/context/CartContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -118,12 +118,15 @@ export default function HomePage() {
     // Socket.io bağlantısı - Real-time stok güncellemeleri için
     const socketBaseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
-    const socket = io(socketBaseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
+    const guestToken = localStorage.getItem('token');
+    if (!guestToken) {
+      return undefined;
+    }
+
+    const socket = createAuthenticatedSocket(socketBaseURL, guestToken);
+    if (!socket) {
+      return undefined;
+    }
 
     socketRef.current = socket;
 

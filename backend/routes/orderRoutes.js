@@ -54,6 +54,22 @@ router.get('/mine', authMiddleware, async (req, res, next) => {
       filter.branchId = new mongoose.Types.ObjectId(String(branchQ));
     }
 
+    const countOnly =
+      req.query.countOnly === 'true' ||
+      req.query.countOnly === '1' ||
+      req.query.countOnly === true;
+
+    if (countOnly) {
+      const total = await Order.countDocuments(filter);
+      return res.json({
+        items: [],
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit) || 0,
+      });
+    }
+
     const [items, total] = await Promise.all([
       Order.find(filter)
         .populate('table', 'name capacity')

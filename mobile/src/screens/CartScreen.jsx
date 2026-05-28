@@ -1624,7 +1624,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   cardSheet: {
-    backgroundColor: '#DDDDDD',
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,

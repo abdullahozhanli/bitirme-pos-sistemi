@@ -10,6 +10,7 @@ const {
   isOrderPaid,
 } = require('./orderPayment');
 const { emitCustomerOrderUpdate } = require('./customerOrderNotify');
+const { emitToTables } = require('./socketRooms');
 
 const EARLY_FULFILLMENT_STATUSES = new Set([
   'hazirlaniyor',
@@ -92,7 +93,7 @@ async function freeTableIfNoActiveOrders(tableId, io) {
 
   const table = await Table.findByIdAndUpdate(tableId, { status: 'bos' }, { new: true });
   if (table && io) {
-    io.to('tables').emit('table:status:changed', {
+    emitToTables(io, table.branchId, 'table:status:changed', {
       tableId: table._id,
       status: table.status,
       table: table.toObject(),
@@ -165,7 +166,7 @@ async function cancelOrder({ orderId, actorId, reason, io, branchFilter = {} }) 
   const tableId = order.table?._id || order.table;
   if (io) {
     if (tableId) {
-      io.to('tables').emit('table:order:canceled', {
+      emitToTables(io, order.branchId, 'table:order:canceled', {
         tableId,
         order: order.toObject(),
       });

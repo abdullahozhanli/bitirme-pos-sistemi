@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket, getStaffSocketToken } from '../utils/socketClient';
 
 /**
  * Socket.io client hook
@@ -20,12 +20,11 @@ export default function useSocket(room, callbacks = {}) {
   useEffect(() => {
     // Socket bağlantısı oluştur
     const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
-    const socket = io(baseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-    });
+    const token = getStaffSocketToken();
+    if (!token) return undefined;
+
+    const socket = createAuthenticatedSocket(baseURL, token);
+    if (!socket) return undefined;
 
     socketRef.current = socket;
 

@@ -1,3 +1,6 @@
+/**
+ * @deprecated Mount kaldırıldı (güvenlik). Kullanın: routes/adminRoutes.js
+ */
 const router = require('express').Router();
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');

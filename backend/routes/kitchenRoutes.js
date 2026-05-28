@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const Order = require('../models/Order');
 const OrderEvent = require('../models/OrderEvent');
+const { branchFilterForUser, assertDocumentBranch } = require('../utils/branchAccess');
 
 /**
  * GET /api/kitchen/queue
@@ -14,11 +15,11 @@ router.get('/queue', auth, requireRole('mutfak', 'admin', 'yetkili'), async (req
   try {
     const { station } = req.query;
 
-    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
-    const branchFilter = {};
-    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
-      branchFilter.branchId = req.user.branchId;
+    const branchFilter = branchFilterForUser(req.user);
+    if (branchFilter.__forbidden) {
+      return res.status(403).json({ message: 'Şube atanmamış hesap bu işlemi yapamaz' });
     }
+    delete branchFilter.__forbidden;
 
     // Tüm aktif siparişleri bul (eski ve yeni status'ları dahil)
     // Önce tüm siparişleri çek, sonra filtrele (debug için)
@@ -233,6 +234,9 @@ router.post('/items/:itemId/start', auth, requireRole('mutfak', 'admin', 'yetkil
     
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
     if (!item) return res.status(404).json({ message: 'Sipariş kalemi bulunamadı' });
+    if (!assertDocumentBranch(req.user, order)) {
+      return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
+    }
 
     // QR siparişlerinde status undefined olabilir, bu durumda QUEUED olarak kabul et
     if (!item.status) {
@@ -397,6 +401,9 @@ router.post('/items/:itemId/ready', auth, requireRole('mutfak', 'admin', 'yetkil
     if (!item) {
       console.error('❌ Sipariş kalemi bulunamadı');
       return res.status(404).json({ message: 'Sipariş kalemi bulunamadı' });
+    }
+    if (!assertDocumentBranch(req.user, order)) {
+      return res.status(403).json({ message: 'Bu siparişe erişim yetkiniz yok' });
     }
 
     console.log('🔵 Item bulundu, status:', item.status, 'itemArrayName:', itemArrayName);
@@ -715,11 +722,11 @@ router.get('/orders/history', auth, requireRole('mutfak', 'admin', 'yetkili'), a
       dateFilter = { createdAt: { $gte: start, $lte: end } };
     }
     
-    // BranchId filtresi: Süper admin değilse sadece kendi şubesini göster
-    const branchFilter = {};
-    if (req.user && req.user.role !== 'superadmin' && req.user.branchId) {
-      branchFilter.branchId = req.user.branchId;
+    const branchFilter = branchFilterForUser(req.user);
+    if (branchFilter.__forbidden) {
+      return res.status(403).json({ message: 'Şube atanmamış hesap bu işlemi yapamaz' });
     }
+    delete branchFilter.__forbidden;
     
     // Tamamlanmış siparişleri getir
     const query = {

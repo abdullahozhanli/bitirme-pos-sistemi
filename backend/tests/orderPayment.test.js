@@ -6,11 +6,25 @@ import {
 } from '../utils/orderPayment.js';
 
 describe('buildInitialPaymentFromCheckout', () => {
-  it('marks online confirmed as paid', () => {
+  it('rejects fake online payment in production', () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
     const r = buildInitialPaymentFromCheckout({
       paymentMethod: 'online',
       paymentConfirmed: true,
     });
+    process.env.NODE_ENV = prev;
+    expect(r.error).toBeTruthy();
+  });
+
+  it('marks online confirmed as paid only when demo flag set', () => {
+    const prev = process.env.ALLOW_DEMO_ONLINE_PAYMENT;
+    process.env.ALLOW_DEMO_ONLINE_PAYMENT = 'true';
+    const r = buildInitialPaymentFromCheckout({
+      paymentMethod: 'online',
+      paymentConfirmed: true,
+    });
+    process.env.ALLOW_DEMO_ONLINE_PAYMENT = prev;
     expect(r.paymentStatus).toBe('paid');
     expect(r.paymentMethod).toBe('online');
     expect(r.paidAt).toBeTruthy();

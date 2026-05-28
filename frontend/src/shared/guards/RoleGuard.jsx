@@ -13,14 +13,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 export default function RoleGuard({ allowedRoles = [], children, redirectTo = '/' }) {
   const { user, isAuthenticated } = useAuth();
 
-  // Debug: user ve role bilgisini logla
-  console.log('🔍 RoleGuard check:', {
-    isAuthenticated,
-    user: user ? { id: user.id, email: user.email, role: user.role } : null,
-    allowedRoles,
-    hasAccess: user && user.role ? allowedRoles.includes(user.role) : false
-  });
-
   // Kullanıcı giriş yapmamışsa login sayfasına yönlendir
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;

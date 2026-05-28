@@ -59,8 +59,23 @@ function applyUnpaidToOrder(order, method) {
 function buildInitialPaymentFromCheckout(body) {
   const method = normalizePaymentMethod(body?.paymentMethod);
   const confirmed = body?.paymentConfirmed === true || body?.paymentConfirmed === 'true';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const allowDemoOnline =
+    !isProduction && process.env.ALLOW_DEMO_ONLINE_PAYMENT === 'true';
 
   if (method === 'online') {
+    if (isProduction) {
+      return {
+        error:
+          'Online ödeme henüz etkin değil. Lütfen masada öde veya kasada öde seçin.',
+      };
+    }
+    if (!allowDemoOnline) {
+      return {
+        error:
+          'Online ödeme demo modunda kapalı. ALLOW_DEMO_ONLINE_PAYMENT=true ile açılabilir.',
+      };
+    }
     if (!confirmed) {
       return { error: 'Online ödeme için paymentConfirmed gerekli' };
     }

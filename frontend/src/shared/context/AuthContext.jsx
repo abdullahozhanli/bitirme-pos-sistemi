@@ -115,6 +115,30 @@ export function AuthProvider({ children }) {
     );
   }, []);
 
+  // Oturum açıkken rol ve policy sunucudan doğrulanır (localStorage tek başına yetki kaynağı değil)
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get('/api/auth/me');
+        const me = res.data;
+        if (!cancelled && me && typeof me === 'object') {
+          setUser((prev) => {
+            const merged = { ...(prev || {}), ...me };
+            localStorage.setItem('userData', JSON.stringify(merged));
+            return merged;
+          });
+        }
+      } catch {
+        // token geçersizse interceptor yönlendirir
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   // apply token to axios (geriye dönük uyumluluk için)
   const applyToken = (t) => {
     if (t) {

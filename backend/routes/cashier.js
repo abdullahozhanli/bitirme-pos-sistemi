@@ -6,8 +6,12 @@ const Order = require('../models/Order');
 const Payment = require('../models/Payment');
 const { unpaidPaymentMatch } = require('../utils/orderQueries');
 const { recordOrderPayment, normalizeStaffMethod, todayKey, startOfToday } = require('../utils/recordOrderPayment');
+const requireStaffBranchMiddleware = require('../middleware/requireStaffBranch');
+const { branchFilterForUser } = require('../utils/branchAccess');
+const { emitToTables } = require('../utils/socketRooms');
 
 router.use(auth, requireRole('kasa', 'admin', 'yetkili'));
+router.use(requireStaffBranchMiddleware);
 
 const PENDING_ORDER_STATUSES = [
   'serviste',
@@ -18,14 +22,6 @@ const PENDING_ORDER_STATUSES = [
   'SENT_TO_KITCHEN',
   'IN_PREP',
 ];
-
-function branchFilterForUser(user) {
-  const filter = {};
-  if (user && user.role !== 'superadmin' && user.branchId) {
-    filter.branchId = user.branchId;
-  }
-  return filter;
-}
 
 function orderLineTotal(order) {
   const direct = Number(order.total ?? order.totalPrice ?? 0);
@@ -200,7 +196,7 @@ router.post('/checkout/:tableId', async (req, res) => {
     await Table.findByIdAndUpdate(tableId, { status: 'bos' });
 
     if (io) {
-      io.to('tables').emit('table:status:changed', {
+      emitToTables(io, table.branchId || req.user.branchId, 'table:status:changed', {
         tableId,
         status: 'bos',
         table: { ...table.toObject(), status: 'bos' },

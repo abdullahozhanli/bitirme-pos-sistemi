@@ -60,3 +60,24 @@ export const menuGoBtn = {
 };
 
 export const scanCardGradient = [profileCardStyle.cardBg, profileCardStyle.cardBg];
+
+/** Bağlı masa kartı — mockup paleti */
+export const connectedCardTheme = {
+  cardBg: '#FFFFFF',
+  border: '#E8E8E8',
+  divider: '#EEEEEE',
+  /** İkon önde — arka daire çok silik */
+  iconCircleBg: '#F4F9F6',
+  /** Menüye Git butonu ile aynı yeşil */
+  iconColor: '#1F6B38',
+  labelGreen: '#1F6B38',
+  checkGreen: '#4CAF50',
+  textPrimary: '#111827',
+  textMuted: '#6B7280',
+  removePillBg: '#F3F4F6',
+  removeIcon: '#6B7280',
+  removeText: '#4B5563',
+  primaryBtnBg: '#1F6B38',
+  primaryBtnPressed: '#1A5C30',
+  secondaryBorder: '#1F2937',
+};

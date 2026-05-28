@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket, getStaffSocketToken } from '../../../shared/utils/socketClient';
 import {
   Box,
   Typography,
@@ -85,16 +85,12 @@ export default function AdminTableManagementPage() {
     // Socket.io bağlantısı
     const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
-    socketRef.current = io(baseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      forceNew: false,
-    });
+    const token = getStaffSocketToken();
+    if (!token) return undefined;
 
+    socketRef.current = createAuthenticatedSocket(baseURL, token);
     const socket = socketRef.current;
+    if (!socket) return undefined;
 
     socket.on('connect', () => {
       console.log('✅ Socket.io bağlandı (Admin)');

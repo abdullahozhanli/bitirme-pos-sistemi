@@ -1,83 +1,55 @@
 /**
  * Garson kullanıcısı oluştur
- * 
+ *
  * Kullanım:
- *   node backend/scripts/createGarsonUser.js
- *   node backend/scripts/createGarsonUser.js garson@example.com password123
+ *   GARSON_EMAIL=garson@example.com GARSON_PASSWORD='GucluSifre1!' node scripts/createGarsonUser.js
  */
 
 require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const { isStrongPassword } = require('../utils/authValidation');
 
 async function createGarsonUser() {
+  const email = (process.env.GARSON_EMAIL || process.argv[2] || '').trim().toLowerCase();
+  const password = process.env.GARSON_PASSWORD || process.argv[3];
+
+  if (!email || !password) {
+    console.error('❌ GARSON_EMAIL ve GARSON_PASSWORD (veya argv) gerekli.');
+    process.exit(1);
+  }
+  if (!isStrongPassword(password)) {
+    console.error('❌ Şifre politika gereksinimlerini karşılamıyor.');
+    process.exit(1);
+  }
+
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('✅ MongoDB bağlantısı başarılı\n');
 
-    const email = process.argv[2] || 'garson@example.com';
-    const password = process.argv[3] || 'garson123';
-    const name = 'Garson Kullanıcı';
-
-    // Kullanıcı var mı kontrol et
     let user = await User.findOne({ email });
-    
     if (user) {
-      console.log(`⚠️  Kullanıcı zaten var: ${email}`);
-      console.log(`   Rol: ${user.role}`);
-      console.log(`   Aktif: ${user.isActive}`);
-      
-      // Rolü güncelle
-      if (user.role !== 'garson') {
-        user.role = 'garson';
-        await user.save();
-        console.log('✅ Rol "garson" olarak güncellendi');
-      }
-      
-      // Aktif yap
-      if (!user.isActive) {
-        user.isActive = true;
-        user.active = true;
-        await user.save();
-        console.log('✅ Kullanıcı aktif yapıldı');
-      }
-      
-      // Şifreyi güncelle - passwordHash'i markModified ile işaretle
-      user.passwordHash = password; // pre-save hook otomatik hashleyecek
-      user.markModified('passwordHash'); // pre-save hook'un çalışması için
+      user.role = 'garson';
+      user.isActive = true;
+      user.passwordHash = password;
       await user.save();
-      console.log(`✅ Şifre güncellendi: ${password}`);
-      
-      console.log('\n✅ Kullanıcı hazır!');
-      console.log(`   Email: ${email}`);
-      console.log(`   Şifre: ${password}`);
-      console.log(`   Rol: ${user.role}`);
+      console.log(`✅ Garson kullanıcısı güncellendi: ${email}`);
     } else {
-      // Yeni kullanıcı oluştur
-      user = new User({
+      await User.create({
         email,
-        passwordHash: password, // pre-save hook otomatik hashleyecek
-        name,
+        passwordHash: password,
+        name: process.env.GARSON_NAME || 'Garson Kullanıcı',
         role: 'garson',
         isActive: true,
-        active: true
       });
-      
-      await user.save();
-      console.log('✅ Garson kullanıcısı oluşturuldu!');
-      console.log(`   Email: ${email}`);
-      console.log(`   Şifre: ${password}`);
-      console.log(`   Rol: garson`);
-      console.log(`   İsim: ${name}`);
+      console.log(`✅ Garson kullanıcısı oluşturuldu: ${email}`);
     }
 
     await mongoose.disconnect();
-    console.log('\n✅ İşlem tamamlandı');
+    process.exit(0);
   } catch (error) {
-    console.error('❌ Hata:', error);
+    console.error('❌ Hata:', error.message);
     process.exit(1);
   }
 }
 
 createGarsonUser();
-

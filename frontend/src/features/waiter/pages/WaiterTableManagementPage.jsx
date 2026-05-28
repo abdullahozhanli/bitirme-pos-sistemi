@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket, getStaffSocketToken } from '../../../shared/utils/socketClient';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -111,23 +111,17 @@ export default function WaiterTableManagementPage() {
     // Socket.io bağlantısı
     const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
-    const socket = io(baseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      forceNew: false,
-    });
+    const token = getStaffSocketToken();
+    if (!token) return undefined;
+
+    const socket = createAuthenticatedSocket(baseURL, token);
+    if (!socket) return undefined;
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('✅ Socket.io bağlandı (Garson Masa Yönetimi)');
       socket.emit('subscribe:tables');
-      
-      // Garson odasına abone ol (bildirimler için)
-      const token = localStorage.getItem('token');
+
       if (token) {
         try {
           // Token'dan user ID'yi çıkar (JWT decode)

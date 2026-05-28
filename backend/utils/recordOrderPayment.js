@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const { applyPaidToOrder, isOrderPaid } = require('./orderPayment');
 const { unpaidPaymentMatch } = require('./orderQueries');
 const { emitCustomerOrderUpdate } = require('./customerOrderNotify');
+const { emitToTables } = require('./socketRooms');
 
 function normalizeStaffMethod(method) {
   return method === 'card' ? 'card' : 'cash';
@@ -109,7 +110,7 @@ async function recordOrderPayment({ order, actorId, method, amount, io, channel 
       if (unpaidCount === 0) {
         const table = await Table.findByIdAndUpdate(tableId, { status: 'bos' }, { new: true });
         if (table) {
-          io.to('tables').emit('table:status:changed', {
+          emitToTables(io, order.branchId, 'table:status:changed', {
             tableId: table._id,
             status: 'bos',
             table: table.toObject(),
@@ -117,7 +118,7 @@ async function recordOrderPayment({ order, actorId, method, amount, io, channel 
         }
       }
 
-      io.to('tables').emit('table:payment:completed', {
+      emitToTables(io, order.branchId, 'table:payment:completed', {
         tableId,
         orderId: order._id,
         amount: payAmount,

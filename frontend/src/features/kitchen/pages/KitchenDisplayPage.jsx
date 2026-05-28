@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { createAuthenticatedSocket, getStaffSocketToken } from '../../../shared/utils/socketClient';
 import { 
   Box, 
   Typography, 
@@ -73,14 +73,11 @@ export default function KitchenDisplayPage() {
     // Socket.io bağlantısı
     const baseURL = import.meta.env?.VITE_API_URL || 'http://localhost:5001';
 
-    const socket = io(baseURL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000,
-      forceNew: false,
-    });
+    const token = getStaffSocketToken();
+    if (!token) return undefined;
+
+    const socket = createAuthenticatedSocket(baseURL, token);
+    if (!socket) return undefined;
 
     socketRef.current = socket;
 

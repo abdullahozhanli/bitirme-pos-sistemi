@@ -3,7 +3,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import { homeFonts } from '../../constants/homeTheme';
-import IconBadge from './IconBadge';
 import { homeCardTheme, profileCardStyle, qrGradient } from './homeTheme';
 
 const WELCOME_TITLE = "Self Kasa'ya hoş geldiniz!";
@@ -12,11 +11,6 @@ export default function ScanQrCard({ onScanPress }) {
   return (
     <View style={styles.outer}>
       <View style={styles.card}>
-        <View style={styles.topRow}>
-          <IconBadge name="scan-outline" />
-          <Text style={styles.topLabel}>QR ile bağlan</Text>
-        </View>
-
         <View style={styles.center}>
           <View style={styles.qrFrame}>
             <LottieView
@@ -76,23 +70,10 @@ const styles = StyleSheet.create({
     backgroundColor: homeCardTheme.cardBg,
     overflow: 'hidden',
   },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 4,
-  },
-  topLabel: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 16,
-    color: homeCardTheme.textPrimary,
-  },
   center: {
     alignItems: 'center',
     paddingHorizontal: 22,
-    paddingTop: 8,
+    paddingTop: 18,
     paddingBottom: 22,
   },
   qrFrame: {

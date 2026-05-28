@@ -1,14 +1,39 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { homeFonts, androidRipple } from '../../constants/homeTheme';
 import { formatConnectedTime } from '../../utils/tableSessionCore';
-import IconBadge from './IconBadge';
-import { homeCardTheme, menuGoBtn, profileCardStyle } from './homeTheme';
+import { connectedCardTheme, profileCardStyle } from './homeTheme';
+
+/** MaterialCommunityIcons — yemek / masa / QR için daha net set */
+const ICON = {
+  table: 'silverware-fork-knife',
+  store: 'store-outline',
+  menu: 'room-service-outline',
+  qr: 'qrcode-scan',
+};
 
 function tableDisplayName(session) {
   if (session?.tableName) return session.tableName;
   if (session?.tableNumber) return `Masa ${session.tableNumber}`;
   return '—';
+}
+
+function IconCircle({ name, size = 44, iconSize = 22 }) {
+  return (
+    <View
+      style={[
+        styles.iconCircle,
+        { width: size, height: size, borderRadius: size / 2 },
+      ]}
+    >
+      <MaterialCommunityIcons
+        name={name}
+        size={iconSize}
+        color={connectedCardTheme.iconColor}
+      />
+    </View>
+  );
 }
 
 export default function ConnectedTableCard({
@@ -25,15 +50,11 @@ export default function ConnectedTableCard({
     <View style={styles.outer}>
       <View style={styles.card}>
         <View style={styles.headerRow}>
-          <IconBadge name="grid-outline" />
+          <IconCircle name={ICON.table} />
 
           <View style={styles.headerTextCol}>
             <Text style={styles.headerLabel}>Bağlı Masa</Text>
             <Text style={styles.tableTitle}>{tableName}</Text>
-            <View style={styles.linkedRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.linkedText}>QR ile bağlandı</Text>
-            </View>
           </View>
 
           <Pressable
@@ -42,26 +63,28 @@ export default function ConnectedTableCard({
             style={({ pressed }) => [styles.removePill, pressed && styles.pressed]}
             android_ripple={androidRipple}
           >
-            <Ionicons name="close-outline" size={14} color={homeCardTheme.removeText} />
-            <Text style={styles.removePillText}>Kaldır</Text>
+            <Ionicons
+              name="trash-outline"
+              size={13}
+              color={connectedCardTheme.iconColor}
+            />
+            <Text style={styles.removePillText}>Bağlantıyı kaldır</Text>
           </Pressable>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.restaurantRow}>
-          <IconBadge name="storefront-outline" />
+          <IconCircle name={ICON.store} size={40} iconSize={20} />
           <View style={styles.restaurantTextCol}>
             <Text style={styles.restaurantName}>{restaurantName}</Text>
             <View style={styles.timeRow}>
-              <Ionicons
-                name="time-outline"
-                size={13}
-                color={homeCardTheme.textSecondary}
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={14}
+                color={connectedCardTheme.textMuted}
               />
               <Text style={styles.timeText}>Son bağlantı: {connectedLabel}</Text>
-              <Text style={styles.timeDot}>·</Text>
-              <Text style={styles.timeText}>1 saat geçerli</Text>
             </View>
           </View>
         </View>
@@ -75,8 +98,9 @@ export default function ConnectedTableCard({
             onPress={onGoMenu}
             android_ripple={{ color: 'rgba(255,255,255,0.15)', foreground: true }}
           >
+            <MaterialCommunityIcons name={ICON.menu} size={20} color="#FFFFFF" />
             <Text style={styles.primaryBtnText}>Menüye Git</Text>
-            <Ionicons name="chevron-forward" size={16} color={menuGoBtn.icon} />
+            <Ionicons name="chevron-forward" size={17} color="#FFFFFF" />
           </Pressable>
 
           <Pressable
@@ -84,9 +108,17 @@ export default function ConnectedTableCard({
             onPress={onScanAgain}
             android_ripple={androidRipple}
           >
-            <IconBadge name="scan-outline" size={32} iconSize={18} />
+            <MaterialCommunityIcons
+              name={ICON.qr}
+              size={22}
+              color={connectedCardTheme.iconColor}
+            />
             <Text style={styles.secondaryBtnText}>Farklı Masa / QR Okut</Text>
-            <Ionicons name="chevron-forward" size={16} color={homeCardTheme.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={17}
+              color={connectedCardTheme.iconColor}
+            />
           </Pressable>
         </View>
       </View>
@@ -105,16 +137,22 @@ const cardShadow = {
 const styles = StyleSheet.create({
   outer: {
     marginBottom: 16,
-    borderRadius: 18,
+    borderRadius: 20,
     ...cardShadow,
   },
   card: {
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: homeCardTheme.border,
-    backgroundColor: homeCardTheme.cardBg,
+    borderColor: connectedCardTheme.border,
+    backgroundColor: connectedCardTheme.cardBg,
     overflow: 'hidden',
     paddingBottom: 14,
+  },
+  iconCircle: {
+    backgroundColor: connectedCardTheme.iconCircleBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -127,64 +165,50 @@ const styles = StyleSheet.create({
   headerTextCol: {
     flex: 1,
     minWidth: 0,
-    paddingTop: 1,
+    paddingTop: 2,
   },
   headerLabel: {
     fontFamily: homeFonts.sansMedium,
     fontSize: 12,
-    color: homeCardTheme.textSecondary,
+    color: connectedCardTheme.labelGreen,
     marginBottom: 2,
   },
   tableTitle: {
     fontFamily: homeFonts.sansSemi,
-    fontSize: 21,
-    color: homeCardTheme.textPrimary,
-    letterSpacing: -0.35,
-    lineHeight: 25,
-    marginBottom: 5,
-  },
-  linkedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: homeCardTheme.statusDot,
-  },
-  linkedText: {
-    fontFamily: homeFonts.sans,
-    fontSize: 12,
-    color: homeCardTheme.textSecondary,
+    fontSize: 22,
+    color: connectedCardTheme.textPrimary,
+    letterSpacing: -0.4,
+    lineHeight: 26,
+    marginBottom: 4,
   },
   removePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 10,
+    gap: 4,
+    paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    backgroundColor: connectedCardTheme.removePillBg,
     flexShrink: 0,
+    maxWidth: 118,
   },
   removePillText: {
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 11,
-    color: homeCardTheme.removeText,
+    fontFamily: homeFonts.sans,
+    fontSize: 10,
+    color: connectedCardTheme.removeText,
+    flexShrink: 1,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: homeCardTheme.border,
+    backgroundColor: connectedCardTheme.divider,
     marginHorizontal: 14,
   },
   restaurantRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 11,
     paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   restaurantTextCol: {
     flex: 1,
@@ -193,74 +217,62 @@ const styles = StyleSheet.create({
   restaurantName: {
     fontFamily: homeFonts.sansSemi,
     fontSize: 15,
-    color: homeCardTheme.textPrimary,
+    color: connectedCardTheme.textPrimary,
     marginBottom: 4,
     letterSpacing: -0.15,
   },
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
+    gap: 5,
   },
   timeText: {
     fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: homeCardTheme.textSecondary,
-  },
-  timeDot: {
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: homeCardTheme.textMuted,
+    fontSize: 12,
+    color: connectedCardTheme.textMuted,
   },
   actions: {
     paddingHorizontal: 14,
-    gap: 9,
+    gap: 10,
   },
   primaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    minHeight: menuGoBtn.minHeight,
-    paddingHorizontal: 16,
-    borderRadius: menuGoBtn.borderRadius,
-    backgroundColor: menuGoBtn.bg,
-    shadowColor: profileCardStyle.shadowColor,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    backgroundColor: connectedCardTheme.primaryBtnBg,
   },
   primaryBtnPressed: {
-    backgroundColor: menuGoBtn.bgPressed,
+    backgroundColor: connectedCardTheme.primaryBtnPressed,
     opacity: 0.96,
   },
   primaryBtnText: {
     flex: 1,
     fontFamily: homeFonts.sansSemi,
     fontSize: 15,
-    color: menuGoBtn.text,
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginRight: 16,
   },
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     minHeight: 48,
-    borderRadius: 18,
-    backgroundColor: homeCardTheme.cardBg,
-    borderWidth: 1,
-    borderColor: homeCardTheme.border,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: 14,
+    backgroundColor: connectedCardTheme.cardBg,
+    borderWidth: 1.5,
+    borderColor: connectedCardTheme.secondaryBorder,
+    paddingHorizontal: 14,
   },
   secondaryBtnText: {
     flex: 1,
     fontFamily: homeFonts.sansSemi,
-    fontSize: 13,
-    color: homeCardTheme.textPrimary,
+    fontSize: 14,
+    color: connectedCardTheme.textPrimary,
+    textAlign: 'center',
   },
   pressed: {
     opacity: 0.9,

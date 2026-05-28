@@ -170,7 +170,11 @@ router.get('/generate/:tableNumber/json', async (req, res, next) => {
  */
 router.get('/', auth, requireRole('admin'), async (req, res, next) => {
   try {
-    const qrCodes = await QRCodeModel.find()
+    const filter = {};
+    if (req.user?.role !== 'superadmin' && req.user?.branchId) {
+      filter.branchId = req.user.branchId;
+    }
+    const qrCodes = await QRCodeModel.find(filter)
       .populate('tableId', 'name capacity status')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
@@ -216,12 +220,17 @@ router.post('/', auth, requireRole('admin'), async (req, res, next) => {
     // Masa var mı kontrol et
     let table = await Table.findOne({ name: tableNum });
     
+    if (!req.user?.branchId) {
+      return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+    }
+
     if (!table) {
       // Masa yoksa oluştur
       table = await Table.create({
         name: tableNum,
         capacity: tableCapacity,
-        status: 'bos'
+        status: 'bos',
+        branchId: req.user.branchId,
       });
       console.log('✅ [QR CREATE /api/qr] Yeni masa oluşturuldu:', { 
         _id: table._id,
@@ -291,7 +300,8 @@ router.post('/', auth, requireRole('admin'), async (req, res, next) => {
       qrUrl,
       qrCode: qrCodeDataURL,
       tableId: table._id,
-      createdBy: req.user.id
+      branchId: req.user.branchId,
+      createdBy: req.user.id,
     });
 
     // Populate ile döndür

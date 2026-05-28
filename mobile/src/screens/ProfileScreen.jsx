@@ -33,18 +33,31 @@ export default function ProfileScreen({ navigation }) {
   const { user, logout, refreshUser, uploadProfileAvatar, removeProfileAvatar } = useAuth();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarSheetOpen, setAvatarSheetOpen] = useState(false);
-  const [orderTotal, setOrderTotal] = useState(0);
+  const [orderTotal, setOrderTotal] = useState(null);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      refreshUser();
       let cancelled = false;
       (async () => {
+        setOrdersLoading(true);
         try {
-          const res = await client.get('/api/orders/mine', { params: { limit: 1, page: 1 } });
+          const merged = await refreshUser();
+          if (cancelled) return;
+          if (merged?.orderCount != null) {
+            setOrderTotal(Number(merged.orderCount) || 0);
+            return;
+          }
+          const res = await client.get('/api/orders/mine', {
+            params: { countOnly: true, limit: 1, page: 1 },
+          });
           if (!cancelled) setOrderTotal(Number(res.data?.total) || 0);
         } catch {
-          if (!cancelled) setOrderTotal(0);
+          if (!cancelled) {
+            setOrderTotal((prev) => (prev != null ? prev : 0));
+          }
+        } finally {
+          if (!cancelled) setOrdersLoading(false);
         }
       })();
       return () => {
@@ -199,7 +212,10 @@ export default function ProfileScreen({ navigation }) {
               size={16}
               color={PROFILE_ICON}
             />
-            <Text style={styles.statsText}>Toplam sipariş: {orderTotal}</Text>
+            <Text style={styles.statsText}>
+              Toplam sipariş:{' '}
+              {ordersLoading ? '…' : orderTotal != null ? orderTotal : '—'}
+            </Text>
           </View>
         </View>
 
