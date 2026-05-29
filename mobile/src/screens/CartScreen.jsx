@@ -16,7 +16,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { menuColors, homeFonts, pressScale, uiShadow } from '../constants/homeTheme';
 import { useCart } from '../context/CartContext';
 import { useTableSession } from '../context/TableSessionContext';
@@ -883,6 +882,7 @@ export default function CartScreen({ navigation }) {
       <Modal
         visible={showCardSheet}
         transparent
+        statusBarTranslucent
         animationType="slide"
         onRequestClose={closeCardSheet}
       >
@@ -892,10 +892,13 @@ export default function CartScreen({ navigation }) {
         >
           <Pressable style={styles.cardSheetDismissArea} onPress={closeCardSheet} />
           <View style={[styles.cardSheet, { paddingBottom: 16 + insets.bottom }]}>
-            <View style={styles.cardSheetHeader}>
+            <View style={styles.cardSheetHandleWrap}>
               <View style={styles.cardSheetHandle} />
+            </View>
+            <View style={styles.cardSheetTitleRow}>
+              <Text style={styles.cardSheetTitle}>Kart Bilgileri</Text>
               <Pressable style={styles.cardSheetClose} onPress={closeCardSheet} hitSlop={10}>
-                <Ionicons name="close" size={22} color="#6B7280" />
+                <Ionicons name="close" size={22} color={menuColors.primary} />
               </Pressable>
             </View>
 
@@ -915,37 +918,25 @@ export default function CartScreen({ navigation }) {
               style={({ pressed }) => [
                 styles.cardSheetConfirmBtn,
                 pressed && styles.cardSheetConfirmBtnPressed,
-                !cardFormReady && styles.cardSheetConfirmBtnDisabled,
               ]}
               onPress={confirmCardSheet}
-              disabled={submitting || !cardFormReady}
+              disabled={submitting}
             >
-              <BlurView
-                intensity={cardFormReady ? 40 : 24}
-                tint="light"
-                style={styles.cardSheetConfirmGlass}
+              <LinearGradient
+                colors={['#4FB458', '#43A047']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.cardSheetConfirmGradient}
               >
-                <LinearGradient
-                  colors={
-                    cardFormReady
-                      ? ['rgba(63, 163, 77, 0.18)', 'rgba(63, 163, 77, 0.1)']
-                      : ['rgba(0, 0, 0, 0.04)', 'rgba(0, 0, 0, 0.02)']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.cardSheetConfirmGlassBorder} pointerEvents="none" />
-                <Text
-                  style={[
-                    styles.cardSheetConfirmText,
-                    !cardFormReady && styles.cardSheetConfirmTextMuted,
-                  ]}
-                >
-                  Kartı onayla
-                </Text>
-              </BlurView>
+                <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
+                <Text style={styles.cardSheetConfirmText}>Kartı Onayla</Text>
+              </LinearGradient>
             </Pressable>
+
+            <View style={styles.sslRow}>
+              <Ionicons name="shield-checkmark-outline" size={14} color={menuColors.primary} />
+              <Text style={styles.sslText}>256-bit SSL ile güvenli ödeme</Text>
+            </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1617,7 +1608,7 @@ const styles = StyleSheet.create({
   cardSheetBackdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(17, 24, 39, 0.4)',
   },
   cardSheetDismissArea: {
     flex: 1,
@@ -1638,12 +1629,9 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 22,
   },
-  cardSheetHeader: {
+  cardSheetHandleWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 28,
-    marginBottom: 8,
-    position: 'relative',
+    marginBottom: 6,
   },
   cardSheetHandle: {
     width: 40,
@@ -1651,52 +1639,65 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: 'rgba(0,0,0,0.18)',
   },
+  cardSheetTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 32,
+    marginBottom: 12,
+    position: 'relative',
+  },
+  cardSheetTitle: {
+    fontFamily: Platform.select({ ios: 'Times New Roman', android: 'serif', default: 'serif' }),
+    fontWeight: '700',
+    fontSize: 15,
+    color: menuColors.primaryDark,
+    letterSpacing: 0.2,
+  },
   cardSheetClose: {
     position: 'absolute',
     right: 0,
     top: 0,
+    bottom: 0,
     width: 36,
-    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardSheetConfirmBtn: {
-    marginTop: 12,
-    borderRadius: 12,
+    marginTop: 14,
+    borderRadius: 28,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(63, 163, 77, 0.45)',
-    backgroundColor: 'rgba(63, 163, 77, 0.12)',
+    width: '100%',
   },
   cardSheetConfirmBtnPressed: {
-    opacity: 0.9,
+    opacity: 0.92,
   },
-  cardSheetConfirmBtnDisabled: {
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-  },
-  cardSheetConfirmGlass: {
-    minHeight: 50,
-    borderRadius: 12,
-    overflow: 'hidden',
+  cardSheetConfirmGradient: {
+    minHeight: 54,
+    borderRadius: 28,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  cardSheetConfirmGlassBorder: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(63, 163, 77, 0.35)',
+    gap: 8,
   },
   cardSheetConfirmText: {
     fontFamily: homeFonts.sansSemi,
     fontSize: 16,
-    color: '#3FA34D',
+    color: '#FFFFFF',
     letterSpacing: 0.3,
   },
-  cardSheetConfirmTextMuted: {
-    color: 'rgba(0, 0, 0, 0.35)',
+  sslRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  sslText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: menuColors.textMuted,
   },
   errorTextInline: {
     marginBottom: 4,

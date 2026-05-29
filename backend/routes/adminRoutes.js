@@ -16,6 +16,89 @@ const Table = require('../models/Table');
 const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
 const { cancelOrder } = require('../utils/orderCancel');
 
+const NUTRITION_NUMERIC_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'servingGram'];
+const NUTRITION_CONFIDENCE = ['low', 'medium', 'high'];
+const NUTRITION_SOURCE = ['manual', 'ai_estimate', 'api_estimate'];
+const NUTRITION_STATUS = ['none', 'pending', 'estimated', 'approved'];
+
+function normalizeStringArray(value) {
+  if (value == null) return undefined;
+  const list = Array.isArray(value)
+    ? value
+    : String(value).split(',');
+  const cleaned = list.map((s) => String(s).trim()).filter(Boolean);
+  return cleaned;
+}
+
+/**
+ * Gövdeden gelen nutrition objesini doğrular ve temizler.
+ * Dönüş: { error } | { nutrition } (nutrition, anlamlı veri yoksa undefined olabilir)
+ */
+function buildNutrition(input) {
+  if (input == null) return { nutrition: undefined };
+  if (typeof input !== 'object' || Array.isArray(input)) {
+    return { error: 'Geçersiz besin değeri formatı' };
+  }
+
+  const out = {};
+
+  for (const field of NUTRITION_NUMERIC_FIELDS) {
+    const raw = input[field];
+    if (raw === undefined || raw === null || raw === '') continue;
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num < 0) {
+      return { error: `Geçersiz besin değeri (negatif olamaz): ${field}` };
+    }
+    out[field] = num;
+  }
+
+  if (input.portionUnit != null && String(input.portionUnit).trim() !== '') {
+    out.portionUnit = String(input.portionUnit).trim();
+  }
+  if (input.nutritionNote != null && String(input.nutritionNote).trim() !== '') {
+    out.nutritionNote = String(input.nutritionNote).trim();
+  }
+
+  const allergens = normalizeStringArray(input.allergens);
+  if (allergens && allergens.length) out.allergens = allergens;
+  const ingredients = normalizeStringArray(input.ingredients);
+  if (ingredients && ingredients.length) out.ingredients = ingredients;
+
+  if (input.confidence != null && input.confidence !== '') {
+    if (!NUTRITION_CONFIDENCE.includes(input.confidence)) {
+      return { error: 'Geçersiz confidence (low/medium/high)' };
+    }
+    out.confidence = input.confidence;
+  }
+
+  // source enum doğrulaması yapılır ama tek başına "anlamlı veri" sayılmaz.
+  if (input.source != null && input.source !== '') {
+    if (!NUTRITION_SOURCE.includes(input.source)) {
+      return { error: 'Geçersiz source (manual/ai_estimate/api_estimate)' };
+    }
+  }
+
+  // source ve isNutritionVisibleToCustomer dışında anlamlı alan yoksa nutrition oluşturma.
+  if (Object.keys(out).length === 0) return { nutrition: undefined };
+
+  if (input.source != null && input.source !== '') {
+    out.source = input.source;
+  }
+  if (input.isNutritionVisibleToCustomer !== undefined) {
+    out.isNutritionVisibleToCustomer = Boolean(input.isNutritionVisibleToCustomer);
+  }
+  out.updatedAt = new Date();
+  return { nutrition: out };
+}
+
+function validateNutritionStatus(status) {
+  if (status === undefined || status === null || status === '') return null;
+  if (!NUTRITION_STATUS.includes(status)) {
+    return 'Geçersiz nutritionStatus (none/pending/estimated/approved)';
+  }
+  return null;
+}
+
 function validateProductSaleFields(body, listPriceFallback) {
   const list = body.price != null ? Number(body.price) : Number(listPriceFallback);
   if (body.salePrice != null && body.salePrice !== '') {
@@ -631,6 +714,17 @@ router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
     const saleErr = validateProductSaleFields(req.body);
     if (saleErr) return res.status(400).json({ message: saleErr });
 
+    const { error: nutErr, nutrition } = buildNutrition(req.body.nutrition);
+    if (nutErr) return res.status(400).json({ message: nutErr });
+
+    const statusErr = validateNutritionStatus(req.body.nutritionStatus);
+    if (statusErr) return res.status(400).json({ message: statusErr });
+    const nutritionStatus = req.body.nutritionStatus || undefined;
+
+    if (nutrition && nutritionStatus === 'approved') {
+      nutrition.approvedAt = new Date();
+    }
+
     const product = new Product({
       name,
       price,
@@ -643,6 +737,8 @@ router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
       ...(salePrice != null && salePrice !== '' ? { salePrice: Number(salePrice) } : {}),
       ...(saleStartsAt ? { saleStartsAt: new Date(saleStartsAt) } : {}),
       ...(saleEndsAt ? { saleEndsAt: new Date(saleEndsAt) } : {}),
+      ...(nutrition ? { nutrition } : {}),
+      ...(nutritionStatus ? { nutritionStatus } : {}),
     });
     await product.save();
     const plain = product.toObject();
@@ -671,6 +767,8 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
     const saleErr = validateProductSaleFields(req.body, existing.price);
     if (saleErr) return res.status(400).json({ message: saleErr });
 
+    // Not: ingredients/allergens artık nutrition.ingredients / nutrition.allergens altında
+    // tutuluyor; top-level olarak kabul edilmiyor (şemada da yok).
     const allowedKeys = [
       'name',
       'description',
@@ -683,10 +781,6 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
       'salePrice',
       'saleStartsAt',
       'saleEndsAt',
-      'stock',
-      'unit',
-      'ingredients',
-      'allergens',
     ];
     const patch = {};
     for (const key of allowedKeys) {
@@ -696,10 +790,29 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
     if (patch.saleStartsAt === '') patch.saleStartsAt = null;
     if (patch.saleEndsAt === '') patch.saleEndsAt = null;
 
+    // Nutrition: yalnızca gövdede gönderildiyse güncelle (form göndermezse mevcut korunur)
+    const statusErr = validateNutritionStatus(req.body.nutritionStatus);
+    if (statusErr) return res.status(400).json({ message: statusErr });
+
+    let effectiveStatus = existing.nutritionStatus;
+    if (req.body.nutritionStatus !== undefined && req.body.nutritionStatus !== '') {
+      patch.nutritionStatus = req.body.nutritionStatus;
+      effectiveStatus = req.body.nutritionStatus;
+    }
+
+    if (req.body.nutrition !== undefined) {
+      const { error: nutErr, nutrition } = buildNutrition(req.body.nutrition);
+      if (nutErr) return res.status(400).json({ message: nutErr });
+      if (nutrition) {
+        if (effectiveStatus === 'approved') nutrition.approvedAt = new Date();
+        patch.nutrition = nutrition;
+      }
+    }
+
     const updated = await Product.findOneAndUpdate(
       { _id: req.params.id, branchId: req.user.branchId },
       patch,
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!updated) return res.status(404).json({ message: 'Ürün bulunamadı' });
     const plain = updated.toObject();

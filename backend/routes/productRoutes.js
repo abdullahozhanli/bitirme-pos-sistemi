@@ -51,7 +51,30 @@ router.get('/', async (req, res, next) => {
     const itemsWithPricing = items.map((doc) => {
       const plain = doc.toObject ? doc.toObject() : doc;
       const pricing = formatProductPricing(plain, now);
-      return { ...plain, ...pricing };
+      const merged = { ...plain, ...pricing };
+      // Müşteriye nutrition yalnızca onaylı VE görünür olduğunda dönsün; aksi halde null.
+      // Dönerken de yalnızca müşteriye dönük alanlar; metadata (source/confidence/*At/visibility) gizlenir.
+      const nutritionVisible =
+        merged.nutritionStatus === 'approved' &&
+        merged.nutrition &&
+        merged.nutrition.isNutritionVisibleToCustomer === true;
+      if (nutritionVisible) {
+        const n = merged.nutrition;
+        merged.nutrition = {
+          calories: n.calories,
+          protein: n.protein,
+          carbs: n.carbs,
+          fat: n.fat,
+          servingGram: n.servingGram,
+          portionUnit: n.portionUnit,
+          allergens: n.allergens,
+          ingredients: n.ingredients,
+          nutritionNote: n.nutritionNote,
+        };
+      } else {
+        merged.nutrition = null;
+      }
+      return merged;
     });
 
     res.json({

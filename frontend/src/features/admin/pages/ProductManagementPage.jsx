@@ -2,11 +2,62 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { 
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Select, MenuItem, FormControl, InputLabel, Typography, Paper, Stack
+  TextField, Select, MenuItem, FormControl, InputLabel, Typography, Paper, Stack,
+  Divider, FormControlLabel, Switch
 } from '@mui/material'; 
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import TableToolbar from '../../../shared/components/ui/TableToolbar.jsx';
 import ConfirmDialog from '../../../shared/components/ui/ConfirmDialog.jsx';
+
+// Form besin değerleri için boş şablon (alanlar string olarak tutulur, gönderimde dönüştürülür)
+const EMPTY_NUTRITION = {
+  calories: '', protein: '', carbs: '', fat: '', servingGram: '',
+  portionUnit: '', ingredients: '', allergens: '', nutritionNote: '',
+  confidence: '', source: 'manual', isNutritionVisibleToCustomer: false,
+};
+
+const NUTRITION_NUM_KEYS = ['calories', 'protein', 'carbs', 'fat', 'servingGram'];
+
+/** Form state'indeki nutrition'ı backend payload'ına çevirir (boş alanları atlar). */
+function toNutritionPayload(n) {
+  if (!n) return undefined;
+  const out = {};
+  for (const k of NUTRITION_NUM_KEYS) {
+    if (n[k] !== '' && n[k] != null) out[k] = Number(n[k]);
+  }
+  if (n.portionUnit?.trim()) out.portionUnit = n.portionUnit.trim();
+  if (n.nutritionNote?.trim()) out.nutritionNote = n.nutritionNote.trim();
+  if (n.ingredients?.trim()) out.ingredients = n.ingredients; // backend virgülle ayırır
+  if (n.allergens?.trim()) out.allergens = n.allergens;
+  if (n.confidence) out.confidence = n.confidence;
+
+  // source ve görünürlük bayrağı tek başına "anlamlı nutrition verisi" sayılmaz.
+  // Kullanıcı gerçek bir besin alanı girmediyse hiç payload gönderme.
+  if (Object.keys(out).length === 0) return undefined;
+
+  if (n.source) out.source = n.source;
+  out.isNutritionVisibleToCustomer = Boolean(n.isNutritionVisibleToCustomer);
+  return out;
+}
+
+/** Backend'den gelen nutrition objesini form alanlarına yükler (diziler virgüllü string olur). */
+function nutritionToForm(n) {
+  if (!n || typeof n !== 'object') return { ...EMPTY_NUTRITION };
+  return {
+    calories: n.calories ?? '',
+    protein: n.protein ?? '',
+    carbs: n.carbs ?? '',
+    fat: n.fat ?? '',
+    servingGram: n.servingGram ?? '',
+    portionUnit: n.portionUnit || '',
+    ingredients: Array.isArray(n.ingredients) ? n.ingredients.join(', ') : (n.ingredients || ''),
+    allergens: Array.isArray(n.allergens) ? n.allergens.join(', ') : (n.allergens || ''),
+    nutritionNote: n.nutritionNote || '',
+    confidence: n.confidence || '',
+    source: n.source || 'manual',
+    isNutritionVisibleToCustomer: Boolean(n.isNutritionVisibleToCustomer),
+  };
+}
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState([]);
@@ -17,6 +68,8 @@ export default function ProductManagementPage() {
   const [searchQuery, setSearchQuery] = useState(''); // Arama için
   const [newProductData, setNewProductData] = useState({
     name: '', price: '', description: '', category: '', countInStock: 0, imageUrl: '',
+    nutritionStatus: 'none',
+    nutrition: { ...EMPTY_NUTRITION },
   });
   const [openEditModal, setOpenEditModal] = useState(false); 
   const [editingProductData, setEditingProductData] = useState(null);
@@ -75,6 +128,28 @@ export default function ProductManagementPage() {
     setNewProductData(prevData => ({ ...prevData, [name]: value }));
   };
 
+  const handleNewNutritionChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewProductData(prevData => ({
+      ...prevData,
+      nutrition: {
+        ...prevData.nutrition,
+        [name]: type === 'checkbox' ? checked : value,
+      },
+    }));
+  };
+
+  const handleEditNutritionChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setEditingProductData(prevData => ({
+      ...prevData,
+      nutrition: {
+        ...prevData.nutrition,
+        [name]: type === 'checkbox' ? checked : value,
+      },
+    }));
+  };
+
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -82,13 +157,17 @@ export default function ProductManagementPage() {
       const productPayload = {
         ...newProductData,
         price: Number(newProductData.price),
-        countInStock: Number(newProductData.countInStock)
+        countInStock: Number(newProductData.countInStock),
+        nutritionStatus: newProductData.nutritionStatus || 'none',
+        nutrition: toNutritionPayload(newProductData.nutrition),
       };
       
       await axios.post('/api/admin/products', productPayload);
       setNewProductData({
         name: '', price: '', description: '', countInStock: 0, imageUrl: '',
-        category: categories.length > 0 ? categories[0]._id : ''
+        category: categories.length > 0 ? categories[0]._id : '',
+        nutritionStatus: 'none',
+        nutrition: { ...EMPTY_NUTRITION },
       });
       setMessage('Ürün başarıyla eklendi!');
       // Ürünleri yeniden yükle
@@ -125,7 +204,9 @@ export default function ProductManagementPage() {
       description: product.description || '',
       countInStock: product.countInStock,
       imageUrl: product.imageUrl || '',
-      category: product.category ? (product.category._id || product.category) : product.category || ''
+      category: product.category ? (product.category._id || product.category) : product.category || '',
+      nutritionStatus: product.nutritionStatus || 'none',
+      nutrition: nutritionToForm(product.nutrition),
     });
     setOpenEditModal(true); 
   };
@@ -144,7 +225,9 @@ export default function ProductManagementPage() {
       const updatePayload = {
         ...editingProductData,
         price: Number(editingProductData.price),
-        countInStock: Number(editingProductData.countInStock)
+        countInStock: Number(editingProductData.countInStock),
+        nutritionStatus: editingProductData.nutritionStatus || 'none',
+        nutrition: toNutritionPayload(editingProductData.nutrition),
       };
       
       await axios.put(`/api/admin/products/${editingProductData.id}`, updatePayload);
@@ -297,6 +380,52 @@ export default function ProductManagementPage() {
             ))}
           </Select>
         </FormControl>
+        <Box sx={{ width: '100%' }}>
+          <Divider sx={{ my: 1 }} />
+          <Typography variant="subtitle1" sx={{ mb: 1 }}>Besin Değerleri (opsiyonel)</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <TextField label="Kalori (kcal)" name="calories" type="number" value={newProductData.nutrition.calories} onChange={handleNewNutritionChange} size="small" />
+            <TextField label="Protein (g)" name="protein" type="number" value={newProductData.nutrition.protein} onChange={handleNewNutritionChange} size="small" />
+            <TextField label="Karbonhidrat (g)" name="carbs" type="number" value={newProductData.nutrition.carbs} onChange={handleNewNutritionChange} size="small" />
+            <TextField label="Yağ (g)" name="fat" type="number" value={newProductData.nutrition.fat} onChange={handleNewNutritionChange} size="small" />
+            <TextField label="Porsiyon (g)" name="servingGram" type="number" value={newProductData.nutrition.servingGram} onChange={handleNewNutritionChange} size="small" />
+            <TextField label="Porsiyon Birimi" name="portionUnit" value={newProductData.nutrition.portionUnit} onChange={handleNewNutritionChange} size="small" placeholder="örn: adet, porsiyon" />
+            <TextField label="İçerikler (virgülle)" name="ingredients" value={newProductData.nutrition.ingredients} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 280 }} placeholder="tavuk, marul, sos" />
+            <TextField label="Alerjenler (virgülle)" name="allergens" value={newProductData.nutrition.allergens} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 240 }} placeholder="gluten, süt" />
+            <TextField label="Besin Notu" name="nutritionNote" value={newProductData.nutrition.nutritionNote} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 280 }} />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel>Confidence</InputLabel>
+              <Select name="confidence" value={newProductData.nutrition.confidence} label="Confidence" onChange={handleNewNutritionChange}>
+                <MenuItem value="">—</MenuItem>
+                <MenuItem value="low">low</MenuItem>
+                <MenuItem value="medium">medium</MenuItem>
+                <MenuItem value="high">high</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>Source</InputLabel>
+              <Select name="source" value={newProductData.nutrition.source} label="Source" onChange={handleNewNutritionChange}>
+                <MenuItem value="manual">manual</MenuItem>
+                <MenuItem value="ai_estimate">ai_estimate</MenuItem>
+                <MenuItem value="api_estimate">api_estimate</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 170 }}>
+              <InputLabel>Nutrition Status</InputLabel>
+              <Select name="nutritionStatus" value={newProductData.nutritionStatus} label="Nutrition Status" onChange={handleInputChange}>
+                <MenuItem value="none">none</MenuItem>
+                <MenuItem value="pending">pending</MenuItem>
+                <MenuItem value="estimated">estimated</MenuItem>
+                <MenuItem value="approved">approved</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControlLabel
+              control={<Switch name="isNutritionVisibleToCustomer" checked={newProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleNewNutritionChange} />}
+              label="Müşteriye göster"
+            />
+          </Box>
+        </Box>
+
         <Button type="submit" variant="contained" color="success">Ekle</Button>
       </Box>
 
@@ -351,6 +480,52 @@ export default function ProductManagementPage() {
                   ))}
                 </Select>
               </FormControl>
+
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle1">Besin Değerleri (opsiyonel)</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                <TextField label="Kalori (kcal)" name="calories" type="number" value={editingProductData.nutrition.calories} onChange={handleEditNutritionChange} size="small" />
+                <TextField label="Protein (g)" name="protein" type="number" value={editingProductData.nutrition.protein} onChange={handleEditNutritionChange} size="small" />
+                <TextField label="Karbonhidrat (g)" name="carbs" type="number" value={editingProductData.nutrition.carbs} onChange={handleEditNutritionChange} size="small" />
+                <TextField label="Yağ (g)" name="fat" type="number" value={editingProductData.nutrition.fat} onChange={handleEditNutritionChange} size="small" />
+                <TextField label="Porsiyon (g)" name="servingGram" type="number" value={editingProductData.nutrition.servingGram} onChange={handleEditNutritionChange} size="small" />
+                <TextField label="Porsiyon Birimi" name="portionUnit" value={editingProductData.nutrition.portionUnit} onChange={handleEditNutritionChange} size="small" />
+              </Box>
+              <TextField label="İçerikler (virgülle)" name="ingredients" value={editingProductData.nutrition.ingredients} onChange={handleEditNutritionChange} fullWidth placeholder="tavuk, marul, sos" />
+              <TextField label="Alerjenler (virgülle)" name="allergens" value={editingProductData.nutrition.allergens} onChange={handleEditNutritionChange} fullWidth placeholder="gluten, süt" />
+              <TextField label="Besin Notu" name="nutritionNote" value={editingProductData.nutrition.nutritionNote} onChange={handleEditNutritionChange} fullWidth />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>Confidence</InputLabel>
+                  <Select name="confidence" value={editingProductData.nutrition.confidence} label="Confidence" onChange={handleEditNutritionChange}>
+                    <MenuItem value="">—</MenuItem>
+                    <MenuItem value="low">low</MenuItem>
+                    <MenuItem value="medium">medium</MenuItem>
+                    <MenuItem value="high">high</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <InputLabel>Source</InputLabel>
+                  <Select name="source" value={editingProductData.nutrition.source} label="Source" onChange={handleEditNutritionChange}>
+                    <MenuItem value="manual">manual</MenuItem>
+                    <MenuItem value="ai_estimate">ai_estimate</MenuItem>
+                    <MenuItem value="api_estimate">api_estimate</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 170 }}>
+                  <InputLabel>Nutrition Status</InputLabel>
+                  <Select name="nutritionStatus" value={editingProductData.nutritionStatus} label="Nutrition Status" onChange={handleEditModalInputChange}>
+                    <MenuItem value="none">none</MenuItem>
+                    <MenuItem value="pending">pending</MenuItem>
+                    <MenuItem value="estimated">estimated</MenuItem>
+                    <MenuItem value="approved">approved</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={<Switch name="isNutritionVisibleToCustomer" checked={editingProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleEditNutritionChange} />}
+                  label="Müşteriye göster"
+                />
+              </Box>
             </Box>
           )}
         </DialogContent>

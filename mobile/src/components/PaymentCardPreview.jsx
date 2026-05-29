@@ -15,6 +15,7 @@ import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { homeFonts } from '../constants/homeTheme';
 import {
+  CARD_ASPECT,
   CARD_FIELD_LAYOUT,
   CARD_HEIGHT,
   CARD_IMAGE,
@@ -43,7 +44,7 @@ function digitsOnly(value, maxLen) {
 
 export function formatPanDisplay(digits) {
   const d = digitsOnly(digits, 16);
-  const groups = [4, 4, 3, 4];
+  const groups = [4, 4, 4, 4];
   const parts = [];
   let idx = 0;
   for (const size of groups) {
@@ -305,8 +306,8 @@ export default function PaymentCardPreview({
           style={fieldTextStyle(layout.front.expiry, focused === 'expiry')}
           value={expiry}
           onChangeText={onChangeExpiry}
-          placeholder=""
-          placeholderTextColor="transparent"
+          placeholder={EXPIRY_PLACEHOLDER}
+          placeholderTextColor={PLACEHOLDER_GOLD}
           keyboardType="number-pad"
           maxLength={5}
           editable={editable}
@@ -447,13 +448,15 @@ export default function PaymentCardPreview({
 
   return (
     <View style={styles.wrap}>
-      {!isBack
-        ? USE_CARD_IMAGE_TEMPLATE
-          ? renderTemplateFront()
-          : renderBuiltFront()
-        : USE_CARD_IMAGE_TEMPLATE
-          ? renderTemplateBack()
-          : renderBuiltBack()}
+      <View style={styles.cardShadow}>
+        {!isBack
+          ? USE_CARD_IMAGE_TEMPLATE
+            ? renderTemplateFront()
+            : renderBuiltFront()
+          : USE_CARD_IMAGE_TEMPLATE
+            ? renderTemplateBack()
+            : renderBuiltBack()}
+      </View>
 
       {isBack ? (
         <Pressable
@@ -483,23 +486,27 @@ const styles = StyleSheet.create({
     maxWidth: CARD_MAX_WIDTH,
     alignSelf: 'center',
   },
+  cardShadow: {
+    width: '100%',
+    maxWidth: CARD_MAX_WIDTH,
+    alignSelf: 'center',
+    borderRadius: 18,
+    backgroundColor: '#FAF7F1',
+    shadowColor: '#1A1206',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.3,
+    shadowRadius: 38,
+    elevation: 22,
+  },
   cardOuter: {
     position: 'relative',
     width: '100%',
     maxWidth: CARD_MAX_WIDTH,
-    height: CARD_HEIGHT,
+    aspectRatio: CARD_ASPECT,
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 22,
-    elevation: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(220, 220, 220, 0.65)',
   },
   cardOuterImage: {
-    borderWidth: 0,
     backgroundColor: 'transparent',
   },
   cardBgImage: {

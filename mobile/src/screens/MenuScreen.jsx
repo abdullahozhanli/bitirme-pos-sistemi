@@ -9,6 +9,7 @@ import {
 } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
   Image,
   Modal,
   Platform,
@@ -196,6 +197,11 @@ const MenuProductCard = memo(function MenuProductCard({
               <Ionicons name="time-outline" size={13} color={PALETTE.textSecondary} />
               <Text style={styles.itemStatText}>{meta.prep} dk</Text>
             </View>
+            {Number(item.nutrition?.calories) > 0 ? (
+              <View style={styles.kcalBadge}>
+                <Text style={styles.kcalBadgeText}>🔥 {Math.round(item.nutrition.calories)} kcal</Text>
+              </View>
+            ) : null}
           </View>
           <View style={styles.itemFooterBlock}>
             <View style={styles.itemPriceAddRow}>
@@ -661,6 +667,20 @@ export default function MenuScreen({ navigation }) {
     );
   }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite, quickAdd]);
 
+  const renderProductItem = useCallback(
+    ({ item }) => (
+      <MenuProductCard
+        item={item}
+        onQuickAdd={quickAdd}
+        favorited={isFavorite(item._id || item.id, branchId)}
+        onToggleFavorite={handleToggleFavorite}
+      />
+    ),
+    [quickAdd, isFavorite, branchId, handleToggleFavorite]
+  );
+
+  const productListData = loading || loadError ? [] : filteredProducts;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       {/* Header */}
@@ -685,10 +705,12 @@ export default function MenuScreen({ navigation }) {
         <View style={styles.headerRightSpacer} />
       </View>
 
-      <ScrollView
+      <FlatList
         style={styles.scroll}
+        data={productListData}
+        keyExtractor={(item) => String(item._id || item.id || item.name)}
+        renderItem={renderProductItem}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={Platform.OS === 'android'}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -696,50 +718,76 @@ export default function MenuScreen({ navigation }) {
               (totals.count > 0 ? 124 : 36) + insets.bottom,
           },
         ]}
-        stickyHeaderIndices={[menuCampaigns.length > 0 ? 2 : 1]}
         keyboardShouldPersistTaps="always"
-        {...(Platform.OS === 'ios' ? { delayContentTouches: false } : {})}
-      >
-        {welcomeSection}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={11}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListHeaderComponent={
+          <>
+            {welcomeSection}
 
-        {menuBundlesSectionEl}
+            {menuBundlesSectionEl}
 
-        <View style={styles.stickyCategoriesWrap} collapsable={false}>
-          <ScrollView
-            ref={categoryScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryRow}
-            keyboardShouldPersistTaps="always"
-            nestedScrollEnabled={Platform.OS === 'android'}
-            scrollEventThrottle={16}
-            onLayout={(e) => {
-              categoryViewportWRef.current = e.nativeEvent.layout.width;
-            }}
-            onContentSizeChange={(w) => {
-              categoryContentWRef.current = w;
-            }}
-            onScroll={(e) => {
-              categoryScrollXRef.current = e.nativeEvent.contentOffset.x;
-            }}
-          >
-            {categories.map((cat) => {
-              const active = activeCat === cat;
-              const onChipLayout = (e) => {
-                categoryLayoutsRef.current[cat] = e.nativeEvent.layout;
-              };
-              if (active) {
-                return (
-                  <LinearGradient
-                    key={cat}
-                    colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
-                    start={{ x: 0, y: 0.5 }}
-                    end={{ x: 1, y: 0.5 }}
-                    style={styles.catChipActiveGradient}
-                    onLayout={onChipLayout}
-                  >
+            <View style={styles.stickyCategoriesWrap} collapsable={false}>
+              <ScrollView
+                ref={categoryScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.categoryRow}
+                keyboardShouldPersistTaps="always"
+                nestedScrollEnabled={Platform.OS === 'android'}
+                scrollEventThrottle={16}
+                onLayout={(e) => {
+                  categoryViewportWRef.current = e.nativeEvent.layout.width;
+                }}
+                onContentSizeChange={(w) => {
+                  categoryContentWRef.current = w;
+                }}
+                onScroll={(e) => {
+                  categoryScrollXRef.current = e.nativeEvent.contentOffset.x;
+                }}
+              >
+                {categories.map((cat) => {
+                  const active = activeCat === cat;
+                  const onChipLayout = (e) => {
+                    categoryLayoutsRef.current[cat] = e.nativeEvent.layout;
+                  };
+                  if (active) {
+                    return (
+                      <LinearGradient
+                        key={cat}
+                        colors={['#2F8F39', PALETTE.btnPrimary, '#67C96B']}
+                        start={{ x: 0, y: 0.5 }}
+                        end={{ x: 1, y: 0.5 }}
+                        style={styles.catChipActiveGradient}
+                        onLayout={onChipLayout}
+                      >
+                        <Pressable
+                          delayPressIn={0}
+                          onPress={() => selectCategory(cat)}
+                          android_ripple={{
+                            ...androidRipple,
+                            borderless: false,
+                          }}
+                          style={({ pressed }) => [
+                            styles.catChip,
+                            styles.catChipActive,
+                            pressed && { opacity: 0.92 },
+                          ]}
+                        >
+                          <Text style={[styles.catText, styles.catTextActive]}>
+                            {catLabel(cat)}
+                          </Text>
+                        </Pressable>
+                      </LinearGradient>
+                    );
+                  }
+                  return (
                     <Pressable
+                      key={cat}
                       delayPressIn={0}
+                      onLayout={onChipLayout}
                       onPress={() => selectCategory(cat)}
                       android_ripple={{
                         ...androidRipple,
@@ -747,91 +795,58 @@ export default function MenuScreen({ navigation }) {
                       }}
                       style={({ pressed }) => [
                         styles.catChip,
-                        styles.catChipActive,
                         pressed && { opacity: 0.92 },
                       ]}
                     >
-                      <Text style={[styles.catText, styles.catTextActive]}>
+                      <Text style={styles.catText}>
                         {catLabel(cat)}
                       </Text>
                     </Pressable>
-                  </LinearGradient>
-                );
-              }
-              return (
-                <Pressable
-                  key={cat}
-                  delayPressIn={0}
-                  onLayout={onChipLayout}
-                  onPress={() => selectCategory(cat)}
-                  android_ripple={{
-                    ...androidRipple,
-                    borderless: false,
-                  }}
-                  style={({ pressed }) => [
-                    styles.catChip,
-                    pressed && { opacity: 0.92 },
-                  ]}
-                >
-                  <Text style={styles.catText}>
-                    {catLabel(cat)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
 
-        {popularSectionEl}
+            {popularSectionEl}
 
-        {!loading && !loadError && filteredProducts.length > 0 ? (
-          <View style={styles.listHeaderRow}>
-            <Text style={styles.sectionTitle}>{activeCatLabel}</Text>
-            <Text style={styles.listCount}>{filteredProducts.length} ürün</Text>
-          </View>
-        ) : null}
-
-        {loading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator size="large" color={PALETTE.textPrimary} />
-            <Text style={styles.loadingHint}>Menü yükleniyor…</Text>
-          </View>
-        ) : null}
-
-        {!loading && loadError ? (
-          <View style={styles.centerState}>
-            <Ionicons
-              name="cloud-offline-outline"
-              size={36}
-              color={PALETTE.textSecondary}
-            />
-            <Text style={styles.errorText}>{loadError}</Text>
-          </View>
-        ) : null}
-
-        {!loading && !loadError && filteredProducts.length === 0 ? (
-          <View style={styles.centerState}>
-            <Ionicons
-              name="fast-food-outline"
-              size={36}
-              color={PALETTE.textSecondary}
-            />
-            <Text style={styles.emptyText}>
-              {search ? 'Aramanıza uygun ürün bulunamadı.' : 'Bu kategoride ürün yok.'}
-            </Text>
-          </View>
-        ) : null}
-
-        {filteredProducts.map((item) => (
-          <MenuProductCard
-            key={String(item._id || item.id || item.name)}
-            item={item}
-            onQuickAdd={quickAdd}
-            favorited={isFavorite(item._id || item.id, branchId)}
-            onToggleFavorite={handleToggleFavorite}
-          />
-        ))}
-      </ScrollView>
+            {!loading && !loadError && filteredProducts.length > 0 ? (
+              <View style={styles.listHeaderRow}>
+                <Text style={styles.sectionTitle}>{activeCatLabel}</Text>
+                <Text style={styles.listCount}>{filteredProducts.length} ürün</Text>
+              </View>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.centerState}>
+              <ActivityIndicator size="large" color={PALETTE.textPrimary} />
+              <Text style={styles.loadingHint}>Menü yükleniyor…</Text>
+            </View>
+          ) : loadError ? (
+            <View style={styles.centerState}>
+              <Ionicons
+                name="cloud-offline-outline"
+                size={36}
+                color={PALETTE.textSecondary}
+              />
+              <Text style={styles.errorText}>{loadError}</Text>
+            </View>
+          ) : (
+            <View style={styles.centerState}>
+              <Ionicons
+                name="fast-food-outline"
+                size={36}
+                color={PALETTE.textSecondary}
+              />
+              <Text style={styles.emptyText}>
+                {search ? 'Aramanıza uygun ürün bulunamadı.' : 'Bu kategoride ürün yok.'}
+              </Text>
+            </View>
+          )
+        }
+        {...(Platform.OS === 'ios' ? { delayContentTouches: false } : {})}
+      />
 
       {/* Sticky cart bar */}
       {totals.count > 0 ? (
@@ -1592,6 +1607,20 @@ const styles = StyleSheet.create({
   },
   itemStatCount: {
     color: '#777777',
+  },
+  kcalBadge: {
+    marginLeft: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#FFF3E0',
+    borderWidth: 1,
+    borderColor: '#FFE0B2',
+  },
+  kcalBadgeText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 11,
+    color: '#E65100',
   },
   itemFooterBlock: {
     marginTop: 6,

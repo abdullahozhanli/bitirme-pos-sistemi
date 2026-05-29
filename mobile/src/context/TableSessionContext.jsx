@@ -142,6 +142,8 @@ export function TableSessionProvider({ children }) {
     async (value) => {
       const name = value != null ? String(value).trim() : '';
       if (tableSession) {
+        const currentName = String(tableSession.branchName || '').trim();
+        if (name === currentName) return;
         const next = {
           ...tableSession,
           branchName: name || null,
@@ -151,7 +153,10 @@ export function TableSessionProvider({ children }) {
         hydrate(next);
         return;
       }
-      setBranchNameState(name || null);
+      setBranchNameState((prev) => {
+        const prevName = prev != null ? String(prev).trim() : '';
+        return name === prevName ? prev : name || null;
+      });
     },
     [tableSession, hydrate]
   );

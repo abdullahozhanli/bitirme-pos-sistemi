@@ -108,6 +108,8 @@ export function CartProvider({ children }) {
           note,
           sizeKey,
           category: product.category,
+          // Besin değerleri (varsa) — sepet toplam kalori altyapısı için saklanır
+          nutrition: product.nutrition || null,
         },
       ];
     });
@@ -160,7 +162,16 @@ export function CartProvider({ children }) {
       (s, l) => s + l.qty * Number(l.unitPrice ?? l.price ?? 0),
       0
     );
-    return { count, sum: Number(sum.toFixed(2)) };
+    // Sepet toplam kalori altyapısı: nutrition taşıyan satırlardan toplanır (UI zorunlu değil)
+    const totalCalories = lines.reduce((s, l) => {
+      const kcal = Number(l.nutrition?.calories);
+      return Number.isFinite(kcal) ? s + kcal * l.qty : s;
+    }, 0);
+    return {
+      count,
+      sum: Number(sum.toFixed(2)),
+      totalCalories: Math.round(totalCalories),
+    };
   }, [lines]);
 
   const value = useMemo(

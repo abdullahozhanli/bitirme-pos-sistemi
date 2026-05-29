@@ -12,6 +12,38 @@ function capitalizeWords(str) {
     .join(' '); 
 }
 
+// Besin değerleri (opsiyonel alt-döküman). Eski ürünlerde tamamen yok olabilir.
+const nutritionSchema = new mongoose.Schema(
+  {
+    calories: { type: Number, min: 0 },
+    protein: { type: Number, min: 0 },
+    carbs: { type: Number, min: 0 },
+    fat: { type: Number, min: 0 },
+    servingGram: { type: Number, min: 0 },
+    portionUnit: { type: String },
+    allergens: { type: [String], default: undefined },
+    ingredients: { type: [String], default: undefined },
+    confidence: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+    },
+    source: {
+      type: String,
+      enum: ['manual', 'ai_estimate', 'api_estimate'],
+      default: 'manual',
+    },
+    nutritionNote: { type: String },
+    isNutritionVisibleToCustomer: {
+      type: Boolean,
+      default: false,
+    },
+    estimatedAt: { type: Date },
+    approvedAt: { type: Date },
+    updatedAt: { type: Date },
+  },
+  { _id: false }
+);
+
 // Bir "Ürün"ün veritabanında nasıl görüneceğini tanımlıyoruz
 const productSchema = new mongoose.Schema(
   {
@@ -63,6 +95,16 @@ const productSchema = new mongoose.Schema(
       type: Schema.Types.ObjectId,
       ref: 'Branch',
       required: false, // Migration için opsiyonel, sonra required yapılabilir
+    },
+    // Besin değerleri — opsiyonel; ayarlanmazsa undefined kalır (eski ürünler bozulmaz)
+    nutrition: {
+      type: nutritionSchema,
+      default: undefined,
+    },
+    nutritionStatus: {
+      type: String,
+      enum: ['none', 'pending', 'estimated', 'approved'],
+      default: 'none',
     },
   },
   {
