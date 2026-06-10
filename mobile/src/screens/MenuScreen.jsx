@@ -294,7 +294,9 @@ export default function MenuScreen({ navigation }) {
         }
 
         const productsRes = productsResult.value;
-        const items = Array.isArray(productsRes.data?.items) ? productsRes.data.items : [];
+        const rawItems = Array.isArray(productsRes.data?.items) ? productsRes.data.items : [];
+        // Güvenlik guard'ı: public API zaten filtreler; yine de görünmez ürünleri ele
+        const items = rawItems.filter((p) => p?.isVisibleToCustomer !== false);
         const nextBranchName = String(productsRes.data?.branchName || '').trim();
         if (nextBranchName) {
           setBranchName(nextBranchName);

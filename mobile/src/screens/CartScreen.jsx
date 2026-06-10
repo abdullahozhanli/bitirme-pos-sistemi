@@ -246,6 +246,29 @@ export default function CartScreen({ navigation }) {
     Number((totals.sum - campaignDiscount - couponDiscount - pointsDiscount + serviceFee).toFixed(2))
   );
 
+  const calorieSummary = useMemo(() => {
+    const total = Number(totals?.totalCalories);
+    const safeTotal = Number.isFinite(total) ? Math.round(total) : 0;
+    const cartLines = Array.isArray(lines) ? lines : [];
+    let withCalories = 0;
+    let withoutCalories = 0;
+
+    for (const line of cartLines) {
+      const kcal = Number(line?.nutrition?.calories);
+      if (Number.isFinite(kcal) && kcal > 0) {
+        withCalories += 1;
+      } else {
+        withoutCalories += 1;
+      }
+    }
+
+    return {
+      total: safeTotal,
+      showTotal: safeTotal > 0,
+      showPartialHint: withCalories > 0 && withoutCalories > 0,
+    };
+  }, [lines, totals?.totalCalories]);
+
   const branchLabel = String(branchName || '').trim() || 'A Blok Restoran';
   const isOnlinePayment = paymentMethod === 'online';
   const cardFormReady = isCardFormValid({ cardHolder, cardNumber, cardExpiry, cardCvv });
@@ -755,7 +778,14 @@ export default function CartScreen({ navigation }) {
                 <View style={styles.checkoutSummaryHeadLeft}>
                   <Text style={styles.sectionTitle}>Ödeme özeti</Text>
                   {!summaryExpanded ? (
-                    <Text style={styles.checkoutSummaryHint}>Detaylar için dokun</Text>
+                    <>
+                      <Text style={styles.checkoutSummaryHint}>Detaylar için dokun</Text>
+                      {calorieSummary.showTotal ? (
+                        <Text style={styles.checkoutSummaryKcalHint}>
+                          🔥 {calorieSummary.total} kcal tahmini
+                        </Text>
+                      ) : null}
+                    </>
                   ) : null}
                 </View>
                 <View style={styles.checkoutSummaryHeadRight}>
@@ -791,6 +821,21 @@ export default function CartScreen({ navigation }) {
                       <Text style={styles.summaryLabel}>Servis ücreti</Text>
                       <Text style={styles.summaryValue}>{formatPrice(serviceFee)}</Text>
                     </View>
+                  ) : null}
+                  {calorieSummary.showTotal ? (
+                    <>
+                      <View style={styles.summaryRowCompact}>
+                        <Text style={styles.summaryLabel}>Tahmini Kalori</Text>
+                        <Text style={styles.summaryKcalValue}>
+                          🔥 {calorieSummary.total} kcal
+                        </Text>
+                      </View>
+                      {calorieSummary.showPartialHint ? (
+                        <Text style={styles.summaryKcalHint}>
+                          Bazı ürünlerin kalori bilgisi bulunmayabilir.
+                        </Text>
+                      ) : null}
+                    </>
                   ) : null}
                   <View style={styles.summaryDivider} />
                   <View style={styles.summaryRowCompact}>
@@ -1500,6 +1545,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: homeFonts.sans,
     fontSize: 11,
+    color: menuColors.textMuted,
+  },
+  checkoutSummaryKcalHint: {
+    marginTop: 2,
+    fontFamily: homeFonts.sans,
+    fontSize: 11,
+    color: menuColors.textMuted,
+  },
+  summaryKcalValue: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 14,
+    color: menuColors.text,
+  },
+  summaryKcalHint: {
+    marginTop: 3,
+    fontFamily: homeFonts.sans,
+    fontSize: 10,
+    lineHeight: 14,
     color: menuColors.textMuted,
   },
   summaryPayValueCompact: {

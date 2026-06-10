@@ -34,6 +34,8 @@ router.get('/', async (req, res, next) => {
     if (q) filter.name = { $regex: q, $options: 'i' };
     if (category) filter.category = category;
     if (inStock === 'true') filter.countInStock = { $gt: 0 };
+    // Yalnızca müşteriye görünür ürünler. Alanı olmayan eski ürünler ($ne: false) görünür kabul edilir.
+    filter.isVisibleToCustomer = { $ne: false };
 
     const skip = (Number(page) - 1) * Number(limit);
 

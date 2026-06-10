@@ -96,6 +96,11 @@ const productSchema = new mongoose.Schema(
       ref: 'Branch',
       required: false, // Migration için opsiyonel, sonra required yapılabilir
     },
+    // Ürünün müşteri menüsünde görünüp görünmeyeceği (besin görünürlüğünden bağımsız)
+    isVisibleToCustomer: {
+      type: Boolean,
+      default: true,
+    },
     // Besin değerleri — opsiyonel; ayarlanmazsa undefined kalır (eski ürünler bozulmaz)
     nutrition: {
       type: nutritionSchema,

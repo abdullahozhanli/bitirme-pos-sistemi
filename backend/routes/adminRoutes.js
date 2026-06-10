@@ -737,6 +737,9 @@ router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
       ...(salePrice != null && salePrice !== '' ? { salePrice: Number(salePrice) } : {}),
       ...(saleStartsAt ? { saleStartsAt: new Date(saleStartsAt) } : {}),
       ...(saleEndsAt ? { saleEndsAt: new Date(saleEndsAt) } : {}),
+      ...(req.body.isVisibleToCustomer !== undefined
+        ? { isVisibleToCustomer: Boolean(req.body.isVisibleToCustomer) }
+        : {}),
       ...(nutrition ? { nutrition } : {}),
       ...(nutritionStatus ? { nutritionStatus } : {}),
     });
@@ -781,10 +784,14 @@ router.put('/products/:id', auth, requireRole('admin'), async (req, res, next) =
       'salePrice',
       'saleStartsAt',
       'saleEndsAt',
+      'isVisibleToCustomer',
     ];
     const patch = {};
     for (const key of allowedKeys) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
+    }
+    if (patch.isVisibleToCustomer !== undefined) {
+      patch.isVisibleToCustomer = Boolean(patch.isVisibleToCustomer);
     }
     if (patch.salePrice === '' || patch.salePrice == null) patch.salePrice = null;
     if (patch.saleStartsAt === '') patch.saleStartsAt = null;

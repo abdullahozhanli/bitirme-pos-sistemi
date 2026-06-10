@@ -68,6 +68,7 @@ export default function ProductManagementPage() {
   const [searchQuery, setSearchQuery] = useState(''); // Arama için
   const [newProductData, setNewProductData] = useState({
     name: '', price: '', description: '', category: '', countInStock: 0, imageUrl: '',
+    isVisibleToCustomer: true,
     nutritionStatus: 'none',
     nutrition: { ...EMPTY_NUTRITION },
   });
@@ -166,6 +167,7 @@ export default function ProductManagementPage() {
       setNewProductData({
         name: '', price: '', description: '', countInStock: 0, imageUrl: '',
         category: categories.length > 0 ? categories[0]._id : '',
+        isVisibleToCustomer: true,
         nutritionStatus: 'none',
         nutrition: { ...EMPTY_NUTRITION },
       });
@@ -205,6 +207,7 @@ export default function ProductManagementPage() {
       countInStock: product.countInStock,
       imageUrl: product.imageUrl || '',
       category: product.category ? (product.category._id || product.category) : product.category || '',
+      isVisibleToCustomer: product.isVisibleToCustomer !== false,
       nutritionStatus: product.nutritionStatus || 'none',
       nutrition: nutritionToForm(product.nutrition),
     });
@@ -380,6 +383,11 @@ export default function ProductManagementPage() {
             ))}
           </Select>
         </FormControl>
+        <FormControlLabel
+          control={<Switch checked={newProductData.isVisibleToCustomer} onChange={(e) => setNewProductData(prev => ({ ...prev, isVisibleToCustomer: e.target.checked }))} />}
+          label="Ürünü menüde göster"
+        />
+
         <Box sx={{ width: '100%' }}>
           <Divider sx={{ my: 1 }} />
           <Typography variant="subtitle1" sx={{ mb: 1 }}>Besin Değerleri (opsiyonel)</Typography>
@@ -421,7 +429,7 @@ export default function ProductManagementPage() {
             </FormControl>
             <FormControlLabel
               control={<Switch name="isNutritionVisibleToCustomer" checked={newProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleNewNutritionChange} />}
-              label="Müşteriye göster"
+              label="Besin değerini müşteriye göster"
             />
           </Box>
         </Box>
@@ -481,6 +489,11 @@ export default function ProductManagementPage() {
                 </Select>
               </FormControl>
 
+              <FormControlLabel
+                control={<Switch checked={editingProductData.isVisibleToCustomer} onChange={(e) => setEditingProductData(prev => ({ ...prev, isVisibleToCustomer: e.target.checked }))} />}
+                label="Ürünü menüde göster"
+              />
+
               <Divider sx={{ my: 1 }} />
               <Typography variant="subtitle1">Besin Değerleri (opsiyonel)</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -523,7 +536,7 @@ export default function ProductManagementPage() {
                 </FormControl>
                 <FormControlLabel
                   control={<Switch name="isNutritionVisibleToCustomer" checked={editingProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleEditNutritionChange} />}
-                  label="Müşteriye göster"
+                  label="Besin değerini müşteriye göster"
                 />
               </Box>
             </Box>
