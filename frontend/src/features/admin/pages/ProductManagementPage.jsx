@@ -1,87 +1,72 @@
-import React, { useState, useEffect, useMemo } from 'react'; 
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { 
-  Box, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Select, MenuItem, FormControl, InputLabel, Typography, Paper, Stack,
-  Divider, FormControlLabel, Switch
-} from '@mui/material'; 
+import {
+  Box,
+  Button,
+  Typography,
+  Paper,
+  Stack,
+  Alert,
+  Chip,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import TableToolbar from '../../../shared/components/ui/TableToolbar.jsx';
 import ConfirmDialog from '../../../shared/components/ui/ConfirmDialog.jsx';
+import ProductFormDialog, { createEmptyProductForm } from '../components/ProductFormDialog.jsx';
+import {
+  toNutritionPayload,
+  nutritionToForm,
+  resolveNutritionStatusForSave,
+  nutritionStatusLabel,
+  AI_ESTIMATE_SUCCESS_MSG,
+} from '../utils/productNutrition.js';
 
-// Form besin değerleri için boş şablon (alanlar string olarak tutulur, gönderimde dönüştürülür)
-const EMPTY_NUTRITION = {
-  calories: '', protein: '', carbs: '', fat: '', servingGram: '',
-  portionUnit: '', ingredients: '', allergens: '', nutritionNote: '',
-  confidence: '', source: 'manual', isNutritionVisibleToCustomer: false,
-};
+function buildProductPayload(formData, previousNutritionStatus = 'none') {
+  const nutritionStatus = resolveNutritionStatusForSave(
+    formData.nutrition,
+    previousNutritionStatus
+  );
+  const nutrition = toNutritionPayload({
+    ...formData.nutrition,
+    isNutritionVisibleToCustomer: nutritionStatus === 'approved',
+  });
 
-const NUTRITION_NUM_KEYS = ['calories', 'protein', 'carbs', 'fat', 'servingGram'];
-
-/** Form state'indeki nutrition'ı backend payload'ına çevirir (boş alanları atlar). */
-function toNutritionPayload(n) {
-  if (!n) return undefined;
-  const out = {};
-  for (const k of NUTRITION_NUM_KEYS) {
-    if (n[k] !== '' && n[k] != null) out[k] = Number(n[k]);
-  }
-  if (n.portionUnit?.trim()) out.portionUnit = n.portionUnit.trim();
-  if (n.nutritionNote?.trim()) out.nutritionNote = n.nutritionNote.trim();
-  if (n.ingredients?.trim()) out.ingredients = n.ingredients; // backend virgülle ayırır
-  if (n.allergens?.trim()) out.allergens = n.allergens;
-  if (n.confidence) out.confidence = n.confidence;
-
-  // source ve görünürlük bayrağı tek başına "anlamlı nutrition verisi" sayılmaz.
-  // Kullanıcı gerçek bir besin alanı girmediyse hiç payload gönderme.
-  if (Object.keys(out).length === 0) return undefined;
-
-  if (n.source) out.source = n.source;
-  out.isNutritionVisibleToCustomer = Boolean(n.isNutritionVisibleToCustomer);
-  return out;
-}
-
-/** Backend'den gelen nutrition objesini form alanlarına yükler (diziler virgüllü string olur). */
-function nutritionToForm(n) {
-  if (!n || typeof n !== 'object') return { ...EMPTY_NUTRITION };
   return {
-    calories: n.calories ?? '',
-    protein: n.protein ?? '',
-    carbs: n.carbs ?? '',
-    fat: n.fat ?? '',
-    servingGram: n.servingGram ?? '',
-    portionUnit: n.portionUnit || '',
-    ingredients: Array.isArray(n.ingredients) ? n.ingredients.join(', ') : (n.ingredients || ''),
-    allergens: Array.isArray(n.allergens) ? n.allergens.join(', ') : (n.allergens || ''),
-    nutritionNote: n.nutritionNote || '',
-    confidence: n.confidence || '',
-    source: n.source || 'manual',
-    isNutritionVisibleToCustomer: Boolean(n.isNutritionVisibleToCustomer),
+    name: formData.name,
+    price: Number(formData.price),
+    description: formData.description,
+    imageUrl: formData.imageUrl,
+    category: formData.category,
+    countInStock: Number(formData.countInStock),
+    isVisibleToCustomer: formData.isVisibleToCustomer !== false,
+    nutritionStatus,
+    nutrition,
   };
 }
 
 export default function ProductManagementPage() {
   const [products, setProducts] = useState([]);
-  const [allProducts, setAllProducts] = useState([]); // Tüm ürünler (filtreleme için)
+  const [allProducts, setAllProducts] = useState([]);
   const [message, setMessage] = useState('');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(''); // Arama için
-  const [newProductData, setNewProductData] = useState({
-    name: '', price: '', description: '', category: '', countInStock: 0, imageUrl: '',
-    isVisibleToCustomer: true,
-    nutritionStatus: 'none',
-    nutrition: { ...EMPTY_NUTRITION },
-  });
-  const [openEditModal, setOpenEditModal] = useState(false); 
-  const [editingProductData, setEditingProductData] = useState(null);
-  const [confirm, setConfirm] = useState({ open: false }); 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [formMode, setFormMode] = useState('create');
+  const [formInitialData, setFormInitialData] = useState(null);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [aiEstimateLoading, setAiEstimateLoading] = useState(false);
+  const [aiEstimateInfo, setAiEstimateInfo] = useState('');
+  const [aiEstimateError, setAiEstimateError] = useState('');
+  const [confirm, setConfirm] = useState({ open: false });
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/admin/products', { params: { page: 1, limit: 200 } });
       const list = Array.isArray(response.data) ? response.data : response.data.items || [];
-      const productsWithId = list.map(p => (p ? { id: p._id, ...p } : null)).filter(Boolean);
+      const productsWithId = list.map((p) => (p ? { id: p._id, ...p } : null)).filter(Boolean);
       setAllProducts(productsWithId);
       setProducts(productsWithId);
       setLoading(false);
@@ -98,12 +83,6 @@ export default function ProductManagementPage() {
         const response = await axios.get('/api/admin/categories');
         const catList = Array.isArray(response.data) ? response.data : response.data.items || [];
         setCategories(catList);
-        if (catList.length > 0) {
-          setNewProductData(prevData => ({
-            ...prevData,
-            category: catList[0]._id 
-          }));
-        }
       } catch (error) {
         console.error('Kategoriler çekilirken hata oluştu:', error);
       }
@@ -112,71 +91,128 @@ export default function ProductManagementPage() {
     fetchCategories();
   }, []);
 
-  // Arama için useEffect
   useEffect(() => {
     if (searchQuery === '') {
       setProducts(allProducts);
     } else {
-      const filtered = allProducts.filter(product => 
+      const filtered = allProducts.filter((product) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setProducts(filtered);
     }
-  }, [searchQuery, allProducts]); 
+  }, [searchQuery, allProducts]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewProductData(prevData => ({ ...prevData, [name]: value }));
+  const closeFormDialog = useCallback(() => {
+    setFormDialogOpen(false);
+    setFormInitialData(null);
+    setAiEstimateInfo('');
+    setAiEstimateError('');
+  }, []);
+
+  const openCreateDialog = () => {
+    setFormMode('create');
+    setFormInitialData(
+      createEmptyProductForm(categories.length > 0 ? categories[0]._id : '')
+    );
+    setAiEstimateInfo('');
+    setAiEstimateError('');
+    setFormDialogOpen(true);
   };
 
-  const handleNewNutritionChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setNewProductData(prevData => ({
-      ...prevData,
-      nutrition: {
-        ...prevData.nutrition,
-        [name]: type === 'checkbox' ? checked : value,
-      },
-    }));
+  const openEditDialog = (product) => {
+    setFormMode('edit');
+    setFormInitialData({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      description: product.description || '',
+      countInStock: product.countInStock,
+      imageUrl: product.imageUrl || '',
+      category: product.category
+        ? product.category._id || product.category
+        : product.category || '',
+      isVisibleToCustomer: product.isVisibleToCustomer !== false,
+      nutritionStatus: product.nutritionStatus || 'none',
+      nutrition: nutritionToForm(product.nutrition),
+    });
+    setAiEstimateInfo('');
+    setAiEstimateError('');
+    setFormDialogOpen(true);
   };
 
-  const handleEditNutritionChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setEditingProductData(prevData => ({
-      ...prevData,
-      nutrition: {
-        ...prevData.nutrition,
-        [name]: type === 'checkbox' ? checked : value,
-      },
-    }));
-  };
-
-  const handleCreateProduct = async (e) => {
-    e.preventDefault();
+  const handleFormSubmit = async (formData) => {
     setMessage('');
+    setFormSubmitting(true);
     try {
-      const productPayload = {
-        ...newProductData,
-        price: Number(newProductData.price),
-        countInStock: Number(newProductData.countInStock),
-        nutritionStatus: newProductData.nutritionStatus || 'none',
-        nutrition: toNutritionPayload(newProductData.nutrition),
-      };
-      
-      await axios.post('/api/admin/products', productPayload);
-      setNewProductData({
-        name: '', price: '', description: '', countInStock: 0, imageUrl: '',
-        category: categories.length > 0 ? categories[0]._id : '',
-        isVisibleToCustomer: true,
-        nutritionStatus: 'none',
-        nutrition: { ...EMPTY_NUTRITION },
-      });
-      setMessage('Ürün başarıyla eklendi!');
-      // Ürünleri yeniden yükle
+      const previousStatus = formInitialData?.nutritionStatus || 'none';
+      const payload = buildProductPayload(formData, previousStatus);
+
+      if (formMode === 'create') {
+        await axios.post('/api/admin/products', payload);
+        setMessage('Ürün başarıyla eklendi!');
+      } else {
+        await axios.put(`/api/admin/products/${formData.id}`, payload);
+        setMessage('Ürün başarıyla güncellendi.');
+      }
+
+      closeFormDialog();
       await fetchProducts();
     } catch (error) {
-      const errorMsg = error.response?.data?.message || error.response?.data?.msg || 'Bir hata oluştu.';
+      const errorMsg =
+        error.response?.data?.message || error.response?.data?.msg || 'Bir hata oluştu.';
       setMessage(`Hata: ${errorMsg}`);
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  const applyAiEstimateToForm = (currentFormData, data) => {
+    const nutritionPayload = data.nutrition || data.product?.nutrition;
+    if (!nutritionPayload || typeof nutritionPayload !== 'object') {
+      throw new Error('AI yanıtında besin değeri bulunamadı.');
+    }
+
+    setFormInitialData({
+      ...currentFormData,
+      nutritionStatus: data.nutritionStatus || 'estimated',
+      nutrition: nutritionToForm({
+        ...nutritionPayload,
+        source: nutritionPayload.source || 'ai_estimate',
+        isNutritionVisibleToCustomer: false,
+      }),
+    });
+    setAiEstimateInfo(data.message || AI_ESTIMATE_SUCCESS_MSG);
+  };
+
+  const handleAiNutritionEstimate = async (currentFormData) => {
+    if (!String(currentFormData?.name || '').trim()) return;
+
+    setAiEstimateLoading(true);
+    setAiEstimateInfo('');
+    setAiEstimateError('');
+    try {
+      let response;
+      if (formMode === 'edit' && currentFormData.id) {
+        response = await axios.post(
+          `/api/admin/products/${currentFormData.id}/nutrition/estimate`
+        );
+      } else {
+        response = await axios.post('/api/admin/products/nutrition/estimate-preview', {
+          name: currentFormData.name,
+          description: currentFormData.description,
+          price: currentFormData.price,
+          category: currentFormData.category,
+          nutrition: currentFormData.nutrition,
+        });
+      }
+
+      applyAiEstimateToForm(currentFormData, response.data || {});
+    } catch (error) {
+      const backendMsg = error.response?.data?.message || error.response?.data?.msg;
+      const errorMsg = backendMsg || error.message || 'AI kalori tahmini oluşturulamadı.';
+      setAiEstimateError(errorMsg);
+    } finally {
+      setAiEstimateLoading(false);
     }
   };
 
@@ -186,273 +222,201 @@ export default function ProductManagementPage() {
     try {
       await axios.delete(`/api/admin/products/${id}`);
       setMessage('Ürün başarıyla silindi.');
-      // Silme işleminden sonra ürünleri yeniden yükle
       await fetchProducts();
     } catch (error) {
       console.error('Ürün silme hatası:', error);
-      const errorMsg = error.response?.data?.message || error.response?.data?.msg || 'Ürün silinirken bir hata oluştu.';
+      const errorMsg =
+        error.response?.data?.message ||
+        error.response?.data?.msg ||
+        'Ürün silinirken bir hata oluştu.';
       setMessage(`Hata: ${errorMsg}`);
       setLoading(false);
-      // Hata durumunda da ürünleri yeniden yükle
       await fetchProducts();
     }
   };
 
-  const handleOpenEditModal = (product) => {
-    setEditingProductData({ 
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      description: product.description || '',
-      countInStock: product.countInStock,
-      imageUrl: product.imageUrl || '',
-      category: product.category ? (product.category._id || product.category) : product.category || '',
-      isVisibleToCustomer: product.isVisibleToCustomer !== false,
-      nutritionStatus: product.nutritionStatus || 'none',
-      nutrition: nutritionToForm(product.nutrition),
-    });
-    setOpenEditModal(true); 
-  };
-
-  const handleEditModalInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditingProductData(prevData => ({
-      ...prevData,
-      [name]: value
-    }));
-  };
-
-  const handleUpdateProduct = async () => {
-    setMessage('');
-    try {
-      const updatePayload = {
-        ...editingProductData,
-        price: Number(editingProductData.price),
-        countInStock: Number(editingProductData.countInStock),
-        nutritionStatus: editingProductData.nutritionStatus || 'none',
-        nutrition: toNutritionPayload(editingProductData.nutrition),
-      };
-      
-      await axios.put(`/api/admin/products/${editingProductData.id}`, updatePayload);
-      setMessage('Ürün başarıyla güncellendi.');
-      setOpenEditModal(false); 
-      setEditingProductData(null);
-      // Ürünleri yeniden yükle
-      await fetchProducts();
-    } catch (error) {
-      const errorMsg = error.response?.data?.message || error.response?.data?.msg || 'Bir hata oluştu.';
-      setMessage(`Hata: ${errorMsg}`);
-    }
-  };
-
-  // --- DataGrid SÜTUN TANIMLARI ---
-  const columns = useMemo(() => [
-    { field: 'name', headerName: 'Adı', width: 200 },
-    { 
-      field: 'price', 
-      headerName: 'Fiyatı', 
-      width: 100,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params) => `${params.value} TL`
-    },
-    { 
-      field: 'countInStock', 
-      headerName: 'Stok', 
-      width: 100,
-      align: 'right',
-      headerAlign: 'right',
-      renderCell: (params) => {
-        const stock = params.value || 0;
-        if (stock === 0) {
-          return <span className="stock-badge stock-zero">{stock}</span>;
-        } else if (stock < 10) {
-          return <span className="stock-badge stock-low">{stock}</span>;
-        }
-        return <span className="stock-text">{stock}</span>;
-      }
-    },
-    { 
-      field: 'category', 
-      headerName: 'Kategori', 
-      width: 150,
-      sortable: false,
-      renderCell: (params) => {
-        const category = params.row?.category;
-        let categoryName = 'N/A';
-        
-        // Eğer category bir obje ise (populate edilmişse)
-        if (category && typeof category === 'object' && category !== null) {
-          if (category.name) {
-            categoryName = category.name;
-          } else if (category._id) {
-            // Eğer obje ama name yoksa, categories listesinden bul
-            const foundCat = categories.find(cat => 
-              String(cat._id) === String(category._id)
-            );
-            categoryName = foundCat ? foundCat.name : 'N/A';
+  const columns = useMemo(
+    () => [
+      { field: 'name', headerName: 'Adı', width: 180, flex: 1, minWidth: 140 },
+      {
+        field: 'price',
+        headerName: 'Fiyatı',
+        width: 100,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: (params) => `${params.value} TL`,
+      },
+      {
+        field: 'countInStock',
+        headerName: 'Stok',
+        width: 80,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: (params) => {
+          const stock = params.value || 0;
+          if (stock === 0) {
+            return <span className="stock-badge stock-zero">{stock}</span>;
           }
-        } 
-        // Eğer category bir ID string ise, categories listesinden bul
-        else if (category) {
-          const categoryId = typeof category === 'string' ? category : (category?._id || category);
-          if (categoryId) {
-            const foundCat = categories.find(cat => String(cat._id) === String(categoryId));
-            if (foundCat) {
-              categoryName = foundCat.name;
+          if (stock < 10) {
+            return <span className="stock-badge stock-low">{stock}</span>;
+          }
+          return <span className="stock-text">{stock}</span>;
+        },
+      },
+      {
+        field: 'category',
+        headerName: 'Kategori',
+        width: 130,
+        sortable: false,
+        renderCell: (params) => {
+          const category = params.row?.category;
+          let categoryName = 'N/A';
+
+          if (category && typeof category === 'object' && category !== null) {
+            if (category.name) {
+              categoryName = category.name;
+            } else if (category._id) {
+              const foundCat = categories.find(
+                (cat) => String(cat._id) === String(category._id)
+              );
+              categoryName = foundCat ? foundCat.name : 'N/A';
+            }
+          } else if (category) {
+            const categoryId =
+              typeof category === 'string' ? category : category?._id || category;
+            if (categoryId) {
+              const foundCat = categories.find((cat) => String(cat._id) === String(categoryId));
+              if (foundCat) categoryName = foundCat.name;
             }
           }
-        }
-        
-        return <span>{categoryName}</span>;
-      }
-    },
-    { 
-      field: 'description', 
-      headerName: 'Açıklama', 
-      width: 250,
-      renderCell: (params) => (
-        <span style={{ 
-          whiteSpace: 'nowrap', 
-          overflow: 'hidden', 
-          textOverflow: 'ellipsis',
-          display: 'block',
-          maxWidth: '100%'
-        }}>
-          {params.value || ''}
-        </span>
-      )
-    },
-    {
-      field: 'actions',
-      headerName: 'İşlemler',
-      width: 200,
-      sortable: false,
-      renderCell: (params) => {
-        return (
+
+          return <span>{categoryName}</span>;
+        },
+      },
+      {
+        field: 'isVisibleToCustomer',
+        headerName: 'Menü',
+        width: 90,
+        sortable: false,
+        renderCell: (params) =>
+          params.row.isVisibleToCustomer !== false ? (
+            <Chip label="Görünür" size="small" color="success" variant="outlined" />
+          ) : (
+            <Chip label="Gizli" size="small" variant="outlined" />
+          ),
+      },
+      {
+        field: 'nutritionStatus',
+        headerName: 'Besin',
+        width: 100,
+        sortable: false,
+        renderCell: (params) => {
+          const label = nutritionStatusLabel(
+            params.row.nutritionStatus,
+            params.row.nutrition
+          );
+          const color =
+            label === 'Yayında' ? 'success' : label === 'Taslak' ? 'warning' : 'default';
+          return <Chip label={label} size="small" color={color} variant="outlined" />;
+        },
+      },
+      {
+        field: 'description',
+        headerName: 'Açıklama',
+        width: 200,
+        flex: 1,
+        minWidth: 120,
+        renderCell: (params) => (
+          <span
+            style={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'block',
+              maxWidth: '100%',
+            }}
+          >
+            {params.value || ''}
+          </span>
+        ),
+      },
+      {
+        field: 'actions',
+        headerName: 'İşlemler',
+        width: 200,
+        sortable: false,
+        renderCell: (params) => (
           <Stack direction="row" spacing={1}>
             <Button
-              onClick={() => handleOpenEditModal(params.row)}
+              onClick={() => openEditDialog(params.row)}
               size="small"
               variant="contained"
               color="primary"
             >
               Düzenle
             </Button>
-            <Button 
-              onClick={() => setConfirm({
-                open: true,
-                title: 'Ürünü Sil',
-                description: `"${params.row.name}" adlı ürünü silmek istediğinizden emin misiniz?`,
-                onConfirm: () => {
-                  setConfirm({ open: false });
-                  handleDeleteProduct(params.row.id);
-                }
-              })} 
-              size="small" 
-              variant="contained" 
+            <Button
+              onClick={() =>
+                setConfirm({
+                  open: true,
+                  title: 'Ürünü Sil',
+                  description: `"${params.row.name}" adlı ürünü silmek istediğinizden emin misiniz?`,
+                  onConfirm: () => {
+                    setConfirm({ open: false });
+                    handleDeleteProduct(params.row.id);
+                  },
+                })
+              }
+              size="small"
+              variant="contained"
               color="error"
             >
               Sil
             </Button>
           </Stack>
-        );
-      }
-    }
-  ], [categories]);
+        ),
+      },
+    ],
+    [categories]
+  );
 
-  // --- EKRANA ÇİZDİR (RENDER) ---
   return (
     <Paper sx={{ p: 3 }}>
-      {/* Yeni Ürün Ekle Formu */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Yeni Ürün Ekle
-      </Typography>
-      {message && <Typography color={message.startsWith('Hata:') ? 'error' : 'success'} gutterBottom sx={{ mb: 2 }}>{message}</Typography>}
-      <Box component="form" onSubmit={handleCreateProduct} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
-        <TextField label="Adı" name="name" value={newProductData.name} onChange={handleInputChange} required size="small" />
-        <TextField label="Fiyatı (TL)" name="price" type="number" value={newProductData.price} onChange={handleInputChange} required size="small" />
-        <TextField label="Stok Adedi" name="countInStock" type="number" value={newProductData.countInStock} onChange={handleInputChange} required size="small" />
-        <TextField label="Görsel URL" name="imageUrl" value={newProductData.imageUrl} onChange={handleInputChange} required size="small" placeholder="https://..." sx={{ minWidth: 300 }} />
-        <TextField label="Açıklama" name="description" value={newProductData.description} onChange={handleInputChange} size="small" />
-        <FormControl size="small" sx={{ minWidth: 150 }}>
-          <InputLabel>Kategorisi</InputLabel>
-          <Select name="category" value={newProductData.category} label="Kategorisi" onChange={handleInputChange} required>
-            {categories.map((category) => (
-              <MenuItem key={category._id} value={category._id}>{category.name}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControlLabel
-          control={<Switch checked={newProductData.isVisibleToCustomer} onChange={(e) => setNewProductData(prev => ({ ...prev, isVisibleToCustomer: e.target.checked }))} />}
-          label="Ürünü menüde göster"
-        />
-
-        <Box sx={{ width: '100%' }}>
-          <Divider sx={{ my: 1 }} />
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>Besin Değerleri (opsiyonel)</Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-            <TextField label="Kalori (kcal)" name="calories" type="number" value={newProductData.nutrition.calories} onChange={handleNewNutritionChange} size="small" />
-            <TextField label="Protein (g)" name="protein" type="number" value={newProductData.nutrition.protein} onChange={handleNewNutritionChange} size="small" />
-            <TextField label="Karbonhidrat (g)" name="carbs" type="number" value={newProductData.nutrition.carbs} onChange={handleNewNutritionChange} size="small" />
-            <TextField label="Yağ (g)" name="fat" type="number" value={newProductData.nutrition.fat} onChange={handleNewNutritionChange} size="small" />
-            <TextField label="Porsiyon (g)" name="servingGram" type="number" value={newProductData.nutrition.servingGram} onChange={handleNewNutritionChange} size="small" />
-            <TextField label="Porsiyon Birimi" name="portionUnit" value={newProductData.nutrition.portionUnit} onChange={handleNewNutritionChange} size="small" placeholder="örn: adet, porsiyon" />
-            <TextField label="İçerikler (virgülle)" name="ingredients" value={newProductData.nutrition.ingredients} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 280 }} placeholder="tavuk, marul, sos" />
-            <TextField label="Alerjenler (virgülle)" name="allergens" value={newProductData.nutrition.allergens} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 240 }} placeholder="gluten, süt" />
-            <TextField label="Besin Notu" name="nutritionNote" value={newProductData.nutrition.nutritionNote} onChange={handleNewNutritionChange} size="small" sx={{ minWidth: 280 }} />
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>Confidence</InputLabel>
-              <Select name="confidence" value={newProductData.nutrition.confidence} label="Confidence" onChange={handleNewNutritionChange}>
-                <MenuItem value="">—</MenuItem>
-                <MenuItem value="low">low</MenuItem>
-                <MenuItem value="medium">medium</MenuItem>
-                <MenuItem value="high">high</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>Source</InputLabel>
-              <Select name="source" value={newProductData.nutrition.source} label="Source" onChange={handleNewNutritionChange}>
-                <MenuItem value="manual">manual</MenuItem>
-                <MenuItem value="ai_estimate">ai_estimate</MenuItem>
-                <MenuItem value="api_estimate">api_estimate</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: 170 }}>
-              <InputLabel>Nutrition Status</InputLabel>
-              <Select name="nutritionStatus" value={newProductData.nutritionStatus} label="Nutrition Status" onChange={handleInputChange}>
-                <MenuItem value="none">none</MenuItem>
-                <MenuItem value="pending">pending</MenuItem>
-                <MenuItem value="estimated">estimated</MenuItem>
-                <MenuItem value="approved">approved</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={<Switch name="isNutritionVisibleToCustomer" checked={newProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleNewNutritionChange} />}
-              label="Besin değerini müşteriye göster"
-            />
-          </Box>
-        </Box>
-
-        <Button type="submit" variant="contained" color="success">Ekle</Button>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 2,
+          mb: 2,
+        }}
+      >
+        <Typography variant="h5" component="h2">
+          Ürün Yönetimi
+        </Typography>
+        <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={openCreateDialog}>
+          Yeni Ürün
+        </Button>
       </Box>
 
-      <Box sx={{ my: 3, borderTop: '1px solid', borderColor: 'divider' }} />
+      {message ? (
+        <Alert
+          severity={message.startsWith('Hata:') ? 'error' : 'success'}
+          sx={{ mb: 2 }}
+          onClose={() => setMessage('')}
+        >
+          {message.replace(/^Hata:\s*/, '')}
+        </Alert>
+      ) : null}
 
-      {/* DataGrid Tablosu */}
-      <Typography variant="h5" component="h2" gutterBottom>
-        Mevcut Ürünler
-      </Typography>
-      <TableToolbar 
-        value={searchQuery} 
-        onChange={setSearchQuery} 
-        placeholder="Ürün ara..."
-      />
+      <TableToolbar value={searchQuery} onChange={setSearchQuery} placeholder="Ürün ara..." />
+
       <Box sx={{ height: 600, width: '100%', mt: 2 }}>
         <DataGrid
-          rows={products || []} 
-          columns={columns} 
-          pageSizeOptions={[10, 25]} 
+          rows={products || []}
+          columns={columns}
+          pageSizeOptions={[10, 25]}
           initialState={{
             pagination: {
               paginationModel: { pageSize: 10 },
@@ -464,96 +428,25 @@ export default function ProductManagementPage() {
         />
       </Box>
 
-      {/* Düzenleme Dialog */}
-      <Dialog
-        open={openEditModal}
-        onClose={() => setOpenEditModal(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Ürünü Düzenle</DialogTitle>
-        <DialogContent>
-          {editingProductData && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <TextField label="Adı" name="name" value={editingProductData.name} onChange={handleEditModalInputChange} fullWidth />
-              <TextField label="Fiyatı (TL)" name="price" type="number" value={editingProductData.price} onChange={handleEditModalInputChange} fullWidth />
-              <TextField label="Stok Adedi" name="countInStock" type="number" value={editingProductData.countInStock} onChange={handleEditModalInputChange} fullWidth />
-              <TextField label="Görsel URL" name="imageUrl" value={editingProductData.imageUrl || ''} onChange={handleEditModalInputChange} fullWidth placeholder="https://..." />
-              <TextField label="Açıklama" name="description" value={editingProductData.description} onChange={handleEditModalInputChange} fullWidth />
-              <FormControl fullWidth>
-                <InputLabel>Kategorisi</InputLabel> 
-                <Select name="category" value={editingProductData.category} label="Kategorisi" onChange={handleEditModalInputChange}>
-                  {categories.map((category) => (
-                    <MenuItem key={category._id} value={category._id}>{category.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+      <ProductFormDialog
+        open={formDialogOpen}
+        mode={formMode}
+        initialData={formInitialData}
+        categories={categories}
+        submitting={formSubmitting}
+        onClose={closeFormDialog}
+        onSubmit={handleFormSubmit}
+        onAiEstimate={handleAiNutritionEstimate}
+        aiEstimateLoading={aiEstimateLoading}
+        aiEstimateInfo={aiEstimateInfo}
+        aiEstimateError={aiEstimateError}
+      />
 
-              <FormControlLabel
-                control={<Switch checked={editingProductData.isVisibleToCustomer} onChange={(e) => setEditingProductData(prev => ({ ...prev, isVisibleToCustomer: e.target.checked }))} />}
-                label="Ürünü menüde göster"
-              />
-
-              <Divider sx={{ my: 1 }} />
-              <Typography variant="subtitle1">Besin Değerleri (opsiyonel)</Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                <TextField label="Kalori (kcal)" name="calories" type="number" value={editingProductData.nutrition.calories} onChange={handleEditNutritionChange} size="small" />
-                <TextField label="Protein (g)" name="protein" type="number" value={editingProductData.nutrition.protein} onChange={handleEditNutritionChange} size="small" />
-                <TextField label="Karbonhidrat (g)" name="carbs" type="number" value={editingProductData.nutrition.carbs} onChange={handleEditNutritionChange} size="small" />
-                <TextField label="Yağ (g)" name="fat" type="number" value={editingProductData.nutrition.fat} onChange={handleEditNutritionChange} size="small" />
-                <TextField label="Porsiyon (g)" name="servingGram" type="number" value={editingProductData.nutrition.servingGram} onChange={handleEditNutritionChange} size="small" />
-                <TextField label="Porsiyon Birimi" name="portionUnit" value={editingProductData.nutrition.portionUnit} onChange={handleEditNutritionChange} size="small" />
-              </Box>
-              <TextField label="İçerikler (virgülle)" name="ingredients" value={editingProductData.nutrition.ingredients} onChange={handleEditNutritionChange} fullWidth placeholder="tavuk, marul, sos" />
-              <TextField label="Alerjenler (virgülle)" name="allergens" value={editingProductData.nutrition.allergens} onChange={handleEditNutritionChange} fullWidth placeholder="gluten, süt" />
-              <TextField label="Besin Notu" name="nutritionNote" value={editingProductData.nutrition.nutritionNote} onChange={handleEditNutritionChange} fullWidth />
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel>Confidence</InputLabel>
-                  <Select name="confidence" value={editingProductData.nutrition.confidence} label="Confidence" onChange={handleEditNutritionChange}>
-                    <MenuItem value="">—</MenuItem>
-                    <MenuItem value="low">low</MenuItem>
-                    <MenuItem value="medium">medium</MenuItem>
-                    <MenuItem value="high">high</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 160 }}>
-                  <InputLabel>Source</InputLabel>
-                  <Select name="source" value={editingProductData.nutrition.source} label="Source" onChange={handleEditNutritionChange}>
-                    <MenuItem value="manual">manual</MenuItem>
-                    <MenuItem value="ai_estimate">ai_estimate</MenuItem>
-                    <MenuItem value="api_estimate">api_estimate</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 170 }}>
-                  <InputLabel>Nutrition Status</InputLabel>
-                  <Select name="nutritionStatus" value={editingProductData.nutritionStatus} label="Nutrition Status" onChange={handleEditModalInputChange}>
-                    <MenuItem value="none">none</MenuItem>
-                    <MenuItem value="pending">pending</MenuItem>
-                    <MenuItem value="estimated">estimated</MenuItem>
-                    <MenuItem value="approved">approved</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControlLabel
-                  control={<Switch name="isNutritionVisibleToCustomer" checked={editingProductData.nutrition.isNutritionVisibleToCustomer} onChange={handleEditNutritionChange} />}
-                  label="Besin değerini müşteriye göster"
-                />
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEditModal(false)}>İptal</Button>
-          <Button onClick={handleUpdateProduct} variant="contained" color="primary">Kaydet</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Onay Dialog */}
-      <ConfirmDialog 
-        open={confirm.open} 
-        title={confirm.title} 
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
         description={confirm.description}
-        onClose={() => setConfirm({ open: false })} 
+        onClose={() => setConfirm({ open: false })}
         onConfirm={confirm.onConfirm}
       />
     </Paper>

@@ -8,7 +8,6 @@ import Inventory2Icon from '@mui/icons-material/Inventory2';
 import CategoryIcon from '@mui/icons-material/Category';
 import CampaignIcon from '@mui/icons-material/LocalOffer';
 import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
-import LaunchIcon from '@mui/icons-material/Visibility';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -73,7 +72,6 @@ export default function AdminLayout() {
     { to: '/admin/urunler', label: 'Ürün Yönetimi', icon: <Inventory2Icon /> },
     { to: '/admin/kategoriler', label: 'Kategori Yönetimi', icon: <CategoryIcon /> },
     { to: '/admin/kampanyalar', label: 'Kampanya Yönetimi', icon: <CampaignIcon /> },
-    { to: '/', label: 'Müşteri Arayüzünü Gör', icon: <LaunchIcon /> },
   ];
 
   // Alt menü öğeleri
@@ -91,19 +89,15 @@ export default function AdminLayout() {
   };
 
   const drawerContent = (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
       height: '100%',
+      minHeight: 0,
       overflow: 'hidden',
-      '&::-webkit-scrollbar': {
-        display: 'none',
-      },
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
     }}>
       {/* Kullanıcı Profili */}
-      <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)' }}>
+      <Box sx={{ p: 3, borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar 
             sx={{ 
@@ -142,29 +136,22 @@ export default function AdminLayout() {
         </Box>
       </Box>
 
-      {/* Ana Menü */}
-      <List sx={{ 
-        flex: 1, 
-        pt: 2, 
+      {/* Ana Menü — taşan öğeler kaydırılabilir; alt menü sabit kalır */}
+      <List sx={{
+        flex: '1 1 auto',
+        minHeight: 0,
+        pt: 2,
+        pb: 1,
         px: 1,
-        overflow: 'hidden',
-        '&::-webkit-scrollbar': {
-          display: 'none',
-        },
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
+        overflowY: 'auto',
+        overflowX: 'hidden',
       }}>
         {menuItems.map((it) => {
           // Aktif sayfa kontrolü - sadece tam eşleşme veya spesifik path kontrolü
           let active = false;
           if (it.to === '/admin') {
-            // Admin Paneli sadece tam /admin path'inde aktif
             active = pathname === '/admin' || pathname === '/admin/';
-          } else if (it.to === '/') {
-            // Müşteri arayüzü sadece tam / path'inde aktif
-            active = pathname === '/';
           } else {
-            // Diğer sayfalar için pathname'in it.to ile başlaması yeterli
             active = pathname === it.to || pathname.startsWith(it.to + '/');
           }
           return (
@@ -192,12 +179,14 @@ export default function AdminLayout() {
               <ListItemIcon sx={{ minWidth: 40, color: active ? 'var(--color-brand-green)' : 'var(--color-text-muted)' }}>
                 {it.icon}
               </ListItemIcon>
-              <ListItemText 
-                primary={it.label} 
+              <ListItemText
+                primary={it.label}
                 primaryTypographyProps={{
                   fontSize: '0.9375rem',
                   fontWeight: active ? 600 : 400,
                   color: active ? 'var(--color-brand-green)' : 'var(--color-text)',
+                  whiteSpace: 'normal',
+                  lineHeight: 1.35,
                 }}
               />
             </ListItemButton>
@@ -206,7 +195,7 @@ export default function AdminLayout() {
       </List>
 
       {/* Alt Menü (Ayarlar, Yardım ve Çıkış) */}
-      <Box sx={{ borderTop: '1px solid var(--color-border)', pt: 1, pb: 2 }}>
+      <Box sx={{ borderTop: '1px solid var(--color-border)', pt: 1, pb: 2, flexShrink: 0 }}>
         <List sx={{ px: 1 }}>
           {bottomMenuItems.map((it) => (
             <ListItemButton
@@ -283,11 +272,8 @@ export default function AdminLayout() {
             bgcolor: '#FFFFFF',
             borderRight: '1px solid var(--color-border)',
             overflow: 'hidden',
-            '&::-webkit-scrollbar': {
-              display: 'none',
-            },
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
       >
@@ -306,11 +292,8 @@ export default function AdminLayout() {
             bgcolor: '#FFFFFF',
             borderRight: '1px solid var(--color-border)',
             overflow: 'hidden',
-            '&::-webkit-scrollbar': {
-              display: 'none',
-            },
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
       >

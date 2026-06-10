@@ -15,6 +15,11 @@ const OrderEvent = require('../models/OrderEvent');
 const Table = require('../models/Table');
 const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
 const { cancelOrder } = require('../utils/orderCancel');
+const {
+  estimateProductNutrition,
+  hasAiProvider,
+  AI_KEY_MISSING_MSG,
+} = require('../services/aiNutritionService');
 
 const NUTRITION_NUMERIC_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'servingGram'];
 const NUTRITION_CONFIDENCE = ['low', 'medium', 'high'];
@@ -750,6 +755,189 @@ router.post('/products', auth, requireRole('admin'), async (req, res, next) => {
     next(e);
   }
 });
+
+function nutritionDocumentFromAiEstimate(estimate) {
+  const now = new Date();
+  return {
+    calories: estimate.calories,
+    protein: estimate.protein,
+    carbs: estimate.carbs,
+    fat: estimate.fat,
+    servingGram: estimate.servingGram,
+    portionUnit: estimate.portionUnit || undefined,
+    ingredients: estimate.ingredients.length ? estimate.ingredients : undefined,
+    allergens: estimate.allergens.length ? estimate.allergens : undefined,
+    confidence: estimate.confidence,
+    nutritionNote: estimate.nutritionNote || undefined,
+    source: 'ai_estimate',
+    estimatedAt: now,
+    updatedAt: now,
+    isNutritionVisibleToCustomer: false,
+  };
+}
+
+function normalizePreviewNutritionInput(nutrition) {
+  if (!nutrition || typeof nutrition !== 'object') return {};
+  const out = { ...nutrition };
+  if (typeof out.ingredients === 'string') {
+    out.ingredients = out.ingredients
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  if (typeof out.allergens === 'string') {
+    out.allergens = out.allergens
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return out;
+}
+
+async function buildEstimateProductContext({ body, branchId, productId }) {
+  if (productId) {
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return { error: 'Ürün bulunamadı', statusCode: 404 };
+    }
+    const product = await Product.findOne({
+      _id: productId,
+      branchId,
+    }).populate('category', 'name');
+    if (!product) {
+      return { error: 'Ürün bulunamadı', statusCode: 404 };
+    }
+    return { product };
+  }
+
+  const name = String(body?.name || '').trim();
+  if (!name) {
+    return { error: 'AI tahmini için ürün adı gerekli.', statusCode: 400 };
+  }
+
+  let category = null;
+  const categoryId = body?.category;
+  if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
+    category = await Category.findOne({ _id: categoryId, branchId }).select('name');
+  }
+
+  return {
+    product: {
+      name,
+      description: body?.description || '',
+      price: body?.price,
+      category: category ? { name: category.name } : null,
+      nutrition: normalizePreviewNutritionInput(body?.nutrition),
+    },
+  };
+}
+
+/**
+ * POST /api/admin/products/nutrition/estimate-preview
+ * Kayıtlı ürün olmadan AI besin tahmini (yeni ürün formu)
+ */
+router.post(
+  '/products/nutrition/estimate-preview',
+  auth,
+  requireRole('admin'),
+  async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.branchId) {
+        return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+      }
+
+      if (!hasAiProvider()) {
+        return res.status(500).json({ message: AI_KEY_MISSING_MSG });
+      }
+
+      const context = await buildEstimateProductContext({
+        body: req.body,
+        branchId: req.user.branchId,
+      });
+      if (context.error) {
+        return res.status(context.statusCode || 400).json({ message: context.error });
+      }
+
+      const aiResult = await estimateProductNutrition(context.product);
+      if (aiResult.error) {
+        return res.status(aiResult.statusCode || 422).json({ message: aiResult.error });
+      }
+
+      const nutrition = nutritionDocumentFromAiEstimate(aiResult.estimate);
+      res.json({
+        message:
+          'AI tahmini form alanlarına yazıldı. Bu değer müşteriye henüz gösterilmiyor. Sonucu kontrol ettikten sonra "Besin değerini müşteriye göster" seçeneğini açıp ürünü kaydedebilirsiniz.',
+        nutritionStatus: 'estimated',
+        nutrition,
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/products/:id/nutrition/estimate
+ * Ürün için AI besin değeri tahmini (admin, kendi şubesi)
+ */
+router.post(
+  '/products/:id/nutrition/estimate',
+  auth,
+  requireRole('admin'),
+  async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.branchId) {
+        return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
+      }
+
+      // Admin ürün tahmini: Gemini (öncelik) veya OpenAI; USDA burada devreye girmez.
+      if (!hasAiProvider()) {
+        return res.status(500).json({ message: AI_KEY_MISSING_MSG });
+      }
+
+      const context = await buildEstimateProductContext({
+        body: req.body,
+        branchId: req.user.branchId,
+        productId: req.params.id,
+      });
+      if (context.error) {
+        return res.status(context.statusCode || 404).json({ message: context.error });
+      }
+
+      const aiResult = await estimateProductNutrition(context.product);
+      if (aiResult.error) {
+        return res.status(aiResult.statusCode || 422).json({ message: aiResult.error });
+      }
+
+      const nutrition = nutritionDocumentFromAiEstimate(aiResult.estimate);
+
+      const updated = await Product.findOneAndUpdate(
+        { _id: product._id, branchId: req.user.branchId },
+        {
+          nutrition,
+          nutritionStatus: 'estimated',
+        },
+        { new: true, runValidators: true }
+      ).populate('category', 'name');
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Ürün bulunamadı' });
+      }
+
+      const plain = updated.toObject();
+      const nutritionOut =
+        plain.nutrition && typeof plain.nutrition === 'object' ? plain.nutrition : {};
+      res.json({
+        message:
+          'AI tahmini oluşturuldu. Bu değer müşteriye henüz gösterilmiyor. Sonucu kontrol ettikten sonra "Besin değerini müşteriye göster" seçeneğini açıp kaydedebilirsiniz.',
+        nutritionStatus: updated.nutritionStatus,
+        nutrition: nutritionOut,
+        product: { ...plain, ...formatProductPricing(plain) },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 /**
  * PUT /api/admin/products/:id
