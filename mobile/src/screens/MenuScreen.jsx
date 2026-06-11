@@ -97,6 +97,93 @@ function formatPrice(value) {
   return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
 }
 
+function normalizeDetailStringList(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildProductDetailContent(product) {
+  if (!product) {
+    return {
+      description: '',
+      ingredients: [],
+      allergens: [],
+      macros: [],
+      hasBody: false,
+    };
+  }
+
+  const description = String(product.description || product.desc || '').trim();
+  const nutrition = product.nutrition && typeof product.nutrition === 'object' ? product.nutrition : null;
+  const ingredients = normalizeDetailStringList(nutrition?.ingredients);
+  const allergens = normalizeDetailStringList(nutrition?.allergens);
+
+  const macros = [];
+  const pushMacro = (label, raw, unit) => {
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num <= 0) return;
+    macros.push({
+      label,
+      value: unit === 'kcal' ? String(Math.round(num)) : String(Math.round(num * 10) / 10),
+      unit,
+    });
+  };
+
+  if (nutrition) {
+    pushMacro('Kalori', nutrition.calories, 'kcal');
+    pushMacro('Protein', nutrition.protein, 'g');
+    pushMacro('Karbonhidrat', nutrition.carbs, 'g');
+    pushMacro('Yağ', nutrition.fat, 'g');
+    const serving = Number(nutrition.servingGram);
+    if (Number.isFinite(serving) && serving > 0) {
+      macros.push({
+        label: 'Porsiyon',
+        value: String(Math.round(serving)),
+        unit: resolveServingDisplayUnit(nutrition.portionUnit),
+      });
+    }
+  }
+
+  const hasBody =
+    Boolean(description) ||
+    macros.length > 0 ||
+    ingredients.length > 0 ||
+    allergens.length > 0;
+
+  return {
+    description,
+    ingredients,
+    allergens,
+    macros,
+    hasBody,
+  };
+}
+
+const MACRO_ICONS = {
+  Kalori: 'flame',
+  Protein: 'barbell-outline',
+  Karbonhidrat: 'nutrition-outline',
+  Yağ: 'water-outline',
+  Porsiyon: 'restaurant-outline',
+};
+
+function macroDisplayValue(macro) {
+  return macro.unit ? `${macro.value} ${macro.unit}` : macro.value;
+}
+
+function resolveServingDisplayUnit(rawUnit) {
+  const unit = String(rawUnit || '').trim().toLowerCase();
+  if (!unit || unit === 'porsiyon' || unit === 'portion') return 'g';
+  if (unit === 'gr' || unit === 'gram' || unit === 'grams') return 'g';
+  return String(rawUnit).trim();
+}
+
 function menuBundleListTotal(campaign) {
   const items = Array.isArray(campaign?.products) ? campaign.products : [];
   return items.reduce((s, p) => s + Number(p.price || 0), 0);
@@ -151,6 +238,7 @@ const MenuBundleCard = memo(function MenuBundleCard({ campaign, cardWidth, onAdd
 const MenuProductCard = memo(function MenuProductCard({
   item,
   onQuickAdd,
+  onOpenDetail,
   favorited,
   onToggleFavorite,
 }) {
@@ -159,7 +247,11 @@ const MenuProductCard = memo(function MenuProductCard({
   const uri = item.imageUrl || item.image || FALLBACK_IMG;
   return (
     <View style={styles.itemCard}>
-      <View style={styles.itemPress}>
+      <Pressable
+        style={styles.itemPress}
+        onPress={() => onOpenDetail?.(item)}
+        android_ripple={androidRipple}
+      >
         <View style={styles.itemThumbWrap}>
           <Image source={{ uri }} style={styles.itemThumb} resizeMode="cover" />
           {meta.showBadge ? (
@@ -169,7 +261,10 @@ const MenuProductCard = memo(function MenuProductCard({
           ) : null}
           <Pressable
             style={styles.itemThumbFavBtn}
-            onPress={() => onToggleFavorite?.(item)}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              onToggleFavorite?.(item);
+            }}
             hitSlop={6}
           >
             <Ionicons
@@ -178,6 +273,14 @@ const MenuProductCard = memo(function MenuProductCard({
               color={favorited ? PALETTE.favoriteHeart : PALETTE.textSecondary}
             />
           </Pressable>
+          {Number(item.nutrition?.calories) > 0 ? (
+            <View style={styles.itemThumbKcalBadge}>
+              <Ionicons name="flame" size={11} color={PALETTE.successDark} />
+              <Text style={styles.itemThumbKcalText} numberOfLines={1}>
+                {Math.round(item.nutrition.calories)} kcal
+              </Text>
+            </View>
+          ) : null}
         </View>
         <View style={styles.itemBody}>
           <View style={styles.itemTopRow}>
@@ -197,11 +300,6 @@ const MenuProductCard = memo(function MenuProductCard({
               <Ionicons name="time-outline" size={13} color={PALETTE.textSecondary} />
               <Text style={styles.itemStatText}>{meta.prep} dk</Text>
             </View>
-            {Number(item.nutrition?.calories) > 0 ? (
-              <View style={styles.kcalBadge}>
-                <Text style={styles.kcalBadgeText}>🔥 {Math.round(item.nutrition.calories)} kcal</Text>
-              </View>
-            ) : null}
           </View>
           <View style={styles.itemFooterBlock}>
             <View style={styles.itemPriceAddRow}>
@@ -220,7 +318,10 @@ const MenuProductCard = memo(function MenuProductCard({
                   styles.itemAddBtn,
                   pressed && { backgroundColor: '#DCEEDC' },
                 ]}
-                onPress={() => onQuickAdd(item)}
+                onPress={(e) => {
+                  e?.stopPropagation?.();
+                  onQuickAdd(item);
+                }}
                 hitSlop={6}
               >
                 <Text style={styles.itemAddBtnText}>Sepete Ekle</Text>
@@ -228,7 +329,7 @@ const MenuProductCard = memo(function MenuProductCard({
             </View>
           </View>
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 });
@@ -257,6 +358,15 @@ export default function MenuScreen({ navigation }) {
   const [loadError, setLoadError] = useState('');
   const [search, setSearch] = useState('');
   const [showCartPreview, setShowCartPreview] = useState(false);
+  const [detailProduct, setDetailProduct] = useState(null);
+
+  const openProductDetail = useCallback((product) => {
+    setDetailProduct(product);
+  }, []);
+
+  const closeProductDetail = useCallback(() => {
+    setDetailProduct(null);
+  }, []);
 
   const categoryScrollRef = useRef(null);
   const categoryLayoutsRef = useRef({});
@@ -582,7 +692,7 @@ export default function MenuScreen({ navigation }) {
                   { width: popularCardWidth },
                   pressScale(pressed),
                 ]}
-                onPress={() => quickAdd(item)}
+                onPress={() => openProductDetail(item)}
                 android_ripple={androidRipple}
               >
                 <View style={styles.popularImageWrap}>
@@ -667,19 +777,33 @@ export default function MenuScreen({ navigation }) {
         </ScrollView>
       </View>
     );
-  }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite, quickAdd]);
+  }, [showPopular, popularProducts, popularCardWidth, isFavorite, branchId, handleToggleFavorite, openProductDetail]);
 
   const renderProductItem = useCallback(
     ({ item }) => (
       <MenuProductCard
         item={item}
         onQuickAdd={quickAdd}
+        onOpenDetail={openProductDetail}
         favorited={isFavorite(item._id || item.id, branchId)}
         onToggleFavorite={handleToggleFavorite}
       />
     ),
-    [quickAdd, isFavorite, branchId, handleToggleFavorite]
+    [quickAdd, openProductDetail, isFavorite, branchId, handleToggleFavorite]
   );
+
+  const detailContent = useMemo(
+    () => buildProductDetailContent(detailProduct),
+    [detailProduct]
+  );
+  const detailMeta = detailProduct ? productCardMeta(detailProduct) : null;
+  const detailPricing = detailProduct ? getProductDisplayPrices(detailProduct) : null;
+  const detailCategory =
+    detailProduct?.category?.name || detailProduct?.categoryName || detailProduct?.category || '';
+  const detailCalories =
+    detailProduct && Number(detailProduct.nutrition?.calories) > 0
+      ? Math.round(detailProduct.nutrition.calories)
+      : null;
 
   const productListData = loading || loadError ? [] : filteredProducts;
 
@@ -892,6 +1016,160 @@ export default function MenuScreen({ navigation }) {
           </LinearGradient>
         </View>
       ) : null}
+
+      <Modal
+        visible={Boolean(detailProduct)}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={closeProductDetail}
+      >
+        <View style={styles.productDetailBackdropRoot}>
+          <Pressable style={styles.productDetailOverlay} onPress={closeProductDetail} />
+          {detailProduct && detailMeta && detailPricing ? (
+            <View
+              style={[
+                styles.sheet,
+                styles.productDetailSheet,
+                { paddingBottom: 16 + insets.bottom },
+              ]}
+            >
+              <View style={styles.sheetHeaderRow}>
+                <View style={styles.sheetHandle} />
+                <Pressable
+                  style={styles.productDetailClose}
+                  onPress={closeProductDetail}
+                  hitSlop={10}
+                  android_ripple={androidRipple}
+                >
+                  <Ionicons name="close" size={22} color={PALETTE.textSecondary} />
+                </Pressable>
+              </View>
+
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.productDetailScroll}
+                bounces={false}
+              >
+                <Text style={styles.productDetailName}>{detailProduct.name}</Text>
+
+                {detailCategory ? (
+                  <Text style={styles.productDetailCategory}>{detailCategory}</Text>
+                ) : null}
+
+                <View style={styles.productDetailMetaRow}>
+                  <View style={styles.productDetailMetaItem}>
+                    <Ionicons name="star" size={14} color={PALETTE.accent} />
+                    <Text style={styles.productDetailMetaText}>
+                      {detailMeta.rating.toFixed(1)} ({detailMeta.count})
+                    </Text>
+                  </View>
+                  <View style={styles.productDetailMetaItem}>
+                    <Ionicons name="time-outline" size={14} color={PALETTE.textSecondary} />
+                    <Text style={styles.productDetailMetaText}>{detailMeta.prep} dk</Text>
+                  </View>
+                  {detailCalories ? (
+                    <View style={styles.productDetailKcalChip}>
+                      <Ionicons name="flame" size={12} color={PALETTE.successDark} />
+                      <Text style={styles.productDetailKcalText}>{detailCalories} kcal</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {detailContent.description ? (
+                  <Text style={styles.productDetailDescription}>{detailContent.description}</Text>
+                ) : !detailContent.hasBody ? (
+                  <Text style={styles.productDetailDescriptionMuted}>
+                    Bu ürün için açıklama veya besin bilgisi eklenmemiş.
+                  </Text>
+                ) : null}
+
+                {detailContent.macros.length > 0 ? (
+                  <View style={styles.productDetailNutritionSection}>
+                    <Text style={styles.productDetailSectionTitle}>Besin Değerleri</Text>
+                    <View style={styles.productDetailNutritionRow}>
+                      {detailContent.macros.map((macro) => (
+                        <View key={macro.label} style={styles.productDetailNutritionCell}>
+                          <View style={styles.productDetailNutritionIconFrame}>
+                            <Ionicons
+                              name={MACRO_ICONS[macro.label] || 'nutrition-outline'}
+                              size={14}
+                              color="#1A1A1A"
+                            />
+                          </View>
+                          <Text style={styles.productDetailNutritionLabel} numberOfLines={1}>
+                            {macro.label}
+                          </Text>
+                          <Text
+                            style={styles.productDetailNutritionValue}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                          >
+                            {macroDisplayValue(macro)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ) : null}
+
+                {detailContent.ingredients.length > 0 ? (
+                  <View style={styles.productDetailBlock}>
+                    <View style={styles.productDetailBlockHeader}>
+                      <Ionicons name="leaf-outline" size={16} color={PALETTE.successDark} />
+                      <Text style={styles.productDetailBlockTitle}>İçerikler</Text>
+                    </View>
+                    <Text style={styles.productDetailBlockText}>
+                      {detailContent.ingredients.join(', ')}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {detailContent.allergens.length > 0 ? (
+                  <View style={styles.productDetailBlock}>
+                    <View style={styles.productDetailBlockHeader}>
+                      <Ionicons name="shield-outline" size={16} color={PALETTE.successDark} />
+                      <Text style={styles.productDetailBlockTitle}>Alerjenler</Text>
+                    </View>
+                    <Text style={styles.productDetailBlockText}>
+                      {detailContent.allergens.join(', ')}
+                    </Text>
+                  </View>
+                ) : null}
+              </ScrollView>
+
+              <View style={styles.productDetailFooter}>
+                <View style={styles.productDetailPriceCol}>
+                  <Text style={styles.productDetailPriceLabel}>Fiyat</Text>
+                  {detailPricing.isOnSale ? (
+                    <Text style={styles.productDetailPriceOld}>
+                      {formatPrice(detailPricing.list)}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.productDetailPrice}>
+                    {formatPrice(detailPricing.effective)}
+                  </Text>
+                </View>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.productDetailAddBtn,
+                    pressed && { opacity: 0.92 },
+                  ]}
+                  onPress={() => {
+                    quickAdd(detailProduct);
+                    closeProductDetail();
+                  }}
+                  android_ripple={{ color: 'rgba(255,255,255,0.2)', foreground: true }}
+                >
+                  <Ionicons name="bag-handle-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.productDetailAddBtnText}>Sepete Ekle</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+        </View>
+      </Modal>
 
       <Modal
         visible={showCartPreview}
@@ -1570,12 +1848,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 3,
   },
+  itemThumbKcalBadge: {
+    position: 'absolute',
+    left: 5,
+    bottom: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    maxWidth: 72,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.28)',
+    zIndex: 2,
+    shadowColor: '#1A1A1A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  itemThumbKcalText: {
+    flexShrink: 1,
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 10,
+    color: PALETTE.successDark,
+    letterSpacing: -0.2,
+  },
   itemBody: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'space-between',
     minHeight: 82,
     paddingVertical: 2,
+    overflow: 'hidden',
   },
   itemTopRow: {
     flexDirection: 'row',
@@ -1594,12 +1901,14 @@ const styles = StyleSheet.create({
   itemStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     marginTop: 2,
+    gap: 12,
   },
   itemStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 15,
+    flexShrink: 0,
   },
   itemStatText: {
     fontFamily: homeFonts.sans,
@@ -1609,20 +1918,6 @@ const styles = StyleSheet.create({
   },
   itemStatCount: {
     color: '#777777',
-  },
-  kcalBadge: {
-    marginLeft: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: '#FFF3E0',
-    borderWidth: 1,
-    borderColor: '#FFE0B2',
-  },
-  kcalBadgeText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 11,
-    color: '#E65100',
   },
   itemFooterBlock: {
     marginTop: 6,
@@ -1897,5 +2192,231 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+  },
+
+  productDetailBackdropRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  productDetailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  productDetailSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    maxHeight: '88%',
+    paddingHorizontal: 0,
+    paddingTop: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  productDetailClose: {
+    position: 'absolute',
+    right: 16,
+    top: 0,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E0D6',
+  },
+  productDetailScroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  productDetailName: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 24,
+    color: '#1F6B38',
+    letterSpacing: -0.35,
+    marginBottom: 4,
+    paddingRight: 40,
+  },
+  productDetailCategory: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: PALETTE.textSecondary,
+    marginBottom: 12,
+  },
+  productDetailMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 14,
+  },
+  productDetailMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  productDetailMetaText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 13,
+    color: '#555555',
+    fontWeight: '600',
+  },
+  productDetailKcalChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.18)',
+  },
+  productDetailKcalText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 12,
+    color: PALETTE.successDark,
+  },
+  productDetailDescription: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: '#6B6560',
+    lineHeight: 21,
+    marginBottom: 4,
+  },
+  productDetailDescriptionMuted: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: PALETTE.textSecondary,
+    lineHeight: 21,
+    marginBottom: 4,
+  },
+  productDetailNutritionSection: {
+    marginTop: 16,
+  },
+  productDetailSectionTitle: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: PALETTE.textPrimary,
+    marginBottom: 8,
+    letterSpacing: -0.15,
+  },
+  productDetailNutritionRow: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  productDetailNutritionCell: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 3,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E8E0D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+  },
+  productDetailNutritionIconFrame: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FAFAFA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productDetailNutritionLabel: {
+    fontFamily: homeFonts.sans,
+    fontSize: 9,
+    color: PALETTE.textSecondary,
+    textAlign: 'center',
+  },
+  productDetailNutritionValue: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 11,
+    color: PALETTE.successDark,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+    width: '100%',
+  },
+  productDetailBlock: {
+    marginTop: 16,
+  },
+  productDetailBlockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  productDetailBlockTitle: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: PALETTE.textPrimary,
+    letterSpacing: -0.15,
+  },
+  productDetailBlockText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: '#6B6560',
+    lineHeight: 21,
+  },
+  productDetailFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#ECE6DC',
+    backgroundColor: '#FFFFFF',
+  },
+  productDetailPriceCol: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  productDetailPriceLabel: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: PALETTE.textSecondary,
+    marginBottom: 2,
+  },
+  productDetailPriceOld: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
+    color: PALETTE.textSecondary,
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
+  productDetailPrice: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 22,
+    color: '#1F6B38',
+    letterSpacing: -0.2,
+  },
+  productDetailAddBtn: {
+    flex: 1,
+    maxWidth: 220,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: '#43A047',
+    flexShrink: 0,
+  },
+  productDetailAddBtnText: {
+    fontFamily: homeFonts.sansSemi,
+    fontSize: 15,
+    color: '#FFFFFF',
   },
 });

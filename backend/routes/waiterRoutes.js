@@ -13,6 +13,7 @@ const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
 const { emitCustomerOrderUpdate } = require('../utils/customerOrderNotify');
 const { cancelOrder } = require('../utils/orderCancel');
 const { branchFilterForUser, loadOrderForStaff, requireStaffBranch } = require('../utils/branchAccess');
+const { openOrderMatch, tableOrderScope } = require('../utils/orderQueries');
 
 /**
  * GET /api/waiter/tables
@@ -32,13 +33,9 @@ router.get('/tables', auth, requireRole('garson', 'admin', 'yetkili'), async (re
     const updatedTables = await Promise.all(
       tables.map(async (table) => {
         // Aktif siparişleri kontrol et (hem table hem tableId field'larını kontrol et)
-        const activeOrders = await Order.find({
-          $or: [
-            { table: table._id },
-            { tableId: table._id }
-          ],
-          status: { $nin: ['tamamlandi', 'PAID', 'SERVED', 'CANCELED', 'iptal'] }
-        }).lean();
+        const activeOrders = await Order.find(
+          openOrderMatch(tableOrderScope(table._id))
+        ).lean();
         
         const orderCount = activeOrders.length;
         

@@ -4,7 +4,8 @@ export default function StatusChip({ status }) {
   const map = {
     // Yeni standart durumlar
     'PAID': { color: 'success', label: 'Ödendi', bgColor: '#e8f5e9', textColor: '#059669', borderColor: '#c8e6c9' },
-    'tamamlandi': { color: 'success', label: 'Ödendi', bgColor: '#e8f5e9', textColor: '#059669', borderColor: '#c8e6c9' },
+    'ödendi': { color: 'success', label: 'Ödendi', bgColor: '#e8f5e9', textColor: '#059669', borderColor: '#c8e6c9' },
+    'tamamlandi': { color: 'success', label: 'Tamamlandı', bgColor: '#e8f5e9', textColor: '#059669', borderColor: '#c8e6c9' },
     'Pending': { color: 'warning', label: 'Beklemede', bgColor: '#fffbeb', textColor: '#d97706', borderColor: '#fde68a' },
     'CREATED': { color: 'warning', label: 'Beklemede', bgColor: '#fffbeb', textColor: '#d97706', borderColor: '#fde68a' },
     'Cancelled': { color: 'error', label: 'İptal', bgColor: '#fef2f2', textColor: '#dc2626', borderColor: '#fecaca' },

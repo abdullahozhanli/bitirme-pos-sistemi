@@ -22,7 +22,14 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { EMPTY_NUTRITION, hasMeaningfulNutrition } from '../utils/productNutrition.js';
+import {
+  EMPTY_NUTRITION,
+  hasMeaningfulNutrition,
+  nutritionStatusDisplayLabel,
+  nutritionSourceDisplayLabel,
+  nutritionStatusSubtext,
+  nutritionVisibilityHint,
+} from '../utils/productNutrition.js';
 
 export default function ProductFormDialog({
   open,
@@ -65,6 +72,22 @@ export default function ProductFormDialog({
 
   if (!formData) return null;
 
+  const showNutritionStatusPanel =
+    formData.nutritionStatus !== 'none' || hasMeaningfulNutrition(formData.nutrition);
+  const statusLabel = nutritionStatusDisplayLabel(
+    formData.nutritionStatus,
+    formData.nutrition
+  );
+  const sourceLabel = nutritionSourceDisplayLabel(formData.nutrition?.source);
+  const statusSubtext = nutritionStatusSubtext(
+    formData.nutritionStatus,
+    Boolean(formData.nutrition?.isNutritionVisibleToCustomer),
+    formData.nutrition
+  );
+  const visibilityHint = nutritionVisibilityHint(
+    Boolean(formData.nutrition?.isNutritionVisibleToCustomer)
+  );
+
   const handleFieldChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -72,11 +95,27 @@ export default function ProductFormDialog({
 
   const handleNutritionChange = (e) => {
     const { name, value, type, checked } = e.target;
+    setFormData((prev) => {
+      const nextValue = type === 'checkbox' ? checked : value;
+      const nextNutrition = {
+        ...prev.nutrition,
+        [name]: nextValue,
+      };
+      if (name !== 'isNutritionVisibleToCustomer' && prev.nutrition?.source !== 'ai_estimate') {
+        nextNutrition.source = 'manual';
+      }
+      return { ...prev, nutrition: nextNutrition };
+    });
+  };
+
+  const handleVisibilitySwitchChange = (e) => {
+    const checked = e.target.checked;
     setFormData((prev) => ({
       ...prev,
+      nutritionStatus: checked ? 'approved' : prev.nutritionStatus,
       nutrition: {
         ...prev.nutrition,
-        [name]: type === 'checkbox' ? checked : value,
+        isNutritionVisibleToCustomer: checked,
       },
     }));
   };
@@ -263,6 +302,24 @@ export default function ProductFormDialog({
                 </Alert>
               ) : null}
 
+              {showNutritionStatusPanel ? (
+                <Alert severity="info" icon={false} sx={{ mb: 2 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Durum: {statusLabel}
+                  </Typography>
+                  {hasMeaningfulNutrition(formData.nutrition) ? (
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Kaynak: {sourceLabel}
+                    </Typography>
+                  ) : null}
+                  {statusSubtext ? (
+                    <Typography variant="body2" display="block" sx={{ mt: 0.75 }}>
+                      {statusSubtext}
+                    </Typography>
+                  ) : null}
+                </Alert>
+              ) : null}
+
               <Grid container spacing={2}>
                 <Grid item xs={6} sm={3}>
                   <TextField
@@ -373,23 +430,16 @@ export default function ProductFormDialog({
                       <Switch
                         name="isNutritionVisibleToCustomer"
                         checked={Boolean(formData.nutrition.isNutritionVisibleToCustomer)}
-                        onChange={handleNutritionChange}
+                        onChange={handleVisibilitySwitchChange}
                       />
                     }
                     label="Besin değerini müşteriye göster"
                   />
                   <Typography variant="caption" display="block" color="text.secondary" sx={{ ml: 6 }}>
-                    Açıp kaydettiğinizde besin bilgisi müşteri menüsünde görünür.
+                    {visibilityHint}
                   </Typography>
                 </Grid>
               </Grid>
-
-              {hasMeaningfulNutrition(formData.nutrition) &&
-              !formData.nutrition.isNutritionVisibleToCustomer ? (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Besin bilgisi kayıtlı ancak müşteriye henüz gösterilmiyor.
-                </Typography>
-              ) : null}
             </AccordionDetails>
           </Accordion>
         </DialogContent>

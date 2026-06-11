@@ -144,8 +144,10 @@ export default function ProductManagementPage() {
     setMessage('');
     setFormSubmitting(true);
     try {
-      const previousStatus = formInitialData?.nutritionStatus || 'none';
-      const payload = buildProductPayload(formData, previousStatus);
+      const payload = buildProductPayload(
+        formData,
+        formData.nutritionStatus || formInitialData?.nutritionStatus || 'none'
+      );
 
       if (formMode === 'create') {
         await axios.post('/api/admin/products', payload);

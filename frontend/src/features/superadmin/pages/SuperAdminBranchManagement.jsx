@@ -22,6 +22,7 @@ import {
   Alert,
   Switch,
   FormControlLabel,
+  Grid,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -259,53 +260,82 @@ export default function SuperAdminBranchManagement() {
       </TableContainer>
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+        className="superadmin-dialog"
+        PaperProps={{ className: 'superadmin-dialog-paper' }}
+      >
+        <DialogTitle className="superadmin-dialog-title">
           {editingBranch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              label="Şube Adı"
-              fullWidth
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <TextField
-              label="Adres"
-              fullWidth
-              multiline
-              rows={2}
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
-            <TextField
-              label="Telefon"
-              fullWidth
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
-            <TextField
-              label="E-posta"
-              fullWidth
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                />
-              }
-              label="Aktif"
-            />
-          </Box>
+        <DialogContent dividers className="superadmin-dialog-content">
+          <Grid container spacing={2} className="superadmin-dialog-grid">
+            <Grid item xs={12}>
+              <FormControlLabel
+                className="superadmin-switch-row"
+                control={
+                  <Switch
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" fontWeight={500}>
+                    Aktif
+                  </Typography>
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                className="superadmin-field"
+                label="Şube Adı"
+                fullWidth
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                className="superadmin-field"
+                label="Telefon"
+                fullWidth
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                className="superadmin-field"
+                label="E-posta"
+                fullWidth
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                className="superadmin-field"
+                label="Adres"
+                fullWidth
+                multiline
+                minRows={2}
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
+        <DialogActions className="superadmin-dialog-actions">
+          <Button onClick={handleCloseDialog} variant="outlined">
+            İptal
+          </Button>
           <Button onClick={handleSubmit} variant="contained" disabled={!formData.name}>
             {editingBranch ? 'Güncelle' : 'Oluştur'}
           </Button>

@@ -11,6 +11,13 @@ const NUTRITION_SYSTEM_PROMPT =
   'Emin değilsen confidence değerini "low" veya "medium" seç. ' +
   'Eksik bilgi varsa makul bir Türkiye restoran porsiyonu varsay; varsayımı nutritionNote içinde kısaca belirt. ' +
   'Negatif sayı kullanma. Yanıtı yalnızca JSON olarak ver, başka metin ekleme. ' +
+  'İçerikler (ingredients) kuralları: ' +
+  '1) Sadece ürün adı, açıklama ve kategoriye uygun ana malzemeleri yaz; ürün adıyla çelişen malzeme ekleme. ' +
+  '2) Örnek: "ızgara köfte" veya "köfte" → dana/kuzu kıyma, soğan, ekmek içi, baharat; tavuk göğsü yazma. ' +
+  '3) "tavuk" geçmeyen ürünlerde tavuk malzemesi kullanma; "balık" geçmeyen üründe balık kullanma. ' +
+  '4) Et yemeği / köfte / kebap / döner gibi isimlerde kırmızı et veya o yemeğe özgü ana protein kullan. ' +
+  '5) Tahmin edilen malzemeler Türk mutfağı ve menü adına uygun olsun; emin değilsen genel malzemeler yaz ve nutritionNote\'da belirt. ' +
+  '6) En fazla 8 kısa madde. ' +
   'Beklenen şema: {"calories":number,"protein":number,"carbs":number,"fat":number,' +
   '"servingGram":number,"portionUnit":string,"ingredients":string[],"allergens":string[],' +
   '"confidence":"low"|"medium"|"high","nutritionNote":string}';
@@ -61,6 +68,7 @@ function buildProductUserPrompt(product) {
   const nutrition = product?.nutrition || {};
   const lines = [
     'Aşağıdaki restoran/kafe ürünü için tek porsiyon başına tahmini besin değerlerini hesapla.',
+    'İçerikler listesi mutlaka bu ürün adına ve Türk mutfağına uygun olsun; ürün adıyla çelişen malzeme yazma.',
     '',
     `Ürün adı: ${product.name || ''}`,
   ];
@@ -71,7 +79,9 @@ function buildProductUserPrompt(product) {
     lines.push(`Fiyat (TL): ${product.price}`);
   }
   if (Array.isArray(nutrition.ingredients) && nutrition.ingredients.length) {
-    lines.push(`Mevcut içerikler: ${nutrition.ingredients.join(', ')}`);
+    lines.push(
+      `Formda girilmiş içerikler (varsa bunlara öncelik ver, ürün adıyla çelişiyorsa ürün adını esas al): ${nutrition.ingredients.join(', ')}`
+    );
   }
   if (nutrition.servingGram != null && nutrition.servingGram !== '') {
     lines.push(`Mevcut porsiyon (g): ${nutrition.servingGram}`);

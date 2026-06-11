@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import StatusChip from '../../../shared/components/ui/StatusChip.jsx';
 import PaymentBadge from '../../../shared/components/ui/PaymentBadge.jsx';
 import OrderDetailModal from '../../../shared/components/modals/OrderDetailModal.jsx';
+import { isOrderPaid } from '../../../shared/utils/orderPayment.js';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import '../styles/admin.css';
 // Dinamik import kullanıyoruz - Vite uyumluluğu için
@@ -58,11 +59,23 @@ export default function OrderManagementPage(){
         axios.defaults.headers.common['x-auth-token'] = token;
       }
 
-      // Axios baseURL ve token header'ları AuthContext'te otomatik ayarlanmış
-      const { data } = await axios.get('/api/admin/orders');
-      // Backend { items: [...], page, limit, total, pages } formatında döndürüyor
-      const ordersList = Array.isArray(data) ? data : (data.items || []);
-      const mapped = ordersList.map(o=>({ id:o._id, ...o }));
+      const allOrders = [];
+      const pageSize = 100;
+      let page = 1;
+      let total = Infinity;
+
+      while (allOrders.length < total) {
+        const { data } = await axios.get('/api/admin/orders', {
+          params: { page, limit: pageSize },
+        });
+        const batch = Array.isArray(data) ? data : (data.items || []);
+        total = Number(data?.total ?? batch.length);
+        allOrders.push(...batch);
+        if (batch.length === 0 || allOrders.length >= total) break;
+        page += 1;
+      }
+
+      const mapped = allOrders.map(o=>({ id:o._id, ...o }));
       setAllRows(mapped);
       setRows(applyFilters(mapped));
       setMsg('');
@@ -108,15 +121,20 @@ export default function OrderManagementPage(){
 
   const applyFilters = (list) => {
     const q = String(search || '').toLowerCase();
+    const isPaidOrder = (order) =>
+      isOrderPaid(order) || ['tamamlandi', 'PAID', 'SERVED'].includes(order.status);
+
     return (list || []).filter((order) => {
       const matchesSearch = q
         ? (
-            (order.table?.name != null && String(order.table.name).includes(search)) ||
+            (order.table?.name != null && String(order.table.name).toLowerCase().includes(q)) ||
             (Array.isArray(order.items) && order.items.some(it => String(it?.name || '').toLowerCase().includes(q)))
           )
         : true;
       const matchesStatus = status ? order.status === status : true;
-      const matchesPaid = paid ? (paid === 'Evet' ? order.status === 'tamamlandi' : order.status !== 'tamamlandi') : true;
+      const matchesPaid = paid
+        ? (paid === 'Evet' ? isPaidOrder(order) : !isPaidOrder(order))
+        : true;
       return matchesSearch && matchesStatus && matchesPaid;
     });
   };
@@ -242,7 +260,7 @@ export default function OrderManagementPage(){
       tableName: r.table?.name || '',
       total: Number(r.total ?? 0).toFixed(2),
       status: r.status || '',
-      odendi: r.status === 'tamamlandi' ? 'Evet' : 'Hayır',
+      odendi: isOrderPaid(r) || r.status === 'tamamlandi' ? 'Evet' : 'Hayır',
       createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString('tr-TR') : ''
     }));
   };
@@ -516,6 +534,7 @@ export default function OrderManagementPage(){
               <MenuItem value="">Tümü</MenuItem>
               <MenuItem value="hazirlaniyor">Hazırlanıyor</MenuItem>
               <MenuItem value="serviste">Serviste</MenuItem>
+              <MenuItem value="ödendi">Ödendi</MenuItem>
               <MenuItem value="tamamlandi">Tamamlandı</MenuItem>
               <MenuItem value="iptal">İptal</MenuItem>
             </Select>

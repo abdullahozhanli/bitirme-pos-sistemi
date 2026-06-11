@@ -7,6 +7,7 @@ const requireRole = require('../middleware/requireRole');
 const branchAccess = require('../middleware/branchAccess');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const MenuItem = require('../models/MenuItem');
 const Campaign = require('../models/Campaign');
 const { formatProductPricing } = require('../utils/pricing');
 const Category = require('../models/Category');
@@ -14,6 +15,7 @@ const DailyAggregate = require('../models/DailyAggregate');
 const OrderEvent = require('../models/OrderEvent');
 const Table = require('../models/Table');
 const { applyPaidToOrder, isOrderPaid } = require('../utils/orderPayment');
+const { openOrderMatch, tableOrderScope } = require('../utils/orderQueries');
 const { cancelOrder } = require('../utils/orderCancel');
 const {
   estimateProductNutrition,
@@ -25,6 +27,31 @@ const NUTRITION_NUMERIC_FIELDS = ['calories', 'protein', 'carbs', 'fat', 'servin
 const NUTRITION_CONFIDENCE = ['low', 'medium', 'high'];
 const NUTRITION_SOURCE = ['manual', 'ai_estimate', 'api_estimate'];
 const NUTRITION_STATUS = ['none', 'pending', 'estimated', 'approved'];
+
+/** Şube siparişleri: branchId eşleşmesi veya eski kayıtlar (branchId yok, masa şubede). */
+async function buildBranchOrderFilter(branchId) {
+  if (!branchId) return {};
+  const branchObjectId = mongoose.Types.ObjectId.isValid(String(branchId))
+    ? new mongoose.Types.ObjectId(String(branchId))
+    : branchId;
+  const tableIds = await Table.find({ branchId: branchObjectId }).distinct('_id');
+  return {
+    $or: [
+      { branchId: branchObjectId },
+      {
+        $and: [
+          { $or: [{ branchId: { $exists: false } }, { branchId: null }] },
+          {
+            $or: [
+              { table: { $in: tableIds } },
+              { tableId: { $in: tableIds } },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
 
 function normalizeStringArray(value) {
   if (value == null) return undefined;
@@ -428,7 +455,6 @@ router.post('/orders', auth, requireRole('admin'), async (req, res, next) => {
     }
 
     // MenuItem kontrolü ve items hazırlama
-    const MenuItem = require('../models/MenuItem');
     const menuItemIds = items.map(i => i.menuItemId).filter(Boolean);
     const menuItems = await MenuItem.find({ _id: { $in: menuItemIds } }).lean();
     const menuItemsMap = Object.fromEntries(menuItems.map(m => [String(m._id), m]));
@@ -453,12 +479,14 @@ router.post('/orders', auth, requireRole('admin'), async (req, res, next) => {
     const total = orderItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
     // Sipariş oluştur
+    const orderBranchId = table.branchId || req.user?.branchId || null;
     const order = await Order.create({
       table: table._id,
       waiter: req.user.id,
       items: orderItems,
       total,
-      status: 'hazirlaniyor'
+      status: 'hazirlaniyor',
+      ...(orderBranchId ? { branchId: orderBranchId } : {}),
     });
 
     // Table status'unu güncelle
@@ -493,10 +521,13 @@ router.get('/orders', auth, requireRole('admin', 'kasa'), async (req, res, next)
       sort = '-createdAt',
     } = req.query;
 
-    const filter = { branchId: req.user.branchId };
-    if (status) filter.status = status;
+    const branchFilter = await buildBranchOrderFilter(req.user.branchId);
+    const filter = status
+      ? { $and: [branchFilter, { status }] }
+      : branchFilter;
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const limitNum = Math.min(Math.max(Number(limit) || 50, 1), 500);
+    const skip = (Math.max(Number(page), 1) - 1) * limitNum;
 
     const [items, total] = await Promise.all([
       Order.find(filter)
@@ -505,16 +536,16 @@ router.get('/orders', auth, requireRole('admin', 'kasa'), async (req, res, next)
         .populate('items.menuItem', 'name price category')
         .sort(sort)
         .skip(skip)
-        .limit(Number(limit)),
+        .limit(limitNum),
       Order.countDocuments(filter),
     ]);
 
     res.json({
       items,
       page: Number(page),
-      limit: Number(limit),
+      limit: limitNum,
       total,
-      pages: Math.ceil(total / Number(limit)),
+      pages: Math.ceil(total / limitNum),
     });
   } catch (e) {
     next(e);
@@ -582,9 +613,9 @@ router.put('/orders/:id/pay', auth, requireRole('admin', 'kasa'), async (req, re
       return res.status(400).json({ message: 'Kullanıcının bağlı olduğu bir şube bulunamadı' });
     }
     
+    const branchFilter = await buildBranchOrderFilter(req.user.branchId);
     const order = await Order.findOne({
-      _id: req.params.id,
-      branchId: req.user.branchId,
+      $and: [{ _id: req.params.id }, branchFilter],
     });
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
 
@@ -909,9 +940,10 @@ router.post(
       }
 
       const nutrition = nutritionDocumentFromAiEstimate(aiResult.estimate);
+      const productId = context.product._id;
 
       const updated = await Product.findOneAndUpdate(
-        { _id: product._id, branchId: req.user.branchId },
+        { _id: productId, branchId: req.user.branchId },
         {
           nutrition,
           nutritionStatus: 'estimated',
@@ -1279,13 +1311,9 @@ router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
     const tablesWithOrders = await Promise.all(
       tables.map(async (table) => {
         // Aktif siparişleri kontrol et (hem table hem tableId field'larını kontrol et)
-        const activeOrders = await Order.find({
-          $or: [
-            { table: table._id },
-            { tableId: table._id }
-          ],
-          status: { $nin: ['tamamlandi', 'PAID', 'SERVED', 'CANCELED', 'iptal'] }
-        }).lean();
+        const activeOrders = await Order.find(
+          openOrderMatch(tableOrderScope(table._id))
+        ).lean();
         
         // Sadece gerçekten aktif olan siparişleri filtrele
         const trulyActiveOrders = activeOrders;
@@ -1314,6 +1342,7 @@ router.get('/tables', auth, requireRole('admin'), async (req, res, next) => {
         return {
           ...table,
           status: correctStatus,
+          activeOrders: trulyActiveOrders,
           activeOrderCount: orderCount,
           totalAmount: totalAmount,
           hasActiveOrder: orderCount > 0

@@ -1,0 +1,123 @@
+/* Super Admin dialog forms — isolated from admin panel dialog grid rules */
+
+.superadmin-layout .superadmin-dialog-paper {
+  border-radius: 16px !important;
+  max-width: 640px;
+  width: 100%;
+}
+
+.superadmin-layout .superadmin-dialog-title {
+  padding: 20px 24px 16px !important;
+  font-weight: 600 !important;
+  font-size: 1.125rem !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.superadmin-layout .superadmin-dialog-content {
+  padding: 20px 24px !important;
+}
+
+.superadmin-layout .superadmin-dialog-content .MuiGrid-container {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.superadmin-layout .superadmin-dialog-content .MuiGrid-item {
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+}
+
+.superadmin-layout .superadmin-field .MuiOutlinedInput-root {
+  border-radius: 12px;
+  min-height: 44px;
+}
+
+.superadmin-layout .superadmin-field .MuiSelect-select {
+  display: flex;
+  align-items: center;
+  min-height: 44px !important;
+  box-sizing: border-box;
+}
+
+.superadmin-layout .superadmin-field .MuiInputLabel-root {
+  font-size: 0.875rem;
+}
+
+.superadmin-layout .superadmin-field .MuiFormHelperText-root {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.superadmin-layout .superadmin-password-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.superadmin-layout .superadmin-password-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.superadmin-layout .superadmin-password-panel__hint {
+  flex: 1;
+  min-width: 180px;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.superadmin-layout .superadmin-switch-row {
+  margin: 0 !important;
+  width: fit-content;
+}
+
+.superadmin-layout .superadmin-dialog-actions {
+  padding: 16px 24px 20px !important;
+  border-top: 1px solid #e5e7eb;
+  gap: 12px;
+}
+
+.superadmin-layout .superadmin-dialog-actions .MuiButton-root:not(.MuiButton-contained) {
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0 20px;
+  height: 44px;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.superadmin-layout .superadmin-dialog-actions .MuiButton-root:not(.MuiButton-contained):hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.superadmin-layout .superadmin-dialog-actions .MuiButton-contained {
+  border-radius: 12px;
+  padding: 0 24px;
+  height: 44px;
+  text-transform: none;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.superadmin-layout .superadmin-dialog-actions .MuiButton-contained:hover {
+  box-shadow: none;
+}
+
+/* Prevent legacy admin dialog grid from affecting super admin */
+.superadmin-layout .MuiDialogContent-root .MuiBox-root {
+  display: block !important;
+  grid-template-columns: unset !important;
+  grid-template-rows: unset !important;
+  gap: unset !important;
+}

@@ -10,6 +10,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HelpIcon from '@mui/icons-material/Help';
 import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../../../shared/context/AuthContext.jsx';
+import '../styles/superAdminForms.css';
 
 const drawerWidth = 240;
 
@@ -194,7 +195,7 @@ export default function SuperAdminLayout() {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box className="superadmin-layout" sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* Mobile için hamburger menü */}
       {isMobile && (
         <Box

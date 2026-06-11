@@ -1,238 +1,194 @@
-/* --- ANA KART GÖVDESİ --- */
 .table-card {
   position: relative;
-  background: #ffffff;
-  border: 1px solid #E5E7EB; 
-  border-radius: var(--radius-large); 
-  padding: var(--spacing-lg);
-  width: 100%;
-  max-width: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 180px;
+  gap: 28px;
+  width: 100%;
+  min-height: 168px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   box-sizing: border-box;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
-  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
 }
 
 .table-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-/* Hover border colors by status */
-.table-card.available:hover {
-  border-color: var(--color-brand-green);
-}
-
-.table-card.full:hover {
-  border-color: #EF4444;
-}
-
-.table-card.reserved:hover {
-  border-color: #F59E0B;
-}
-
-.table-card.payment_pending:hover {
-  border-color: #3B82F6;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .table-card:active {
-  transform: scale(0.98);
-  transition: transform 0.1s ease;
+  transform: scale(0.985);
 }
 
-.table-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: var(--spacing-xs);
-  border-top-left-radius: var(--radius-large); 
-  border-bottom-left-radius: var(--radius-large);
-  background-color: var(--color-border);
-  z-index: 1;
-}
-
-/* Soft pastel colors for status indicators */
-.table-card.available::before { background-color: #10B981; }
-.table-card.full::before { background-color: #EF4444; }
-.table-card.reserved::before { background-color: #F59E0B; }
-.table-card.payment_pending::before { background-color: #3B82F6; }
-
-.table-card.selected {
-  box-shadow: 0 0 0 2px var(--color-brand-green), 0 2px 8px rgba(0, 0, 0, 0.08);
-  background: #F0FDF4;
-  border-color: var(--color-brand-green);
-  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-/* Dolu masalar için kırmızı iç vurgu */
-.table-card.full.selected {
-  box-shadow: 0 0 0 2px #EF4444, 0 2px 8px rgba(239, 68, 68, 0.15);
-  background: #FEF2F2;
-  border-color: #EF4444;
-}
-
-.table-card.selected::before {
-  width: 10px;
-  transition: width 0.2s ease;
-}
-
-.card-top-section {
+.table-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  padding-left: 16px;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.table-info-main {
-  display: flex;
-  align-items: center;
-  gap: 18px;
+.table-card-title-block {
+  min-width: 0;
 }
 
-.table-icon-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.table-icon {
-  font-size: 32px !important;
-  color: #4b5563;
-}
-
-.table-text-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.table-text-info h2 {
+.table-card-name {
   margin: 0;
-  font-size: 22px;
-  color: var(--color-text);
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.capacity-text {
-  margin: 0;
-  font-size: 14px;
-  color: var(--color-text-muted);
+.table-card-capacity {
+  margin: 6px 0 0;
+  font-size: 0.875rem;
   font-weight: 500;
+  color: #64748b;
 }
 
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-top: 8px;
+.table-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #94a3b8;
 }
 
-/* Soft pastel status dots */
-.status-dot.full { background: #EF4444; }
-.status-dot.available { background: #10B981; }
-.status-dot.reserved { background: #F59E0B; }
-.status-dot.payment_pending { background: #3B82F6; }
+.table-card-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffffff;
+}
 
-.card-bottom-section {
-  width: 100%;
-  padding: 14px;
-  border-radius: var(--radius-large);
-  text-align: center;
+.table-card-badge-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.table-card-order {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
   gap: 6px;
-  min-height: 55px;
 }
 
-/* Soft pastel backgrounds for status sections */
-.table-card.available .card-bottom-section {
-  background-color: #ECFDF5;
-  border: 1px solid #D1FAE5;
-}
-
-.table-card.available .card-bottom-section * {
-  color: #059669; 
-  font-weight: 600;
-  font-size: 15px;
-  margin: 0;
-}
-
-.table-card.full .card-bottom-section {
-  background-color: #FEF2F2;
-  border: 1px solid #FECACA;
-}
-
-.table-card.full .card-bottom-section * {
-  color: #DC2626;
-  font-weight: 600;
-  font-size: 15px;
-  margin: 0;
-}
-
-.status-text-large {
-  font-size: 15px;
-  color: #DC2626;
-  font-weight: 600;
-  margin: 0;
-}
-
-.order-number {
-  font-size: 13px;
-  color: #991B1B;
+.table-card-order-label {
+  font-size: 0.875rem;
   font-weight: 500;
-  margin: 0;
+  color: #64748b;
 }
 
-.order-summary {
-  font-size: 13px;
-  color: #991B1B;
-  font-weight: 500;
-  margin: 0;
+.table-card-order-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
 }
 
-.table-card.reserved .card-bottom-section {
-  background-color: #FFFBEB;
-  border: 1px solid #FDE68A;
-}
-
-.table-card.reserved .card-bottom-section * {
-  color: #D97706;
+.table-card-order-empty {
   font-weight: 600;
-  font-size: 15px;
-  margin: 0;
+  color: #94a3b8;
 }
 
-.table-card.payment_pending .card-bottom-section {
-  background-color: #EFF6FF;
-  border: 1px solid #DBEAFE;
+/* Müsait — yeşil */
+.table-card.available {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: linear-gradient(180deg, #f6fff9 0%, #ffffff 100%);
 }
 
-.table-card.payment_pending .card-bottom-section * {
-  color: #2563EB;
-  font-weight: 600;
-  font-size: 15px;
-  margin: 0;
+.table-card.available .table-card-badge {
+  background: #22c55e;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.table-card.available:hover {
+  border-color: #22c55e;
+}
+
+.table-card.available.selected {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18), 0 8px 24px rgba(34, 197, 94, 0.12);
+}
+
+/* Dolu — kırmızı */
+.table-card.full {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: linear-gradient(180deg, #fff7f7 0%, #ffffff 100%);
+}
+
+.table-card.full .table-card-badge {
+  background: #ef4444;
+}
+
+.table-card.full:hover {
+  border-color: #ef4444;
+}
+
+.table-card.full.selected {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 8px 24px rgba(239, 68, 68, 0.12);
+}
+
+/* Rezerve — amber */
+.table-card.reserved {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.table-card.reserved .table-card-badge {
+  background: #f59e0b;
+}
+
+.table-card.reserved:hover {
+  border-color: #f59e0b;
+}
+
+.table-card.reserved.selected {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18), 0 8px 24px rgba(245, 158, 11, 0.12);
+}
+
+/* Ödeme bekliyor — mavi */
+.table-card.payment_pending {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.table-card.payment_pending .table-card-badge {
+  background: #3b82f6;
+}
+
+.table-card.payment_pending:hover {
+  border-color: #3b82f6;
+}
+
+.table-card.payment_pending.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18), 0 8px 24px rgba(59, 130, 246, 0.12);
 }
 
 @media (max-width: 768px) {
   .table-card {
-    padding: 16px;
-    min-height: auto;
+    min-height: 152px;
+    padding: 16px 18px;
+    gap: 22px;
+  }
+
+  .table-card-name {
+    font-size: 1.2rem;
+  }
+
+  .table-card-badge {
+    padding: 6px 12px;
   }
 }
-

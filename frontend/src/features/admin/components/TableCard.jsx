@@ -1,82 +1,85 @@
 import React from 'react';
-import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
 import './TableCard.css';
 
+const STATUS_CLASS = {
+  bos: 'available',
+  dolu: 'full',
+  rezerve: 'reserved',
+  odeme_bekliyor: 'payment_pending',
+};
+
+const STATUS_LABEL = {
+  bos: 'MÜSAİT',
+  dolu: 'DOLU',
+  rezerve: 'REZERVE',
+  odeme_bekliyor: 'ÖDEME',
+};
+
+function formatTablePrice(value) {
+  return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
+}
+
+function calculateOrderDuration(table) {
+  const orders = Array.isArray(table.activeOrders) ? table.activeOrders : [];
+  if (!orders.length) return null;
+
+  const oldestOrder = orders
+    .map((order) => new Date(order.createdAt || order.created_at))
+    .sort((a, b) => a - b)[0];
+
+  if (!oldestOrder || Number.isNaN(oldestOrder.getTime())) return null;
+
+  return Math.floor((Date.now() - oldestOrder.getTime()) / (1000 * 60));
+}
+
+function tableHasActiveOrder(table) {
+  if (table.hasActiveOrder) return true;
+  if (Number(table.activeOrderCount) > 0) return true;
+  return Array.isArray(table.activeOrders) && table.activeOrders.length > 0;
+}
+
 export default function TableCard({ table, isSelected, onClick }) {
-  const statusMap = {
-    bos: 'available',
-    dolu: 'full',
-    rezerve: 'reserved',
-    odeme_bekliyor: 'payment_pending',
-  };
-
-  const statusClass = statusMap[table.status] || 'available';
-
-  const calculateOrderDuration = () => {
-    if (!table.hasActiveOrder || !table.activeOrders || table.activeOrders.length === 0) {
-      return null;
-    }
-    
-    const oldestOrder = table.activeOrders
-      .map(order => new Date(order.createdAt || order.created_at))
-      .sort((a, b) => a - b)[0];
-    
-    if (!oldestOrder) return null;
-    
-    const now = new Date();
-    const diffMs = now - oldestOrder;
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    
-    return diffMins;
-  };
-
-  const orderDuration = calculateOrderDuration();
-  const activeOrder = table.activeOrders && table.activeOrders.length > 0 ? table.activeOrders[0] : null;
-  const orderNumber = activeOrder?._id ? activeOrder._id.slice(-4).toUpperCase() : (activeOrder?.orderNumber || '');
-  const productCount = activeOrder?.items?.length || table.activeOrderCount || 0;
+  const statusClass = STATUS_CLASS[table.status] || 'available';
+  const statusLabel = STATUS_LABEL[table.status] || 'MÜSAİT';
+  const orderDuration = calculateOrderDuration(table);
   const totalPrice = table.totalAmount || 0;
+  const hasActiveOrder = tableHasActiveOrder(table);
 
   return (
-    <div 
+    <div
       className={`table-card ${statusClass} ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
     >
-      <div className="card-top-section">
-        <div className="table-info-main">
-          <div className="table-icon-wrapper">
-            <TableRestaurantIcon className="table-icon" />
-          </div>
-          <div className="table-text-info">
-            <h2>{table.name}</h2>
-            <p className="capacity-text">Kapasite: {table.capacity}</p>
-          </div>
+      <div className="table-card-header">
+        <div className="table-card-title-block">
+          <h2 className="table-card-name">{table.name}</h2>
+          <p className="table-card-capacity">{table.capacity} Kişilik</p>
         </div>
-        <div className={`status-dot ${statusClass}`}></div>
+        <div className={`table-card-badge ${statusClass}`}>
+          <span className="table-card-badge-dot" aria-hidden="true" />
+          <span className="table-card-badge-text">{statusLabel}</span>
+        </div>
       </div>
 
-      <div className="card-bottom-section">
-        {table.status === 'dolu' ? (
-          <>
-            <div className="status-text-large">DOLU</div>
-            {table.hasActiveOrder && (
-              <>
-                <div className="order-number">Sipariş #{orderNumber || '---'}</div>
-                <div className="order-summary">
-                  {productCount} ürün - {totalPrice.toFixed(2).replace('.', ',')}₺
-                  {orderDuration != null ? ` · ${orderDuration}dk` : ''}
-                </div>
-              </>
-            )}
-          </>
-        ) : table.status === 'bos' ? (
-          <div>MÜSAİT</div>
-        ) : table.status === 'rezerve' ? (
-          <div>REZERVE</div>
-        ) : table.status === 'odeme_bekliyor' ? (
-          <div>ÖDEME BEKLİYOR</div>
-        ) : null}
+      <div className="table-card-order">
+        <span className="table-card-order-label">Aktif Sipariş</span>
+        {hasActiveOrder ? (
+          <span className="table-card-order-value">
+            {orderDuration != null ? `${orderDuration}dk / ` : ''}
+            {formatTablePrice(totalPrice)}
+          </span>
+        ) : (
+          <span className="table-card-order-value table-card-order-empty">Sipariş yok</span>
+        )}
       </div>
     </div>
   );
 }
-

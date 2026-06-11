@@ -856,278 +856,222 @@ export default function SuperAdminUserManagement() {
       </Dialog>
 
       {/* Kullanıcı Dialog */}
-      <Dialog 
-        open={dialogOpen} 
-        onClose={handleCloseDialog} 
-        maxWidth={false}
-        PaperProps={{
-          sx: {
-            maxWidth: '720px',
-            width: '100%',
-            borderRadius: 2,
-          }
-        }}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+        className="superadmin-dialog"
+        PaperProps={{ className: 'superadmin-dialog-paper' }}
       >
-        <DialogTitle sx={{ p: '20px', pb: '16px', borderBottom: '1px solid', borderColor: 'divider', fontWeight: 600 }}>
+        <DialogTitle className="superadmin-dialog-title">
           {editingUser ? 'Kullanıcı Düzenle' : 'Yeni Kullanıcı Ekle'}
         </DialogTitle>
-        <DialogContent 
-          className="dialog-content-form" 
-          sx={{ 
-            p: '20px !important',
-            display: 'block !important',
-            '& > *': {
-              width: '100% !important',
-              maxWidth: '100% !important'
-            }
-          }}
-        >
-          <Box 
-            className="form-stack"
-            sx={{ 
-              display: 'flex !important',
-              flexDirection: 'column !important',
-              gap: '16px !important',
-              width: '100% !important',
-              maxWidth: '100% !important',
-              '& > *': {
-                width: '100% !important',
-                maxWidth: '100% !important',
-                flexShrink: 0
-              }
-            }}
-          >
-            {/* Ad Soyad */}
-            <TextField
-              id="user-name"
-              name="name"
-              label="Ad Soyad"
-              fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              helperText="Kullanıcının tam adı"
-              FormHelperTextProps={{ sx: { fontSize: '12px', m: '4px 0 0 0', color: '#666' } }}
-              sx={{ 
-                '& .MuiOutlinedInput-root': { 
-                  height: '44px',
-                  borderRadius: '12px'
-                }
-              }}
-            />
-
-            {/* E-posta */}
-            <TextField
-              id="user-email"
-              name="email"
-              label="E-posta"
-              fullWidth
-              required
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={!!editingUser}
-              helperText={editingUser ? "E-posta değiştirilemez" : "Giriş için kullanılacak"}
-              FormHelperTextProps={{ sx: { fontSize: '12px', m: '4px 0 0 0', color: '#666' } }}
-              sx={{ 
-                '& .MuiOutlinedInput-root': { 
-                  height: '44px',
-                  borderRadius: '12px'
-                }
-              }}
-            />
-
-            {/* Rol */}
-            <FormControl 
-              fullWidth
-              sx={{ 
-                width: '100% !important',
-                maxWidth: '100% !important'
-              }}
-            >
-              <InputLabel id="user-role-label">Rol</InputLabel>
-              <Select
-                id="user-role"
-                name="role"
-                labelId="user-role-label"
-                value={formData.role}
-                label="Rol"
-                onChange={(e) => {
-                  const newRole = e.target.value;
-                  setFormData({ 
-                    ...formData, 
-                    role: newRole,
-                    branchId: newRole === 'superadmin' ? '' : formData.branchId
-                  });
-                }}
-                sx={{ 
-                  height: '44px',
-                  borderRadius: '12px',
-                  '& .MuiSelect-select': {
-                    height: '44px',
-                    display: 'flex',
-                    alignItems: 'center'
+        <DialogContent dividers className="superadmin-dialog-content">
+          <Grid container spacing={2} className="superadmin-dialog-grid">
+            {editingUser && (
+              <Grid item xs={12}>
+                <FormControlLabel
+                  className="superadmin-switch-row"
+                  control={
+                    <Switch
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      color="primary"
+                    />
                   }
-                }}
-              >
-                {ROLES.map((role) => (
-                  <MenuItem key={role} value={role}>
-                    {role}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  label={
+                    <Typography variant="body2" fontWeight={500}>
+                      Aktif kullanıcı
+                    </Typography>
+                  }
+                />
+              </Grid>
+            )}
 
-            {/* Şube */}
-            {formData.role !== 'superadmin' && (
-              <FormControl 
+            {!editingUser && (
+              <Grid item xs={12}>
+                <Box className="superadmin-password-panel">
+                  <Box className="superadmin-password-panel__row">
+                    <Typography className="superadmin-password-panel__hint" component="span">
+                      {autoGeneratePassword ? 'Güvenli şifre otomatik oluşturulacak' : PASSWORD_POLICY_MESSAGE}
+                    </Typography>
+                    <FormControlLabel
+                      className="superadmin-switch-row"
+                      control={
+                        <Switch
+                          checked={autoGeneratePassword}
+                          onChange={(e) => {
+                            setAutoGeneratePassword(e.target.checked);
+                            if (e.target.checked) {
+                              setFormData({ ...formData, password: generateSecurePassword() });
+                            } else {
+                              setFormData({ ...formData, password: '' });
+                            }
+                          }}
+                          color="primary"
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+                          Otomatik şifre oluştur
+                        </Typography>
+                      }
+                    />
+                  </Box>
+                  {autoGeneratePassword ? (
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={handleGeneratePassword}
+                      startIcon={<RefreshIcon />}
+                      sx={{ height: 44, borderRadius: '12px' }}
+                    >
+                      Şifre Üret
+                    </Button>
+                  ) : (
+                    <TextField
+                      id="user-password"
+                      name="password"
+                      className="superadmin-field"
+                      label="Şifre"
+                      fullWidth
+                      required
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Şifre girin"
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={() => setShowPassword(!showPassword)}
+                              edge="end"
+                              aria-label="Şifreyi göster/gizle"
+                            >
+                              {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  )}
+                </Box>
+              </Grid>
+            )}
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                id="user-name"
+                name="name"
+                className="superadmin-field"
+                label="Ad Soyad"
                 fullWidth
-                sx={{ 
-                  width: '100% !important',
-                  maxWidth: '100% !important'
-                }}
-              >
-                <InputLabel id="user-branch-label">Şube</InputLabel>
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                helperText="Kullanıcının tam adı"
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth className="superadmin-field">
+                <InputLabel id="user-role-label">Rol</InputLabel>
                 <Select
-                  id="user-branch"
-                  name="branchId"
-                  labelId="user-branch-label"
-                  value={formData.branchId}
-                  label="Şube"
-                  onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
-                  sx={{ 
-                    height: '44px',
-                    borderRadius: '12px',
-                    '& .MuiSelect-select': {
-                      height: '44px',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }
+                  id="user-role"
+                  name="role"
+                  labelId="user-role-label"
+                  value={formData.role}
+                  label="Rol"
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setFormData({
+                      ...formData,
+                      role: newRole,
+                      branchId: newRole === 'superadmin' ? '' : formData.branchId,
+                    });
                   }}
                 >
-                  <MenuItem value="">Şube Seçin</MenuItem>
-                  {branches
-                    .filter(b => b.isActive)
-                    .map((branch) => (
-                      <MenuItem key={branch._id} value={branch._id}>
-                        {branch.name}
-                      </MenuItem>
-                    ))}
+                  {ROLES.map((role) => (
+                    <MenuItem key={role} value={role}>
+                      {role}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
-            )}
+            </Grid>
 
-            {/* Password Section */}
-            {!editingUser && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                  <Typography variant="caption" sx={{ fontSize: '12px', color: '#666', flex: 1 }}>
-                    {autoGeneratePassword ? 'Güvenli şifre otomatik oluşturulacak' : PASSWORD_POLICY_MESSAGE}
-                  </Typography>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={autoGeneratePassword}
-                        onChange={(e) => {
-                          setAutoGeneratePassword(e.target.checked);
-                          if (e.target.checked) {
-                            setFormData({ ...formData, password: generateSecurePassword() });
-                          } else {
-                            setFormData({ ...formData, password: '' });
-                          }
-                        }}
-                        color="primary"
-                        size="small"
-                      />
-                    }
-                    label={
-                      <Typography variant="body2" sx={{ fontSize: '14px', whiteSpace: 'nowrap' }}>
-                        Otomatik şifre oluştur
-                      </Typography>
-                    }
-                    sx={{ margin: 0 }}
-                  />
-                </Box>
-                
-                {autoGeneratePassword ? (
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={handleGeneratePassword}
-                    startIcon={<RefreshIcon />}
-                    sx={{ 
-                      height: '44px',
-                      borderRadius: '12px'
-                    }}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                id="user-email"
+                name="email"
+                className="superadmin-field"
+                label="E-posta"
+                fullWidth
+                required
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={!!editingUser}
+                helperText={editingUser ? 'E-posta değiştirilemez' : 'Giriş için kullanılacak'}
+              />
+            </Grid>
+
+            {formData.role !== 'superadmin' && (
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth className="superadmin-field">
+                  <InputLabel id="user-branch-label">Şube</InputLabel>
+                  <Select
+                    id="user-branch"
+                    name="branchId"
+                    labelId="user-branch-label"
+                    value={formData.branchId}
+                    label="Şube"
+                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
                   >
-                    Şifre Üret
-                  </Button>
-                ) : (
-                  <TextField
-                    id="user-password"
-                    name="password"
-                    label="Şifre"
-                    fullWidth
-                    required
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Şifre girin"
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            size="small"
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            aria-label="Şifreyi göster/gizle"
-                          >
-                            {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{ 
-                      '& .MuiOutlinedInput-root': { 
-                        height: '44px',
-                        borderRadius: '12px'
-                      }
-                    }}
-                  />
-                )}
-              </Box>
+                    <MenuItem value="">Şube Seçin</MenuItem>
+                    {branches
+                      .filter((b) => b.isActive)
+                      .map((branch) => (
+                        <MenuItem key={branch._id} value={branch._id}>
+                          {branch.name}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             )}
 
-            {/* Aktif Switch */}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  color="primary"
+            {!editingUser && (
+              <Grid item xs={12}>
+                <FormControlLabel
+                  className="superadmin-switch-row"
+                  control={
+                    <Switch
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" fontWeight={500}>
+                      Aktif kullanıcı
+                    </Typography>
+                  }
                 />
-              }
-              label={
-                <Typography variant="body2" fontWeight={500}>
-                  Aktif kullanıcı
-                </Typography>
-              }
-              sx={{ margin: 0, width: 'fit-content' }}
-            />
-          </Box>
+              </Grid>
+            )}
+          </Grid>
         </DialogContent>
-        <DialogActions className="dialog-footer">
-          <Button 
-            onClick={handleCloseDialog}
-            variant="text"
-            className="footer-button-cancel"
-          >
+        <DialogActions className="superadmin-dialog-actions">
+          <Button onClick={handleCloseDialog} variant="outlined">
             İptal
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleSubmit}
             variant="contained"
             disabled={!formData.email || (!editingUser && !autoGeneratePassword && !formData.password)}
-            className="footer-button-submit"
           >
             {editingUser ? 'Güncelle' : 'Oluştur'}
           </Button>

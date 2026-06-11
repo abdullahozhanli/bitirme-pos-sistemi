@@ -21,6 +21,61 @@ export const AI_ESTIMATE_SUCCESS_MSG =
 export const AI_ESTIMATE_PREVIEW_SUCCESS_MSG =
   'AI tahmini form alanlarına yazıldı. Bu değer müşteriye henüz gösterilmiyor. Sonucu kontrol ettikten sonra "Besin değerini müşteriye göster" seçeneğini açıp ürünü kaydedebilirsiniz.';
 
+const NUTRITION_STATUS_LABELS = {
+  none: 'Besin bilgisi yok',
+  pending: 'Onay bekliyor',
+  estimated: 'AI tahmini oluşturuldu',
+  approved: 'Onaylandı',
+};
+
+const NUTRITION_SOURCE_LABELS = {
+  manual: 'Manuel giriş',
+  ai_estimate: 'AI tahmini',
+  api_estimate: 'API tahmini',
+};
+
+/** Admin formunda gösterilecek durum metni (teknik enum gizli) */
+export function nutritionStatusDisplayLabel(status, nutrition) {
+  const s = String(status || 'none');
+  if (s === 'none' && hasMeaningfulNutrition(nutrition)) {
+    return 'Taslak besin bilgisi';
+  }
+  return NUTRITION_STATUS_LABELS[s] || NUTRITION_STATUS_LABELS.none;
+}
+
+/** Admin formunda gösterilecek kaynak metni */
+export function nutritionSourceDisplayLabel(source) {
+  return NUTRITION_SOURCE_LABELS[String(source || 'manual')] || NUTRITION_SOURCE_LABELS.manual;
+}
+
+/** Durum satırının altındaki kısa açıklama */
+export function nutritionStatusSubtext(status, visible, nutrition) {
+  const s = String(status || 'none');
+  if (visible && s === 'approved') {
+    return 'Bu değer müşteri menüsünde gösterilebilir.';
+  }
+  if (s === 'approved' && !visible) {
+    return 'Besin değeri onaylı ancak müşteriye henüz gösterilmiyor.';
+  }
+  if (s === 'estimated') {
+    return 'Bu değer müşteriye henüz gösterilmiyor.';
+  }
+  if (s === 'pending') {
+    return 'Onay bekliyor; müşteriye henüz gösterilmiyor.';
+  }
+  if (hasMeaningfulNutrition(nutrition)) {
+    return 'Bu değer müşteriye henüz gösterilmiyor.';
+  }
+  return '';
+}
+
+/** Switch altındaki yardım metni */
+export function nutritionVisibilityHint(visible) {
+  return visible
+    ? 'Kaydettiğinizde besin değerleri müşteri menüsünde yayınlanır.'
+    : 'Bu değerler yalnızca admin panelinde görünür.';
+}
+
 /** Formda anlamlı besin verisi var mı? */
 export function hasMeaningfulNutrition(n) {
   if (!n || typeof n !== 'object') return false;

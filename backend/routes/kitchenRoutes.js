@@ -4,7 +4,15 @@ const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const Order = require('../models/Order');
 const OrderEvent = require('../models/OrderEvent');
+const MenuItem = require('../models/MenuItem');
+const Product = require('../models/Product');
 const { branchFilterForUser, assertDocumentBranch } = require('../utils/branchAccess');
+const {
+  kitchenQueueOrderMatch,
+  KITCHEN_WORK_STATUSES,
+} = require('../utils/orderQueries');
+
+const KITCHEN_ACTIVE_STATUSES = KITCHEN_WORK_STATUSES;
 
 /**
  * GET /api/kitchen/queue
@@ -675,6 +683,34 @@ router.post('/items/:itemId/ready', auth, requireRole('mutfak', 'admin', 'yetkil
     }
 
     res.json(order);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/kitchen/orders
+ * Aktif siparişleri listeler (mutfak ekranı)
+ */
+router.get('/orders', auth, requireRole('mutfak', 'admin', 'yetkili'), async (req, res, next) => {
+  try {
+    const branchFilter = branchFilterForUser(req.user);
+    if (branchFilter.__forbidden) {
+      return res.status(403).json({ message: 'Şube atanmamış hesap bu işlemi yapamaz' });
+    }
+    delete branchFilter.__forbidden;
+
+    const orders = await Order.find(kitchenQueueOrderMatch(branchFilter))
+      .populate('table', 'name capacity')
+      .populate('tableId', 'name capacity')
+      .populate('waiter', 'name email')
+      .populate('waiterId', 'name email')
+      .populate('items.menuItem', 'name price category')
+      .populate('orderItems.product', 'name price station')
+      .sort({ createdAt: 1 })
+      .lean();
+
+    res.json(orders);
   } catch (e) {
     next(e);
   }

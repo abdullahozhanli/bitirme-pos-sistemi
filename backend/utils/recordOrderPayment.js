@@ -4,7 +4,7 @@ const DailyAggregate = require('../models/DailyAggregate');
 const Table = require('../models/Table');
 const Order = require('../models/Order');
 const { applyPaidToOrder, isOrderPaid } = require('./orderPayment');
-const { unpaidPaymentMatch } = require('./orderQueries');
+const { unpaidPaymentMatch, openOrderMatch, tableOrderScope } = require('./orderQueries');
 const { emitCustomerOrderUpdate } = require('./customerOrderNotify');
 const { emitToTables } = require('./socketRooms');
 
@@ -102,10 +102,9 @@ async function recordOrderPayment({ order, actorId, method, amount, io, channel 
       order.table?._id || order.table || order.tableId?._id || order.tableId;
 
     if (tableId) {
-      const tableFilter = { table: tableId };
-      if (order.branchId) tableFilter.branchId = order.branchId;
-
-      const unpaidCount = await Order.countDocuments(unpaidPaymentMatch(tableFilter));
+      const unpaidCount = await Order.countDocuments(
+        openOrderMatch(tableOrderScope(tableId))
+      );
 
       if (unpaidCount === 0) {
         const table = await Table.findByIdAndUpdate(tableId, { status: 'bos' }, { new: true });
@@ -123,6 +122,13 @@ async function recordOrderPayment({ order, actorId, method, amount, io, channel 
         orderId: order._id,
         amount: payAmount,
         method: payMethod,
+      });
+
+      io.to(`kitchen.${branchId}`).emit('order:status:changed', {
+        orderId: order._id,
+        from: previousStatus,
+        to: 'ödendi',
+        order: order.toObject ? order.toObject() : order,
       });
     }
   }
