@@ -2,6 +2,7 @@ const express = require('express');
 const MealCalorieEstimate = require('../models/MealCalorieEstimate');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { calorieEstimateLimiter } = require('../middleware/rateLimiters');
+const { handleNutritionChat } = require('../services/nutritionChatService');
 
 const router = express.Router();
 
@@ -391,6 +392,29 @@ async function askCalorieEstimateWithUsda(text) {
     null
   );
 }
+
+router.post('/chat', calorieEstimateLimiter, authMiddleware, async (req, res, next) => {
+  try {
+    const result = await handleNutritionChat({
+      branchId: req.body?.branchId,
+      message: req.body?.message,
+      history: req.body?.history,
+      cartItems: req.body?.cartItems,
+    });
+    res.json(result);
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[calorie/chat]', error?.message || error);
+    }
+    if (error?.name === 'AbortError') {
+      return res.status(504).json({ message: 'AI yanıt süresi aşıldı. Tekrar deneyin.' });
+    }
+    if (!error.statusCode) {
+      error.statusCode = 500;
+    }
+    next(error);
+  }
+});
 
 router.post('/estimate', calorieEstimateLimiter, authMiddleware, async (req, res, next) => {
   try {

@@ -1,19 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Easing,
+  FlatList,
   Image,
+  Keyboard,
+  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -21,7 +22,9 @@ import {
   pressScale,
   androidRipple,
 } from '../constants/homeTheme';
-import { estimateCalories } from '../api/calorie';
+import { sendNutritionChat } from '../api/calorie';
+import { useTableSession } from '../context/TableSessionContext';
+import { useCart } from '../context/CartContext';
 
 const PALETTE = {
   pageBg: '#FFFFFF',
@@ -29,21 +32,14 @@ const PALETTE = {
   textPrimary: '#1F2933',
   textSecondary: '#7A7168',
   border: '#E8E0D6',
-  accent: '#FFC107',
-  success: '#2E7D32',
   btnPrimary: '#4CAF50',
-  btnPrimarySoft: '#43A047',
-  softGreen: '#F4F9F5',
-  softAmber: '#E8F5E9',
-  inputBg: '#FAFAF9',
-  inputBorder: '#E8E0D6',
+  userBubble: '#E8F5E9',
+  assistantBubble: '#F8F7F5',
+  chipBg: '#F4F9F5',
 };
 
 const GRADIENT = ['#2F8F39', PALETTE.btnPrimary, '#67C96B'];
-
-const MEAL_HEADER_ICON = 'receipt-outline';
 const AI_KCAL_BADGE_ICON = require('../assets/icons/ai-kcal-badge.png');
-const AI_KCAL_BADGE_MONO = require('../assets/icons/ai-kcal-badge-mono.png');
 
 const SOFT_SHADOW = {
   shadowColor: '#000000',
@@ -53,10 +49,6 @@ const SOFT_SHADOW = {
   elevation: 2,
 };
 
-/**
- * Intro kartı sağ üst dönen dekor görselleri (`src/assets/intro-decor/` — Metro/Windows için ASCII yol).
- * En az 2 görsel olunca yumuşak fade ile döner; 0–1 görselde varsayılan `dal.png` kullanılır.
- */
 const INTRO_DECOR_SLIDES = [
   require('../assets/intro-decor/Kalori_görsel_1.png'),
   require('../assets/intro-decor/Kalori_görsel_4.png'),
@@ -135,77 +127,211 @@ function IntroDecorCarousel({ slides }) {
   );
 }
 
-function confidenceLabel(code) {
-  const c = String(code || '').toLowerCase();
-  if (c === 'high') return 'Yüksek';
-  if (c === 'medium') return 'Orta';
-  if (c === 'low') return 'Düşük';
-  return String(code || '—');
+function IntroHeroHeader() {
+  return (
+    <View style={styles.introSection}>
+      <View
+        style={styles.heroPill}
+        accessibilityRole="header"
+        accessibilityLabel="AI Kalori Asistanı"
+      >
+        <View style={styles.heroPillIconWrap}>
+          <Image
+            source={AI_KCAL_BADGE_ICON}
+            style={styles.heroPillIcon}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+        </View>
+        <Text style={styles.heroPillText}>AI Kalori Asistanı</Text>
+      </View>
+
+      <View style={styles.introCard}>
+        <IntroDecorVisual />
+        <Text style={styles.introTitle}>Menüne sor, kalori öğren</Text>
+        <Text style={styles.introDesc}>
+          Yapay zeka işletmemizin menüsündeki besin değerlerini kullanır. Ürün kalorisi sorabilir
+          veya hedef kalorine uygun öneri alabilirsin.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const WELCOME_MESSAGE = {
+  id: 'welcome',
+  role: 'assistant',
+  text:
+    'Merhaba! Menümüzdeki ürünlerin kalori bilgisini sorabilir veya hedef kalorine uygun öneri alabilirsin. ' +
+    'Örnek: "Americano kaç kalori?" veya "1050 kcal için öner".',
+  products: [],
+};
+
+function ProductChip({ product }) {
+  return (
+    <View style={styles.productChip}>
+      <Ionicons name="flame" size={13} color="#2E7D32" />
+      <Text style={styles.productChipName} numberOfLines={1}>
+        {product.name}
+      </Text>
+      <Text style={styles.productChipKcal}>{product.calories} kcal</Text>
+    </View>
+  );
+}
+
+function ChatBubble({ message }) {
+  const isUser = message.role === 'user';
+  return (
+    <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
+      {!isUser ? (
+        <View style={styles.assistantAvatar}>
+          <Image source={AI_KCAL_BADGE_ICON} style={styles.assistantAvatarImg} resizeMode="contain" />
+        </View>
+      ) : null}
+      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
+        <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{message.text}</Text>
+        {message.products?.length > 0 ? (
+          <View style={styles.productChipList}>
+            {message.products.map((p) => (
+              <ProductChip key={p.id} product={p} />
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
 }
 
 export default function CalorieEstimateScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [mealText, setMealText] = useState('');
-  const [previewUri, setPreviewUri] = useState('');
-  const [imageBase64, setImageBase64] = useState('');
-  const [inputMode, setInputMode] = useState('text');
+  const { branchId, branchName } = useTableSession();
+  const { lines } = useCart();
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const listRef = useRef(null);
 
-  const confidenceText = useMemo(
-    () => (result ? confidenceLabel(result.confidence) : ''),
-    [result]
+  const hasUserMessages = useMemo(
+    () => messages.some((message) => message.role === 'user'),
+    [messages]
   );
 
-  async function pickImage() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('İzin Gerekli', 'Fotoğraf seçmek için galeri izni vermelisiniz.');
-      return;
-    }
+  const cartItems = useMemo(
+    () =>
+      lines.map((line) => ({
+        productId: String(line._id),
+        name: line.name,
+        qty: line.qty,
+        calories: line.nutrition?.calories ?? null,
+      })),
+    [lines]
+  );
 
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.5,
-      base64: true,
+  const historyForApi = useMemo(
+    () =>
+      messages
+        .filter((m) => m.id !== 'welcome')
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.text,
+        })),
+    [messages]
+  );
+
+  const scrollToEnd = useCallback((animated = true) => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd?.({ animated });
+    });
+  }, []);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = Keyboard.addListener(showEvent, (event) => {
+      const height = Number(event?.endCoordinates?.height) || 0;
+      const inset =
+        Platform.OS === 'ios' ? Math.max(0, height - insets.bottom) : height;
+      setKeyboardInset(inset);
+      scrollToEnd();
+      setTimeout(() => scrollToEnd(), 120);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardInset(0);
     });
 
-    if (picked.canceled || !picked.assets?.length) return;
-    setPreviewUri(picked.assets[0].uri || '');
-    setImageBase64(picked.assets[0].base64 || '');
-    setInputMode('photo');
-    setResult(null);
-  }
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, [insets.bottom, scrollToEnd]);
 
-  async function runEstimate() {
-    if (!mealText.trim() && !imageBase64) {
-      Alert.alert('Eksik Bilgi', 'Metin yazın veya fotoğraf ekleyin.');
-      return;
-    }
+  const sendMessage = useCallback(
+    async (rawText) => {
+      const text = String(rawText || '').trim();
+      if (!text || loading) return;
 
-    setLoading(true);
-    setResult(null);
-    try {
-      const data = await estimateCalories({ text: mealText, imageBase64 });
-      setResult(data);
-    } catch (err) {
-      const message =
-        err?.response?.data?.message || 'Tahmin alınamadı. Lütfen tekrar deneyin.';
-      Alert.alert('Hata', message);
-    } finally {
-      setLoading(false);
-    }
-  }
+      if (!branchId) {
+        Alert.alert(
+          'Şube gerekli',
+          'Menü kalori asistanı için önce masanızdaki QR kodu okutarak şubeye bağlanın.'
+        );
+        return;
+      }
 
-  function clearImage() {
-    setPreviewUri('');
-    setImageBase64('');
-    setResult(null);
-  }
+      const userMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        text,
+        products: [],
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInput('');
+      setLoading(true);
+      scrollToEnd();
+
+      try {
+        const data = await sendNutritionChat({
+          branchId,
+          message: text,
+          history: historyForApi,
+          cartItems,
+        });
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            text: data.reply || 'Yanıt alınamadı.',
+            products: Array.isArray(data.products) ? data.products : [],
+          },
+        ]);
+      } catch (err) {
+        const message =
+          err?.response?.data?.message || 'Yanıt alınamadı. Lütfen tekrar deneyin.';
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-err-${Date.now()}`,
+            role: 'assistant',
+            text: message,
+            products: [],
+          },
+        ]);
+      } finally {
+        setLoading(false);
+        scrollToEnd();
+      }
+    },
+    [loading, branchId, historyForApi, cartItems, scrollToEnd]
+  );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Pressable
           style={({ pressed }) => [styles.iconBtn, pressScale(pressed)]}
@@ -227,237 +353,77 @@ export default function CalorieEstimateScreen({ navigation }) {
         <View style={styles.headerRightSpacer} />
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: 24 + insets.bottom },
-        ]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.flex}>
+        <FlatList
+          ref={listRef}
+          style={styles.flex}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <ChatBubble message={item} />}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: 16 + keyboardInset },
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          ListHeaderComponent={hasUserMessages ? null : <IntroHeroHeader />}
+          ListFooterComponent={
+            loading ? (
+              <View style={styles.typingRow}>
+                <ActivityIndicator size="small" color={PALETTE.btnPrimary} />
+                <Text style={styles.typingText}>Yanıt hazırlanıyor…</Text>
+              </View>
+            ) : null
+          }
+        />
+
         <View
-          style={styles.heroPill}
-          accessibilityRole="header"
-          accessibilityLabel="AI Kalori Asistanı"
+          style={[
+            styles.composer,
+            {
+              marginBottom: keyboardInset,
+              paddingBottom: keyboardInset > 0 ? 10 : Math.max(insets.bottom, 10),
+            },
+          ]}
         >
-          <View style={styles.heroPillIconWrap}>
-            <Image
-              source={AI_KCAL_BADGE_ICON}
-              style={styles.heroPillIcon}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-          </View>
-          <Text style={styles.heroPillText}>AI Kalori Asistanı</Text>
-        </View>
-
-        <View style={styles.introCard}>
-          <IntroDecorVisual />
-          <Text style={styles.introTitle}>
-            Öğününüzü yazın veya fotoğraf ekleyin
-          </Text>
-          <Text style={styles.introDesc}>
-            Yapay zeka, metin ve isteğe bağlı görselle yaklaşık kalori tahmini üretir.
-            Sonuçlar bilgilendirme amaçlıdır.
-          </Text>
-        </View>
-
-        <View style={styles.formCard}>
-          <View style={styles.formCardHeader}>
-            <View style={styles.formCardHeaderIconWrap}>
-              <Ionicons name={MEAL_HEADER_ICON} size={17} color="#6B6560" />
-            </View>
-            <View style={styles.formCardHeaderTitles}>
-              <Text style={styles.fieldLabel}>Öğün açıklaması</Text>
-              <View style={styles.fieldHintRow}>
-                <View style={styles.formInfoIcon}>
-                  <Text style={styles.formInfoBang}>!</Text>
-                </View>
-                <Text style={styles.fieldHint}>
-                  Ürünleri yazın veya fotoğraf ekleyin. AI yaklaşık kalori tahmini oluştursun.
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.segmentRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.segmentTab,
-                inputMode === 'text' && styles.segmentTabActive,
-                pressed && { opacity: 0.92 },
-              ]}
-              onPress={() => setInputMode('text')}
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={15}
-                color={inputMode === 'text' ? PALETTE.textPrimary : '#9CA3AF'}
-              />
-              <Text
-                style={[
-                  styles.segmentTabText,
-                  inputMode === 'text' && styles.segmentTabTextActive,
-                ]}
-              >
-                Metin girin
-              </Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.segmentTab,
-                inputMode === 'photo' && styles.segmentTabActive,
-                pressed && { opacity: 0.92 },
-              ]}
-              onPress={() => setInputMode('photo')}
-            >
-              <Ionicons
-                name="camera-outline"
-                size={15}
-                color={inputMode === 'photo' ? PALETTE.textPrimary : '#9CA3AF'}
-              />
-              <Text
-                style={[
-                  styles.segmentTabText,
-                  inputMode === 'photo' && styles.segmentTabTextActive,
-                ]}
-              >
-                Fotoğraf ekle
-              </Text>
-            </Pressable>
-          </View>
-
-          {inputMode === 'text' ? (
-            <View style={styles.textAreaShell}>
-              <TextInput
-                value={mealText}
-                onChangeText={setMealText}
-                placeholder=""
-                placeholderTextColor="#9CA3AF"
-                multiline
-                maxLength={600}
-                style={styles.textArea}
-                textAlignVertical="top"
-              />
-              <Text style={styles.charCount}>{mealText.length}/600</Text>
-            </View>
-          ) : (
-            <View style={styles.photoPanel}>
-              {previewUri ? (
-                <View style={styles.previewWrap}>
-                  <Image source={{ uri: previewUri }} style={styles.preview} />
-                  <Pressable
-                    onPress={clearImage}
-                    hitSlop={8}
-                    style={({ pressed }) => [
-                      styles.previewRemoveBtn,
-                      pressed && { opacity: 0.9 },
-                    ]}
-                  >
-                    <Ionicons name="close" size={16} color="#FFFFFF" />
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.photoPickArea,
-                    pressed && { opacity: 0.94 },
-                  ]}
-                  onPress={pickImage}
-                  android_ripple={{ ...androidRipple, borderless: false }}
-                >
-                  <View style={styles.photoPickIconWrap}>
-                    <Ionicons name="camera-outline" size={22} color="#6B7280" />
-                  </View>
-                  <Text style={styles.photoPickTitle}>Fotoğraf seç</Text>
-                  <Text style={styles.photoPickHint}>Galeriden öğün fotoğrafı ekleyin</Text>
-                </Pressable>
-              )}
-              {previewUri ? (
-                <Pressable
-                  onPress={pickImage}
-                  style={({ pressed }) => [
-                    styles.photoChangeLink,
-                    pressed && { opacity: 0.85 },
-                  ]}
-                >
-                  <Text style={styles.photoChangeLinkText}>Başka fotoğraf seç</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          )}
-
-          <View style={styles.formCardFooter}>
-            <View style={styles.formInfoRow}>
-              <View style={styles.formInfoIcon}>
-                <Text style={styles.formInfoBang}>!</Text>
-              </View>
-              <Text style={styles.formInfoText}>
-                Detaylı açıklamalar daha doğru tahmin sağlar.
-              </Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.ctaCompact,
-                (loading || pressed) && { opacity: loading ? 1 : 0.92 },
-              ]}
-              onPress={runEstimate}
-              disabled={loading}
-              accessibilityRole="button"
-              accessibilityLabel="Tahmin et"
-              android_ripple={{ color: 'rgba(255,255,255,0.22)', foreground: true }}
-            >
-              <LinearGradient
-                colors={GRADIENT}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.ctaGradient}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Image
-                      source={AI_KCAL_BADGE_MONO}
-                      style={styles.ctaIconMono}
-                      resizeMode="contain"
-                      accessibilityIgnoresInvertColors
-                    />
-                    <Text style={styles.ctaText}>Tahmin et</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
-          </View>
-        </View>
-
-        {result ? (
-          <View style={styles.resultCard}>
+          <TextInput
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ürün kalorisi veya öneri iste…"
+            placeholderTextColor="#9CA3AF"
+            style={styles.composerInput}
+            multiline
+            maxLength={600}
+            editable={!loading}
+            onFocus={() => scrollToEnd()}
+          />
+          <Pressable
+            style={({ pressed }) => [
+              styles.sendBtn,
+              (!input.trim() || loading) && styles.sendBtnDisabled,
+              pressed && input.trim() && !loading && { opacity: 0.92 },
+            ]}
+            onPress={() => sendMessage(input)}
+            disabled={!input.trim() || loading}
+            accessibilityRole="button"
+            accessibilityLabel="Gönder"
+          >
             <LinearGradient
-              colors={['#F0F1F3', '#FFFFFF', '#F5F6F8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.resultIconWrap}>
-              <Ionicons name="flame" size={22} color={PALETTE.textPrimary} />
-            </View>
-            <Text style={styles.resultLabel}>Tahmini kalori</Text>
-            <Text style={styles.resultKcal}>
-              {result.estimatedCalories}
-              <Text style={styles.resultKcalUnit}> kcal</Text>
-            </Text>
-            <View style={styles.confidenceRow}>
-              <View style={styles.confidenceChip}>
-                <Ionicons name="shield-checkmark-outline" size={14} color={PALETTE.textSecondary} />
-                <Text style={styles.confidenceText}>Güven: {confidenceText}</Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
-      </ScrollView>
+              colors={GRADIENT}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.sendBtnGradient}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Ionicons name="send" size={16} color="#FFFFFF" />
+              )}
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
@@ -467,6 +433,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: PALETTE.pageBg,
   },
+  flex: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -510,11 +477,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
-  scroll: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: 12,
-    paddingTop: 6,
+  introSection: {
     gap: 12,
+    marginBottom: 4,
   },
   heroPill: {
     alignSelf: 'center',
@@ -538,7 +503,6 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -594,299 +558,135 @@ const styles = StyleSheet.create({
     paddingRight: 118,
     zIndex: 1,
   },
-  formCard: {
-    backgroundColor: PALETTE.cardBg,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#ECE8E2',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 10,
-    ...SOFT_SHADOW,
-  },
-  formCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 11,
-  },
-  formCardHeaderIconWrap: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  formCardHeaderTitles: {
-    flex: 1,
-    minWidth: 0,
-    paddingTop: 3,
-  },
-  fieldLabel: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 14,
-    color: '#4A4540',
-    letterSpacing: -0.12,
-  },
-  fieldHintRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 3,
-  },
-  fieldHint: {
-    flex: 1,
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    lineHeight: 15,
-    color: '#7A7168',
-  },
-  segmentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  segmentTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E2E5E9',
-    backgroundColor: '#F4F5F7',
-  },
-  segmentTabActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#B0B8C4',
-  },
-  segmentTabText: {
-    fontFamily: homeFonts.sansMedium,
-    fontSize: 13,
-    color: PALETTE.textSecondary,
-  },
-  segmentTabTextActive: {
-    fontFamily: homeFonts.sansSemi,
-    color: PALETTE.textPrimary,
-  },
-  textAreaShell: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E8E0D6',
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  textArea: {
-    minHeight: 88,
+  listContent: {
     paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 4,
-    fontFamily: homeFonts.sans,
-    fontSize: 14,
-    color: PALETTE.textPrimary,
-    lineHeight: 20,
+    paddingTop: 6,
+    paddingBottom: 12,
+    gap: 12,
   },
-  charCount: {
-    fontFamily: homeFonts.sans,
-    fontSize: 10,
-    color: '#9CA3AF',
-    textAlign: 'right',
-    paddingHorizontal: 10,
-    paddingBottom: 6,
-    paddingTop: 0,
-  },
-  formCardFooter: {
+  bubbleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginTop: 2,
+    alignItems: 'flex-end',
+    gap: 8,
+    maxWidth: '92%',
   },
-  formInfoRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    minWidth: 0,
+  bubbleRowUser: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
+    maxWidth: '86%',
   },
-  formInfoIcon: {
-    width: 11,
-    height: 11,
-    borderRadius: 5.5,
-    backgroundColor: PALETTE.btnPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 2,
-    alignSelf: 'flex-start',
-  },
-  formInfoBang: {
-    fontFamily: homeFonts.sansBold,
-    fontSize: 14,
-    lineHeight: 10,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    marginTop: 0.5,
-  },
-  formInfoText: {
-    flex: 1,
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    lineHeight: 15,
-    color: '#7A7168',
-  },
-  photoPanel: {
-    gap: 6,
-  },
-  photoPickArea: {
-    minHeight: 108,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#D4CCC2',
-    backgroundColor: '#FAFAF9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  photoPickIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F1F3',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  photoPickTitle: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 13,
-    color: PALETTE.textPrimary,
-    marginBottom: 2,
-  },
-  photoPickHint: {
-    fontFamily: homeFonts.sans,
-    fontSize: 11,
-    color: PALETTE.textSecondary,
-    textAlign: 'center',
-  },
-  photoChangeLink: {
-    alignSelf: 'center',
-    paddingVertical: 4,
-  },
-  photoChangeLinkText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 13,
-    color: '#1F6B38',
-  },
-  previewWrap: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E8E0D6',
-    backgroundColor: '#F4F4F5',
-    position: 'relative',
-  },
-  preview: {
-    width: '100%',
-    height: 128,
-    backgroundColor: '#F4F4F5',
-  },
-  previewRemoveBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+  assistantAvatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(17, 24, 39, 0.55)',
+    backgroundColor: '#F4F9F5',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  ctaCompact: {
-    flexShrink: 0,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  ctaGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    height: 34,
-    paddingHorizontal: 11,
-  },
-  ctaIconMono: {
-    width: 18,
-    height: 18,
-  },
-  ctaText: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 13,
-    color: '#FFFFFF',
-    letterSpacing: 0.05,
-  },
-  resultCard: {
-    borderRadius: 18,
     borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-    ...SOFT_SHADOW,
+    borderColor: '#C5DDB0',
   },
-  resultIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(31, 41, 51, 0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
+  assistantAvatarImg: {
+    width: 20,
+    height: 20,
+  },
+  bubble: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderWidth: 1,
-    borderColor: 'rgba(31, 41, 51, 0.08)',
+    flex: 1,
   },
-  resultLabel: {
+  bubbleAssistant: {
+    backgroundColor: PALETTE.assistantBubble,
+    borderColor: '#ECE8E2',
+  },
+  bubbleUser: {
+    backgroundColor: PALETTE.userBubble,
+    borderColor: '#C8E6C9',
+  },
+  bubbleText: {
     fontFamily: homeFonts.sans,
-    fontSize: 13,
-    color: PALETTE.textSecondary,
-    marginBottom: 4,
-  },
-  resultKcal: {
-    fontFamily: homeFonts.sansBold,
-    fontSize: 36,
+    fontSize: 14,
+    lineHeight: 20,
     color: PALETTE.textPrimary,
-    letterSpacing: -1,
   },
-  resultKcalUnit: {
-    fontFamily: homeFonts.sansSemi,
-    fontSize: 18,
-    color: PALETTE.textSecondary,
-    letterSpacing: 0,
+  bubbleTextUser: {
+    fontFamily: homeFonts.sansMedium,
   },
-  confidenceRow: {
-    marginTop: 14,
+  productChipList: {
+    marginTop: 10,
+    gap: 6,
   },
-  confidenceChip: {
+  productChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: PALETTE.border,
+    borderColor: '#DDE8DD',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
-  confidenceText: {
+  productChipName: {
+    flex: 1,
     fontFamily: homeFonts.sansSemi,
     fontSize: 12,
+    color: PALETTE.textPrimary,
+  },
+  productChipKcal: {
+    fontFamily: homeFonts.sansMedium,
+    fontSize: 11,
+    color: '#2E7D32',
+  },
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingLeft: 36,
+  },
+  typingText: {
+    fontFamily: homeFonts.sans,
+    fontSize: 12,
     color: PALETTE.textSecondary,
+  },
+  composer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: PALETTE.border,
+    backgroundColor: PALETTE.pageBg,
+  },
+  composerInput: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 110,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    backgroundColor: '#FAFAF9',
+    paddingHorizontal: 14,
+    paddingTop: Platform.OS === 'ios' ? 12 : 10,
+    paddingBottom: 10,
+    fontFamily: homeFonts.sans,
+    fontSize: 14,
+    color: PALETTE.textPrimary,
+  },
+  sendBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  sendBtnDisabled: {
+    opacity: 0.45,
+  },
+  sendBtnGradient: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
