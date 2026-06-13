@@ -4,24 +4,38 @@
     "slug": "self-kasa-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/görsel/logo.png",
+    "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F7F5"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.selfkasa.mobile"
     },
     "android": {
       "package": "com.selfkasa.mobile",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
-        "foregroundImage": "./src/görsel/logo.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8F7F5"
       }
     },
     "plugins": [
       "expo-asset",
       "expo-secure-store",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F8F7F5",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 280,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-camera",
         {

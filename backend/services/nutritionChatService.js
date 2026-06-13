@@ -104,6 +104,7 @@ function buildChatSystemPrompt(branchName, menuItems) {
     name: p.name,
     kcal: p.calories,
     cat: p.category || undefined,
+    pop: p.isFeatured || undefined,
   }));
   const menuJson = JSON.stringify(slimMenu);
   return (
@@ -111,7 +112,8 @@ function buildChatSystemPrompt(branchName, menuItems) {
     'Yalnızca aşağıdaki menü listesindeki ürünler hakkında konuş. ' +
     'Menüde olmayan ürün için tahmin yapma; nazikçe menümüzde bulunmadığını söyle. ' +
     'Kalori ve besin değerlerini menüdeki sayılardan kullan; uydurma. ' +
-    'Müşteri kalori hedefi söylediğinde menüden 1-3 ürün veya mantıklı bir kombinasyon öner; toplam kaloriyi hesapla. ' +
+    'Müşteri kalori hedefi söylediğinde menüden hedefe uygun, dengeli 1-3 ürünlük mantıklı menü kombinasyonları oluştur; toplam kaloriyi hesapla ve kısaca açıkla. ' +
+    'Müşteri popüler, en çok satan veya öne çıkan ürünleri sorduğunda menü JSON\'ındaki "pop": true olan ürünleri tespit et ve müşteriye tanıt. ' +
     'Sepet bilgisi verilmişse sepet toplam kalorisini hesapla ve kısaca açıkla. ' +
     'Kısa, samimi, Türkçe yanıt ver. Tıbbi tavsiye verme. ' +
     'Yanıtı YALNIZCA JSON ver, başka metin ekleme: ' +
@@ -137,6 +139,7 @@ function toMenuItem(doc) {
     fat: Number(n.fat) || 0,
     servingGram: Number(n.servingGram) || null,
     portionUnit: n.portionUnit || '',
+    isFeatured: !!doc.isFeatured,
   };
 }
 
@@ -155,7 +158,7 @@ async function loadBranchMenu(branchId) {
     'nutrition.calories': { $gt: 0 },
   })
     .populate('category', 'name')
-    .select('name category nutrition price')
+    .select('name category nutrition price isFeatured')
     .sort({ name: 1 })
     .limit(MAX_MENU_ITEMS)
     .lean();
@@ -563,15 +566,11 @@ function mapRecommendedProducts(menu, ids) {
     }));
 }
 
-function shouldUseGemini(message, history) {
+function shouldUseGemini() {
   if (String(process.env.NUTRITION_CHAT_USE_AI || 'true').toLowerCase() === 'false') {
     return false;
   }
-  const norm = normalizeTr(message);
-  if (history.length > 0) return true;
-  if (norm.length > 120) return true;
-  if (norm.includes('neden') || norm.includes('acikla') || norm.includes('fark')) return true;
-  return false;
+  return true;
 }
 
 async function handleNutritionChat({
@@ -616,17 +615,8 @@ async function handleNutritionChat({
     };
   }
 
-  const fast = tryFastChatReply({ message: text, menu, cartItems: safeCart });
-  if (fast) {
-    return {
-      reply: fast.reply,
-      products: mapRecommendedProducts(menu, fast.recommendedProductIds || []),
-      source: fast.source,
-    };
-  }
-
   let result = null;
-  if (shouldUseGemini(text, safeHistory)) {
+  if (shouldUseGemini()) {
     result = await askGeminiNutritionChat({
       branchName,
       menu,

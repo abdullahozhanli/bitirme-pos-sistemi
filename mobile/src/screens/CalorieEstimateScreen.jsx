@@ -161,9 +161,7 @@ function IntroHeroHeader() {
 const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'assistant',
-  text:
-    'Merhaba! Menümüzdeki ürünlerin kalori bilgisini sorabilir veya hedef kalorine uygun öneri alabilirsin. ' +
-    'Örnek: "Americano kaç kalori?" veya "1050 kcal için öner".',
+  text: 'Merhaba! Menüden kalori sorabilir veya öneri isteyebilirsin.',
   products: [],
 };
 

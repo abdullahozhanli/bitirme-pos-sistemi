@@ -101,6 +101,10 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
     // Besin değerleri — opsiyonel; ayarlanmazsa undefined kalır (eski ürünler bozulmaz)
     nutrition: {
       type: nutritionSchema,

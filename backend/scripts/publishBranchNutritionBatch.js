@@ -1,5 +1,5 @@
 /**
- * Şube menüsünü TEK Gemini çağrısıyla işler (rate limit dostu).
+ * Şube menüsünü küçük Gemini batch'leriyle işler (rate limit + token dostu).
  * node scripts/publishBranchNutritionBatch.js
  */
 require('dotenv').config();
@@ -11,9 +11,18 @@ const { hasAiProvider } = require('../services/aiNutritionService');
 const { extractJsonFromAiContent } = require('../services/nutritionEstimateShared');
 
 const TARGET_BRANCH_NAMES = ['Brew Mood', 'Yeşil Mola Cafe'];
+const BATCH_SIZE = 8;
+const CHUNK_DELAY_MS = 4000;
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const GEMINI_MODEL_FALLBACKS = ['gemini-2.5-flash', 'gemini-flash-latest'];
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function resolveGeminiModels() {
+  const configured = String(process.env.GEMINI_MODEL || '').trim();
+  return [...new Set([configured || DEFAULT_GEMINI_MODEL, DEFAULT_GEMINI_MODEL, ...GEMINI_MODEL_FALLBACKS].filter(Boolean))];
 }
 
 function isPublished(p) {
@@ -25,12 +34,59 @@ function isPublished(p) {
   );
 }
 
-async function geminiBatch(branchName, items, retry = 0) {
-  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+function parseBatchJson(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+
+  const arrayStart = raw.indexOf('[');
+  const arrayEnd = raw.lastIndexOf(']');
+  if (arrayStart >= 0 && arrayEnd > arrayStart) {
+    try {
+      const parsed = JSON.parse(raw.slice(arrayStart, arrayEnd + 1));
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {
+      // fall through
+    }
+  }
+
+  const object = extractJsonFromAiContent(raw);
+  if (!object || typeof object !== 'object' || Array.isArray(object)) {
+    return null;
+  }
+
+  const list =
+    object.items ||
+    object.products ||
+    object.menu ||
+    object.results ||
+    object.data;
+  return Array.isArray(list) ? list : null;
+}
+
+async function callGeminiBatch(apiKey, model, prompt) {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}` +
     `:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 8192,
+      },
+    }),
+  });
+
+  return response;
+}
+
+async function geminiBatch(branchName, items, retry = 0) {
+  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
+  const models = resolveGeminiModels();
 
   const menuLines = items
     .map(
@@ -41,40 +97,60 @@ async function geminiBatch(branchName, items, retry = 0) {
     .join('\n');
 
   const prompt =
-    `Sen Türkiye restoran/kafe beslenme uzmanısın. "${branchName}" şubesi menüsü için HER ürün için ` +
+    `Sen Türkiye restoran/kafe beslenme uzmanısın. "${branchName}" şubesi menüsü için listedeki HER ürün için ` +
     `müşteri açıklaması (1-2 cümle Türkçe) ve tek porsiyon tahmini besin değerleri üret.\n` +
-    `Kurallar: Ürün adıyla çelişen malzeme yazma. Tahminidir. Negatif değer yok.\n` +
-    `Yanıt YALNIZCA JSON dizi:\n` +
-    `[{"productId":string,"customerDescription":string,"calories":number,"protein":number,"carbs":number,"fat":number,"servingGram":number,"portionUnit":string,"ingredients":string[],"allergens":string[],"confidence":"low"|"medium"|"high"}]\n\n` +
+    `Kurallar: Ürün adıyla çelişen malzeme yazma. Tahminidir. Negatif değer yok. Listedeki tüm ürünler items dizisinde olmalı.\n` +
+    `Yanıt YALNIZCA şu JSON nesne formatında olsun, başka metin ekleme:\n` +
+    `{"items":[{"productId":string,"customerDescription":string,"calories":number,"protein":number,"carbs":number,"fat":number,"servingGram":number,"portionUnit":string,"ingredients":string[],"allergens":string[],"confidence":"low"|"medium"|"high"}]}\n\n` +
     `Menü:\n${menuLines}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, responseMimeType: 'application/json' },
-    }),
-  });
+  let lastError = 'Beklenen JSON dizi dönmedi';
+  let lastSnippet = '';
 
-  if (response.status === 429 && retry < 5) {
-    const wait = 20000 * (retry + 1);
-    console.log(`  Rate limit — ${wait / 1000}s bekleniyor...`);
-    await sleep(wait);
-    return geminiBatch(branchName, items, retry + 1);
+  for (const model of models) {
+    const response = await callGeminiBatch(apiKey, model, prompt);
+
+    if (response.status === 429 && retry < 5) {
+      const wait = 20000 * (retry + 1);
+      console.log(`  Rate limit (${model}) — ${wait / 1000}s bekleniyor...`);
+      await sleep(wait);
+      return geminiBatch(branchName, items, retry + 1);
+    }
+
+    if (response.status === 404) {
+      lastError = `Model bulunamadı: ${model}`;
+      continue;
+    }
+
+    if (!response.ok) {
+      lastError = `Gemini HTTP ${response.status} (model: ${model})`;
+      continue;
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
+    const parsed = parseBatchJson(text);
+
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+
+    lastSnippet = text.slice(0, 400);
+    lastError = `JSON parse hatası (model: ${model})`;
   }
 
-  if (!response.ok) {
-    throw new Error(`Gemini HTTP ${response.status}`);
+  if (lastSnippet) {
+    console.log(`  Ham yanıt (ilk 400 karakter): ${lastSnippet}`);
   }
+  throw new Error(lastError);
+}
 
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-  const parsed = extractJsonFromAiContent(text);
-  if (!Array.isArray(parsed)) {
-    throw new Error('Beklenen JSON dizi dönmedi');
+function chunkArray(list, size) {
+  const chunks = [];
+  for (let i = 0; i < list.length; i += size) {
+    chunks.push(list.slice(i, i + size));
   }
-  return parsed;
+  return chunks;
 }
 
 function nutritionFromRow(row) {
@@ -123,8 +199,20 @@ async function main() {
       categoryName: p.category?.name || '',
     }));
 
-    console.log(`  ${items.length} ürün için toplu AI çağrısı...`);
-    const rows = await geminiBatch(branch.name, items);
+    const chunks = chunkArray(items, BATCH_SIZE);
+    console.log(`  ${items.length} ürün, ${chunks.length} batch (en fazla ${BATCH_SIZE} ürün/istek)...`);
+
+    const rows = [];
+    for (let i = 0; i < chunks.length; i += 1) {
+      const chunk = chunks[i];
+      console.log(`  Batch ${i + 1}/${chunks.length} (${chunk.length} ürün)...`);
+      const batchRows = await geminiBatch(branch.name, chunk);
+      rows.push(...batchRows);
+      if (i < chunks.length - 1) {
+        await sleep(CHUNK_DELAY_MS);
+      }
+    }
+
     const byId = new Map(rows.map((r) => [String(r.productId || r.id || ''), r]));
 
     let ok = 0;
