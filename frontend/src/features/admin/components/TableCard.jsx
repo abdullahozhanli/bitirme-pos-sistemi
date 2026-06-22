@@ -47,7 +47,7 @@ export default function TableCard({ table, isSelected, onClick }) {
 
   return (
     <div
-      className={`table-card ${statusClass} ${isSelected ? 'selected' : ''}`}
+      className={`table-card ${statusClass} ${isSelected ? 'selected' : ''} ${table.prefersCashier ? 'priority' : ''}`}
       onClick={onClick}
       role="button"
       tabIndex={0}

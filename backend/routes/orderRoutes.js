@@ -192,6 +192,7 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
     const order = await Order.findById(id)
       .populate('table', 'name capacity')
       .populate('items.menuItem', 'name price category imageUrl')
+      .populate('orderItems.product', 'name price category station imageUrl')
       .lean();
 
     if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });

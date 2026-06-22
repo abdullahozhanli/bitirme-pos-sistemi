@@ -1,46 +1,37 @@
 import React, { useState } from 'react';
-import {
-  Paper,
-  Typography,
-  Box,
-  Button,
-  Divider,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Alert,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
-import PeopleIcon from '@mui/icons-material/People';
-import ReceiptIcon from '@mui/icons-material/Receipt';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 import ConfirmDialog from '../../../shared/components/ui/ConfirmDialog.jsx';
+import { getOrderLineItems } from '../../../shared/utils/orderLineItems';
 import { getOrderPaymentDisplayText } from '../../../shared/utils/orderPayment';
+import { getTableStatusClass, getTableStatusLabel } from '../../../shared/utils/tableStatusDisplay';
+import '../../../shared/components/table/TableDetailPanel.css';
+
+function formatPrice(value) {
+  return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
+}
 
 export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete, onRefresh }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const navigate = useNavigate();
 
-  const statusColor = {
-    bos: 'success',
-    dolu: 'error',
-    rezerve: 'warning',
-    odeme_bekliyor: 'info',
-  };
+  const statusClass = getTableStatusClass(table.status);
+  const statusLabel = getTableStatusLabel(table.status, statusLabels);
+  const activeOrders = table.activeOrders || [];
+  const allOrders = table.orders || [];
+  const totalAmount = table.totalAmount || activeOrders.reduce((sum, o) => sum + (o.total || o.totalPrice || 0), 0);
 
   const handleDelete = async () => {
     try {
       setDeleting(true);
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}`, 'x-auth-token': token } : {};
-      
+
       await axios.delete(`/api/admin/tables/${table._id}`, { headers });
       setDeleteConfirm(false);
       onDelete();
@@ -52,155 +43,137 @@ export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete
     }
   };
 
-  const activeOrders = table.activeOrders || [];
-  const allOrders = table.orders || [];
-
   return (
-    <Paper sx={{ p: 3, position: 'sticky', top: 24, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Masa Detayları
-        </Typography>
-        <Box>
-          <IconButton size="small" onClick={onRefresh} title="Yenile">
-            <RefreshIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={onEdit} title="Düzenle">
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            color="error"
-            disabled={deleting}
-            onClick={() => setDeleteConfirm(true)}
-            title="Sil"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Box>
+    <>
+      <aside className={`table-detail-panel ${statusClass}`}>
+        <div className="table-detail-panel-header">
+          <h2 className="table-detail-panel-title">Masa Detayları</h2>
+          <div className="table-detail-panel-actions-top">
+            <button type="button" className="table-detail-icon-btn" onClick={onRefresh} title="Yenile">
+              <RefreshIcon sx={{ fontSize: 18 }} />
+            </button>
+            <button type="button" className="table-detail-icon-btn" onClick={onEdit} title="Düzenle">
+              <EditIcon sx={{ fontSize: 18 }} />
+            </button>
+            <button
+              type="button"
+              className="table-detail-icon-btn table-detail-icon-btn--danger"
+              disabled={deleting}
+              onClick={() => setDeleteConfirm(true)}
+              title="Sil"
+            >
+              <DeleteIcon sx={{ fontSize: 18 }} />
+            </button>
+          </div>
+        </div>
 
-      <Divider sx={{ mb: 2 }} />
+        <div className="table-detail-hero">
+          <div className="table-detail-hero-text">
+            <h3 className="table-detail-table-name">{table.name}</h3>
+            <p className="table-detail-capacity">{table.capacity} Kişilik</p>
+          </div>
+          <div className={`table-detail-badge ${statusClass}`}>
+            <span className="table-detail-badge-dot" aria-hidden="true" />
+            <span className="table-detail-badge-text">{statusLabel}</span>
+          </div>
+        </div>
 
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <TableRestaurantIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            {table.name}
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Kapasite
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <PeopleIcon sx={{ fontSize: 18 }} />
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {table.capacity} Kişi
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Durum
-            </Typography>
-            <Chip
-              label={statusLabels[table.status] || table.status}
-              size="small"
-              color={statusColor[table.status] || 'default'}
-            />
-          </Box>
-        </Box>
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-
-      {activeOrders.length > 0 ? (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+        <section className="table-detail-section">
+          <p className="table-detail-section-label">
             Aktif Siparişler ({activeOrders.length})
-          </Typography>
-          <List dense>
-            {activeOrders.slice(0, 5).map((order) => {
-              const orderId = order._id || order.id;
-              const orderNumber = orderId ? `SIP-${orderId.toString().substring(0, 8).toUpperCase()}` : 'N/A';
-              const itemsCount = (order.items || []).length;
-              
-              return (
-                <ListItem
-                  key={orderId}
-                  sx={{
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    mb: 1,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      backgroundColor: 'action.hover',
-                    },
-                  }}
-                  onClick={() => navigate(`/admin/siparisler?orderId=${orderId}`)}
-                >
-                  <ReceiptIcon sx={{ fontSize: 20, mr: 1, color: 'primary.main' }} />
-                  <ListItemText
-                    primary={orderNumber}
-                    secondary={`${itemsCount} ürün • ₺${(order.total || order.totalPrice || 0).toFixed(2)} • ${getOrderPaymentDisplayText(order)}`}
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
+          </p>
+
+          {activeOrders.length === 0 ? (
+            <div className="table-detail-empty">
+              <ReceiptIcon />
+              <p>Aktif sipariş bulunmuyor</p>
+            </div>
+          ) : (
+            <div className="table-detail-orders">
+              {activeOrders.slice(0, 5).map((order) => {
+                const orderId = order._id || order.id;
+                const lineItems = getOrderLineItems(order);
+                const orderTotal = order.total || order.totalPrice || 0;
+
+                return (
+                  <article
+                    key={orderId}
+                    className="table-detail-order-card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/admin/siparisler?orderId=${orderId}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/admin/siparisler?orderId=${orderId}`);
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="table-detail-order-head">
+                      <div>
+                        <p className="table-detail-order-id">
+                          Sipariş #{orderId?.slice(-6).toUpperCase() || '---'}
+                        </p>
+                        <p className="table-detail-order-meta">
+                          {lineItems.length} ürün · {getOrderPaymentDisplayText(order)}
+                        </p>
+                      </div>
+                      <span className="table-detail-order-total">{formatPrice(orderTotal)}</span>
+                    </div>
+
+                    {lineItems.length > 0 && (
+                      <div className="table-detail-order-items">
+                        {lineItems.map((line) => (
+                          <div key={line.id} className="table-detail-order-line">
+                            <span className="table-detail-order-item">
+                              {line.qty}x {line.name}
+                              <span className="table-detail-order-item-price">
+                                {formatPrice(line.lineTotal)}
+                              </span>
+                            </span>
+                            {line.note ? (
+                              <span className="table-detail-order-item-note">Not: {line.note}</span>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
           {activeOrders.length > 5 && (
-            <Button
-              fullWidth
-              variant="outlined"
-              size="small"
+            <button
+              type="button"
+              className="table-detail-action-row"
               onClick={() => navigate(`/admin/siparisler?tableId=${table._id}`)}
-              sx={{ mt: 1 }}
             >
               Tümünü Gör ({activeOrders.length})
-            </Button>
+            </button>
           )}
-        </Box>
-      ) : (
-        <Box sx={{ mb: 3, textAlign: 'center', py: 2, color: 'text.secondary' }}>
-          <ReceiptIcon sx={{ fontSize: 48, mb: 1, opacity: 0.3 }} />
-          <Typography variant="body2">Aktif sipariş bulunmuyor</Typography>
-        </Box>
-      )}
+        </section>
 
-      {table.totalAmount > 0 && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Toplam: ₺{table.totalAmount.toFixed(2)}
-          </Typography>
-        </Alert>
-      )}
+        {totalAmount > 0 && (
+          <div className="table-detail-summary-total">
+            <span className="table-detail-total-label">Toplam Tutar</span>
+            <span className="table-detail-total-value">{formatPrice(totalAmount)}</span>
+          </div>
+        )}
 
-      <Divider sx={{ my: 2 }} />
-
-      {allOrders.length > 0 && (
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-            Sipariş Geçmişi
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Toplam {allOrders.length} sipariş
-          </Typography>
-          <Button
-            fullWidth
-            variant="outlined"
-            size="small"
+        {allOrders.length > 0 && (
+          <button
+            type="button"
+            className="table-detail-history-link"
             onClick={() => navigate(`/admin/siparisler?tableId=${table._id}`)}
-            sx={{ mt: 1 }}
           >
-            Tüm Siparişleri Gör
-          </Button>
-        </Box>
-      )}
+            <span>Sipariş Geçmişi ({allOrders.length})</span>
+            <span>Tümünü Gör →</span>
+          </button>
+        )}
+      </aside>
 
       <ConfirmDialog
         open={deleteConfirm}
@@ -211,7 +184,6 @@ export default function TableDetailPanel({ table, statusLabels, onEdit, onDelete
         confirmText="Sil"
         cancelText="İptal"
       />
-    </Paper>
+    </>
   );
 }
-

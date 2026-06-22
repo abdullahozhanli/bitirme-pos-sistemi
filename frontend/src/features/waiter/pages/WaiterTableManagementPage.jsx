@@ -29,7 +29,7 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
-import WaiterTableCard from '../components/WaiterTableCard.jsx';
+import TableCard from '../../admin/components/TableCard.jsx';
 import WaiterTableDetailPanel from '../components/WaiterTableDetailPanel.jsx';
 import OrderCreateModal from '../components/OrderCreateModal.jsx';
 import { TABLE_STATUS, STATUS_LABELS, STATUS_COLORS, STATUS_CLASS_MAP } from '../constants/tableStatus.js';
@@ -501,10 +501,9 @@ export default function WaiterTableManagementPage() {
               className="waiter-table-grid"
             >
               {filteredTables.map((table) => (
-                <WaiterTableCard
+                <TableCard
                   key={table._id || table.id}
                   table={table}
-                  statusLabels={STATUS_LABELS}
                   isSelected={selectedTable?._id === table._id}
                   onClick={() => handleSelectTable(table)}
                 />

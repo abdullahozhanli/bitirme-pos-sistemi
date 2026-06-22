@@ -1,342 +1,204 @@
 import React from 'react';
-import {
-  Paper,
-  Typography,
-  Box,
-  Button,
-  Divider,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Stack,
-} from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PaymentIcon from '@mui/icons-material/Payment';
-import EditIcon from '@mui/icons-material/Edit';
-import CancelIcon from '@mui/icons-material/Cancel';
-import CloseIcon from '@mui/icons-material/Close';
-import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
-import PeopleIcon from '@mui/icons-material/People';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import { useNavigate } from 'react-router-dom';
-import { TABLE_STATUS, STATUS_LABELS, STATUS_COLORS } from '../constants/tableStatus.js';
+import { TABLE_STATUS, STATUS_LABELS } from '../constants/tableStatus.js';
+import { getOrderLineItems } from '../../../shared/utils/orderLineItems';
 import { getOrderPaymentDisplayText } from '../../../shared/utils/orderPayment';
-import './WaiterTableDetailPanel.css';
+import { getTableStatusClass, getTableStatusLabel } from '../../../shared/utils/tableStatusDisplay';
+import '../../../shared/components/table/TableDetailPanel.css';
 
-export default function WaiterTableDetailPanel({ table, statusLabels, onCreateOrder, onRefresh, onClose }) {
+function formatPrice(value) {
+  return `₺${Number(value || 0).toFixed(2).replace('.', ',')}`;
+}
+
+export default function WaiterTableDetailPanel({
+  table,
+  statusLabels = STATUS_LABELS,
+  onCreateOrder,
+  onRefresh,
+  onClose,
+}) {
   const navigate = useNavigate();
-
-  // Status class for CSS badge styling
-  const statusClassMap = {
-    [TABLE_STATUS.AVAILABLE]: 'available',
-    [TABLE_STATUS.OCCUPIED]: 'full',
-    [TABLE_STATUS.RESERVED]: 'reserved',
-    [TABLE_STATUS.PAYMENT_PENDING]: 'payment_pending',
-  };
-  const statusClass = statusClassMap[table.status] || 'available';
-
+  const statusClass = getTableStatusClass(table.status);
+  const statusLabel = getTableStatusLabel(table.status, statusLabels);
   const activeOrders = table.activeOrders || [];
   const allOrders = table.orders || [];
   const totalAmount = activeOrders.reduce((sum, o) => sum + (o.total || o.totalPrice || 0), 0);
 
   return (
-    <Paper className="waiter-table-detail-panel" sx={{ 
-      p: { xs: 2, lg: 3 }, 
-      position: { xs: 'relative', lg: 'sticky' }, 
-      top: { lg: 24 }, 
-      maxHeight: { lg: 'calc(100vh - 100px)' }, 
-      overflowY: 'auto',
-      boxShadow: { xs: 'none', lg: '0 1px 3px rgba(0, 0, 0, 0.05)' },
-    }}>
-      {/* Kompakt Header - Mobilde */}
-      <Box className="detail-panel-header-mobile" sx={{ display: { xs: 'flex', lg: 'none' }, justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="body1" sx={{ fontWeight: 600, fontSize: '15px' }}>
-          Masa {table.name} → {table.capacity} Kişilik
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton size="small" onClick={onRefresh} title="Yenile" sx={{ padding: '6px' }}>
-            <RefreshIcon sx={{ fontSize: '18px' }} />
-          </IconButton>
+    <aside className={`table-detail-panel ${statusClass}`}>
+      <div className="table-detail-panel-header">
+        <h2 className="table-detail-panel-title">Masa Detayları</h2>
+        <div className="table-detail-panel-actions-top">
+          <button type="button" className="table-detail-icon-btn" onClick={onRefresh} title="Yenile">
+            <RefreshIcon sx={{ fontSize: 18 }} />
+          </button>
           {onClose && (
-            <IconButton size="small" onClick={onClose} title="Kapat" sx={{ padding: '6px' }}>
-              <CloseIcon sx={{ fontSize: '18px' }} />
-            </IconButton>
+            <button type="button" className="table-detail-icon-btn" onClick={onClose} title="Kapat">
+              <CloseIcon sx={{ fontSize: 18 }} />
+            </button>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      {/* Desktop Header */}
-      <Box className="detail-panel-header-desktop" sx={{ display: { xs: 'none', lg: 'flex' }, justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Masa Detayları
-        </Typography>
-        <IconButton size="small" onClick={onRefresh} title="Yenile">
-          <RefreshIcon fontSize="small" />
-        </IconButton>
-      </Box>
+      <div className="table-detail-hero">
+        <div className="table-detail-hero-text">
+          <h3 className="table-detail-table-name">{table.name}</h3>
+          <p className="table-detail-capacity">{table.capacity} Kişilik</p>
+        </div>
+        <div className={`table-detail-badge ${statusClass}`}>
+          <span className="table-detail-badge-dot" aria-hidden="true" />
+          <span className="table-detail-badge-text">{statusLabel}</span>
+        </div>
+      </div>
 
-      <Divider className="detail-panel-divider" sx={{ mb: 2, display: { xs: 'none', lg: 'block' } }} />
-
-      {/* Masa Bilgileri */}
-      <Box className="detail-panel-info" sx={{ mb: { xs: 2, lg: 3 } }}>
-        <Box sx={{ display: { xs: 'none', lg: 'flex' }, alignItems: 'center', gap: 1, mb: 2 }}>
-          <TableRestaurantIcon sx={{ fontSize: 36, color: 'primary.main' }} />
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            {table.name}
-          </Typography>
-        </Box>
-
-        <Stack spacing={1.5}>
-          <Box sx={{ display: { xs: 'none', lg: 'flex' }, justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <PeopleIcon sx={{ fontSize: 20 }} />
-              <Typography variant="body2" color="text.secondary">
-                Kapasite
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {table.capacity} Kişi
-            </Typography>
-          </Box>
-
-          {/* Status - Inline with badge */}
-          <Box className="detail-panel-status" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '13px', lg: '14px' } }}>
-              Durum:
-            </Typography>
-            <span className={`detail-status-badge detail-status-badge-${statusClass}`}>
-              {statusLabels[table.status] || table.status}
-            </span>
-          </Box>
-        </Stack>
-      </Box>
-
-      <Divider className="detail-panel-divider" sx={{ my: { xs: 1.5, lg: 2 }, display: { xs: 'none', lg: 'block' } }} />
-
-      {/* Hızlı Aksiyonlar */}
-      <Box className="detail-panel-actions" sx={{ mb: { xs: 2, lg: 3 } }}>
-        <Typography variant="subtitle2" className="detail-section-title" sx={{ fontWeight: 600, mb: { xs: 1, lg: 1.5 }, fontSize: { xs: '13px', lg: '14px' }, display: { xs: 'none', lg: 'block' } }}>
-          Hızlı İşlemler
-        </Typography>
-        <Stack spacing={{ xs: 1, lg: 1.5 }}>
-          {/* Sadece müsait masalarda sipariş al butonu göster */}
+      <section className="table-detail-section">
+        <p className="table-detail-section-label">Hızlı İşlemler</p>
+        <div className="table-detail-actions">
           {table.status === TABLE_STATUS.AVAILABLE && (
-            <Box 
-              className="detail-action-primary-available"
+            <button
+              type="button"
+              className="table-detail-action-primary"
               onClick={() => {
-                if (onCreateOrder) {
-                  onCreateOrder();
-                } else {
-                  navigate(`/waiter/orders/create?tableId=${table._id || table.id}`);
-                }
-              }}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 1,
-                padding: { xs: '12px 16px', lg: '14px 20px' },
-                borderRadius: { xs: '12px', lg: '12px' },
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: { xs: '#10B981', lg: '#10B981' },
-                color: 'white',
-                fontWeight: 600,
-                fontSize: { xs: '14px', lg: '16px' },
+                if (onCreateOrder) onCreateOrder();
+                else navigate(`/waiter/orders/create?tableId=${table._id || table.id}`);
               }}
             >
-              <AddIcon sx={{ fontSize: { xs: '18px', lg: '20px' } }} />
-              <span>Yeni Sipariş Al</span>
-            </Box>
+              <AddIcon sx={{ fontSize: 18 }} />
+              Yeni Sipariş Al
+            </button>
           )}
-          
           {activeOrders.length > 0 && (
-            <Box 
-              className="detail-action-row"
+            <button
+              type="button"
+              className="table-detail-action-row"
               onClick={() => navigate(`/waiter/orders?tableId=${table._id || table.id}`)}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1, 
-                padding: { xs: '10px 12px', lg: '14px 16px' },
-                borderRadius: '12px',
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-              }}
             >
-              <ReceiptIcon sx={{ fontSize: { xs: '18px', lg: '20px' }, color: '#6B7280' }} />
-              <Typography sx={{ flex: 1, fontSize: { xs: '13px', lg: '14px' }, fontWeight: 500, color: '#111827' }}>
-                Siparişleri Gör ({activeOrders.length})
-              </Typography>
-            </Box>
+              <ReceiptIcon />
+              Siparişleri Gör ({activeOrders.length})
+            </button>
           )}
-
           {table.status === TABLE_STATUS.PAYMENT_PENDING && (
-            <Button
-              fullWidth
-              variant="contained"
-              color="success"
-              startIcon={<PaymentIcon />}
+            <button
+              type="button"
+              className="table-detail-action-primary"
               onClick={() => navigate(`/waiter/orders?tableId=${table._id || table.id}&payment=true`)}
-              size="large"
-              sx={{ py: { xs: 1.25, lg: 1.5 }, fontWeight: 600, fontSize: { xs: '14px', lg: '16px' } }}
             >
+              <PaymentIcon sx={{ fontSize: 18 }} />
               Ödeme Al
-            </Button>
+            </button>
           )}
-        </Stack>
-      </Box>
+        </div>
+      </section>
 
-      <Box className="detail-panel-spacer" sx={{ height: { xs: 12, lg: 0 }, display: { xs: 'block', lg: 'none' } }} />
+      <section className="table-detail-section">
+        <p className="table-detail-section-label">
+          Aktif Siparişler ({activeOrders.length})
+        </p>
 
-      {/* Aktif Siparişler */}
-      {activeOrders.length > 0 ? (
-        <Box className="detail-panel-orders" sx={{ mb: { xs: 2, lg: 3 } }}>
-          <Typography variant="subtitle2" className="detail-section-title" sx={{ fontWeight: 600, mb: { xs: 1, lg: 1.5 }, fontSize: { xs: '13px', lg: '14px' } }}>
-            Aktif Siparişler ({activeOrders.length})
-          </Typography>
-          <List dense className="detail-orders-list" sx={{ padding: 0 }}>
+        {activeOrders.length === 0 ? (
+          <div className="table-detail-empty">
+            <ReceiptIcon />
+            <p>Aktif sipariş bulunmuyor</p>
+          </div>
+        ) : (
+          <div className="table-detail-orders">
             {activeOrders.slice(0, 5).map((order) => {
               const orderId = order._id || order.id;
-              const orderNumber = orderId ? `SIP-${orderId.toString().substring(0, 8).toUpperCase()}` : 'N/A';
-              const items = order.orderItems || order.items || [];
-              const totalItemsCount = items.reduce((sum, item) => sum + (item.qty || 1), 0);
+              const lineItems = getOrderLineItems(order);
               const orderTotal = order.total || order.totalPrice || 0;
-              
+
               return (
-                <ListItem
-                  key={orderId}
-                  className="detail-order-item"
-                  sx={{
-                    border: '1px solid',
-                    borderColor: '#E5E7EB',
-                    borderRadius: '12px',
-                    mb: { xs: 0.75, lg: 1 },
-                    padding: { xs: '10px 12px', lg: '12px 16px' },
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onClick={() => navigate(`/waiter/orders?orderId=${orderId}`)}
-                >
-                  <ReceiptIcon sx={{ fontSize: { xs: '18px', lg: '20px' }, mr: { xs: 1, lg: 1.5 }, color: '#6B7280' }} />
-                  <ListItemText
-                    primary={orderNumber}
-                    secondary={`${totalItemsCount} ürün • ₺${orderTotal.toFixed(2)} • ${getOrderPaymentDisplayText(order)}`}
-                    primaryTypographyProps={{ 
-                      fontWeight: 600, 
-                      fontSize: { xs: '13px', lg: '14px' },
-                      color: '#111827'
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: { xs: '11px', lg: '12px' },
-                      color: '#6B7280'
-                    }}
-                    sx={{ margin: 0 }}
-                  />
-                  <IconButton
-                    size="small"
-                    className="detail-order-edit"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/waiter/orders?orderId=${orderId}&edit=true`);
-                    }}
-                    sx={{ 
-                      padding: { xs: '4px', lg: '6px' },
-                      '&:hover': {
-                        backgroundColor: '#F3F4F6'
-                      }
-                    }}
-                  >
-                    <EditIcon sx={{ fontSize: { xs: '16px', lg: '18px' }, color: '#6B7280' }} />
-                  </IconButton>
-                </ListItem>
+                <article key={orderId} className="table-detail-order-card">
+                  <div className="table-detail-order-head">
+                    <div>
+                      <p className="table-detail-order-id">
+                        Sipariş #{orderId?.slice(-6).toUpperCase() || '---'}
+                      </p>
+                      <p className="table-detail-order-meta">
+                        {lineItems.length} ürün · {getOrderPaymentDisplayText(order)}
+                      </p>
+                    </div>
+                    <span className="table-detail-order-total">{formatPrice(orderTotal)}</span>
+                  </div>
+
+                  {lineItems.length > 0 && (
+                    <div className="table-detail-order-items">
+                      {lineItems.map((line) => (
+                        <div key={line.id} className="table-detail-order-line">
+                          <span className="table-detail-order-item">
+                            {line.qty}x {line.name}
+                            <span className="table-detail-order-item-price">
+                              {formatPrice(line.lineTotal)}
+                            </span>
+                          </span>
+                          {line.note ? (
+                            <span className="table-detail-order-item-note">Not: {line.note}</span>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="table-detail-order-actions">
+                    <button
+                      type="button"
+                      className="table-detail-btn"
+                      onClick={() => navigate(`/waiter/orders?orderId=${orderId}`)}
+                    >
+                      <ReceiptIcon />
+                      Görüntüle
+                    </button>
+                    <button
+                      type="button"
+                      className="table-detail-btn"
+                      onClick={() => navigate(`/waiter/orders?orderId=${orderId}&edit=true`)}
+                    >
+                      <EditOutlinedIcon />
+                      Düzenle
+                    </button>
+                  </div>
+                </article>
               );
             })}
-          </List>
-          {activeOrders.length > 5 && (
-            <Button
-              fullWidth
-              variant="outlined"
-              size="small"
-              onClick={() => navigate(`/waiter/orders?tableId=${table._id || table.id}`)}
-              sx={{ mt: 1 }}
-            >
-              Tümünü Gör ({activeOrders.length})
-            </Button>
-          )}
-        </Box>
-      ) : (
-        <Box className="detail-empty-state" sx={{ mb: { xs: 2, lg: 3 }, textAlign: 'center', py: { xs: 1.5, lg: 3 }, color: 'text.secondary' }}>
-          <ReceiptIcon sx={{ fontSize: { xs: 24, lg: 48 }, mb: { xs: 0.5, lg: 1 }, opacity: 0.2 }} />
-          <Typography variant="body2" sx={{ fontSize: { xs: '11px', lg: '14px' }, color: '#9CA3AF' }}>Aktif sipariş bulunmuyor</Typography>
-        </Box>
-      )}
+          </div>
+        )}
 
-      {/* Toplam Tutar */}
-      {totalAmount > 0 && (
-        <Box className="detail-total-amount" sx={{ 
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: { xs: '12px 0', lg: '16px 0' },
-          borderTop: { xs: '1px solid #E5E7EB', lg: 'none' },
-          borderBottom: { xs: '1px solid #E5E7EB', lg: 'none' },
-          mb: { xs: 2, lg: 2 },
-          mt: { xs: 2, lg: 0 },
-        }}>
-          <Typography variant="body2" sx={{ fontSize: { xs: '13px', lg: '14px' }, fontWeight: 500, color: '#6B7280' }}>
-            Toplam Tutar
-          </Typography>
-          <Typography variant="body1" sx={{ fontSize: { xs: '16px', lg: '20px' }, fontWeight: 700, color: '#111827' }}>
-            ₺{totalAmount.toFixed(2)}
-          </Typography>
-        </Box>
-      )}
-
-      {/* Sipariş Geçmişi */}
-      {allOrders.length > 0 && (
-        <Box className="detail-order-history">
-          <Box 
-            className="detail-history-link"
+        {activeOrders.length > 5 && (
+          <button
+            type="button"
+            className="table-detail-action-row"
             onClick={() => navigate(`/waiter/orders?tableId=${table._id || table.id}`)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: { xs: '8px 0', lg: '12px 0' },
-              cursor: 'pointer',
-              borderTop: { xs: '1px solid #E5E7EB', lg: 'none' },
-              mt: { xs: 2, lg: 0 },
-            }}
           >
-            <Typography variant="body2" sx={{ fontSize: { xs: '12px', lg: '13px' }, color: '#6B7280' }}>
-              Sipariş Geçmişi ({allOrders.length})
-            </Typography>
-            <Typography variant="body2" sx={{ fontSize: { xs: '12px', lg: '13px' }, color: '#1976d2', fontWeight: 500 }}>
-              Görüntüle →
-            </Typography>
-          </Box>
-        </Box>
+            Tümünü Gör ({activeOrders.length})
+          </button>
+        )}
+      </section>
+
+      {totalAmount > 0 && (
+        <div className="table-detail-summary-total">
+          <span className="table-detail-total-label">Toplam Tutar</span>
+          <span className="table-detail-total-value">{formatPrice(totalAmount)}</span>
+        </div>
       )}
-    </Paper>
+
+      {allOrders.length > 0 && (
+        <button
+          type="button"
+          className="table-detail-history-link"
+          onClick={() => navigate(`/waiter/orders?tableId=${table._id || table.id}`)}
+        >
+          <span>Sipariş Geçmişi ({allOrders.length})</span>
+          <span>Görüntüle →</span>
+        </button>
+      )}
+    </aside>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

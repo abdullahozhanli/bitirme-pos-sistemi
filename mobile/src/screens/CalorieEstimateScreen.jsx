@@ -23,6 +23,7 @@ import {
   androidRipple,
 } from '../constants/homeTheme';
 import { sendNutritionChat } from '../api/calorie';
+import { useAuth } from '../context/AuthContext';
 import { useTableSession } from '../context/TableSessionContext';
 import { useCart } from '../context/CartContext';
 
@@ -127,13 +128,40 @@ function IntroDecorCarousel({ slides }) {
   );
 }
 
-function IntroHeroHeader() {
+function resolveBranchLabel(branchName) {
+  const trimmed = String(branchName || '').trim();
+  return trimmed || 'işletmemiz';
+}
+
+function resolveFirstName(userName) {
+  const trimmed = String(userName || '').trim();
+  return trimmed.split(/\s+/)[0] || '';
+}
+
+function buildWelcomeMessage(branchName, userName) {
+  const branch = resolveBranchLabel(branchName);
+  const firstName = resolveFirstName(userName);
+  const greeting = firstName ? `Merhaba ${firstName}!` : 'Merhaba!';
+  const text = `${greeting} ${branch} Kalori Asistanı'na hoş geldin. Menüden kalori sorabilir veya hedefine uygun öneri isteyebilirsin.`;
+
+  return {
+    id: 'welcome',
+    role: 'assistant',
+    text,
+    products: [],
+  };
+}
+
+function IntroHeroHeader({ branchName, userName }) {
+  const branch = resolveBranchLabel(branchName);
+  const firstName = resolveFirstName(userName);
+
   return (
     <View style={styles.introSection}>
       <View
         style={styles.heroPill}
         accessibilityRole="header"
-        accessibilityLabel="AI Kalori Asistanı"
+        accessibilityLabel={`${branch} Kalori Asistanı`}
       >
         <View style={styles.heroPillIconWrap}>
           <Image
@@ -143,27 +171,22 @@ function IntroHeroHeader() {
             accessibilityIgnoresInvertColors
           />
         </View>
-        <Text style={styles.heroPillText}>AI Kalori Asistanı</Text>
+        <Text style={styles.heroPillText}>{branch} Kalori Asistanı</Text>
       </View>
 
       <View style={styles.introCard}>
         <IntroDecorVisual />
-        <Text style={styles.introTitle}>Menüne sor, kalori öğren</Text>
+        <Text style={styles.introTitle}>
+          {firstName ? `${firstName}, menüne sor` : 'Menüne sor, kalori öğren'}
+        </Text>
         <Text style={styles.introDesc}>
-          Yapay zeka işletmemizin menüsündeki besin değerlerini kullanır. Ürün kalorisi sorabilir
+          Yapay zeka {branch} menüsündeki besin değerlerini kullanır. Ürün kalorisi sorabilir
           veya hedef kalorine uygun öneri alabilirsin.
         </Text>
       </View>
     </View>
   );
 }
-
-const WELCOME_MESSAGE = {
-  id: 'welcome',
-  role: 'assistant',
-  text: 'Merhaba! Menüden kalori sorabilir veya öneri isteyebilirsin.',
-  products: [],
-};
 
 function ProductChip({ product }) {
   return (
@@ -202,9 +225,10 @@ function ChatBubble({ message }) {
 
 export default function CalorieEstimateScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { branchId, branchName } = useTableSession();
   const { lines } = useCart();
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [messages, setMessages] = useState(() => [buildWelcomeMessage(null, null)]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [keyboardInset, setKeyboardInset] = useState(0);
@@ -243,6 +267,17 @@ export default function CalorieEstimateScreen({ navigation }) {
       listRef.current?.scrollToEnd?.({ animated });
     });
   }, []);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      const hasUser = prev.some((message) => message.role === 'user');
+      if (hasUser) return prev;
+
+      const welcome = buildWelcomeMessage(branchName, user?.name);
+      const rest = prev.filter((message) => message.id !== 'welcome');
+      return [welcome, ...rest];
+    });
+  }, [branchName, user?.name]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -365,7 +400,11 @@ export default function CalorieEstimateScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          ListHeaderComponent={hasUserMessages ? null : <IntroHeroHeader />}
+          ListHeaderComponent={
+            hasUserMessages ? null : (
+              <IntroHeroHeader branchName={branchName} userName={user?.name} />
+            )
+          }
           ListFooterComponent={
             loading ? (
               <View style={styles.typingRow}>

@@ -199,7 +199,16 @@ function parseTargetCalories(message) {
     if (Number.isFinite(n) && n >= 50 && n <= 5000) return n;
   }
   const norm = normalizeTr(message);
-  if (norm.includes('kalori') || norm.includes('kcal') || norm.includes('oner') || norm.includes('lazim')) {
+  if (
+    norm.includes('kalori') ||
+    norm.includes('kcal') ||
+    norm.includes('oner') ||
+    norm.includes('lazim') ||
+    norm.includes('laxim') ||
+    norm.includes('ihtiyac') ||
+    norm.includes('doldur') ||
+    norm.includes('tamamla')
+  ) {
     const plain = String(message || '').match(/\b(\d{3,4})\b/);
     if (plain) {
       const n = Number(plain[1]);
@@ -209,37 +218,241 @@ function parseTargetCalories(message) {
   return null;
 }
 
-function suggestForTarget(target, menu) {
-  if (!menu.length) return [];
-  const sorted = [...menu].sort((a, b) => a.calories - b.calories);
+function parseTargetCaloriesFromHistory(history) {
+  if (!Array.isArray(history)) return null;
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i]?.role !== 'user') continue;
+    const content = history[i]?.content || history[i]?.text || '';
+    const target = parseTargetCalories(content);
+    if (target) return target;
+  }
+  return null;
+}
 
-  let bestSingle = sorted[0];
-  let bestSingleDiff = Math.abs(bestSingle.calories - target);
-  for (const item of sorted) {
-    const diff = Math.abs(item.calories - target);
-    if (diff < bestSingleDiff) {
-      bestSingle = item;
-      bestSingleDiff = diff;
+function parseRequestedProductCount(message) {
+  const norm = normalizeTr(message);
+  const rangeMatch = norm.match(/\b([2-5])\s*(?:yada|veya|ile|or|\/|-)\s*([2-5])\s*urun/);
+  if (rangeMatch) {
+    const a = Number(rangeMatch[1]);
+    const b = Number(rangeMatch[2]);
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      return Math.max(a, b);
     }
   }
 
-  let bestPair = null;
-  let bestPairDiff = Infinity;
-  for (let i = 0; i < sorted.length; i += 1) {
-    for (let j = i; j < sorted.length; j += 1) {
-      const sum = sorted[i].calories + sorted[j].calories;
-      const diff = Math.abs(sum - target);
-      if (diff < bestPairDiff) {
-        bestPairDiff = diff;
-        bestPair = i === j ? [sorted[i]] : [sorted[i], sorted[j]];
+  const digitMatch = norm.match(/\b([2-5])\s*urun(?:le|lu|ler|den|de|u|uyle|lerle)?\b/);
+  if (digitMatch) {
+    const n = Number(digitMatch[1]);
+    if (Number.isFinite(n) && n >= 2 && n <= 5) return n;
+  }
+
+  const wordCounts = [
+    { keys: ['iki'], count: 2 },
+    { keys: ['uc', 'üç'], count: 3 },
+    { keys: ['dort', 'dört'], count: 4 },
+    { keys: ['bes', 'beş'], count: 5 },
+  ];
+  for (const entry of wordCounts) {
+    if (
+      entry.keys.some((k) => new RegExp(`\\b${normalizeTr(k)}\\b`).test(norm)) &&
+      /\burun(?:le|lu|ler|den|de|u|uyle|lerle)?\b/.test(norm)
+    ) {
+      return entry.count;
+    }
+  }
+
+  if (
+    (norm.includes('doldur') || norm.includes('tamamla') || norm.includes('karsila')) &&
+    (norm.includes('hangi') || norm.includes('urun'))
+  ) {
+    return 3;
+  }
+
+  return null;
+}
+
+function parseProductCountRange(message) {
+  const norm = normalizeTr(message);
+  const rangeMatch = norm.match(/\b([2-5])\s*(?:yada|veya|ile|or|\/|-)\s*([2-5])\s*urun/);
+  if (!rangeMatch) return null;
+  const a = Number(rangeMatch[1]);
+  const b = Number(rangeMatch[2]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return { min: Math.min(a, b), max: Math.max(a, b) };
+}
+
+function parseRequestedProductCountFromHistory(history) {
+  if (!Array.isArray(history)) return null;
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i]?.role !== 'user') continue;
+    const count = parseRequestedProductCount(history[i]?.content || history[i]?.text || '');
+    if (count) return count;
+  }
+  return null;
+}
+
+function isComboCorrectionMessage(message) {
+  const norm = normalizeTr(message);
+  return (
+    (norm.includes('ama') || norm.includes('istedim') || norm.includes('dedim') || norm.includes('soylemistim')) &&
+    (norm.includes('urun') || /\b[2-5]\b/.test(norm))
+  );
+}
+
+function resolveComboCount(message, target, history = []) {
+  const range = parseProductCountRange(message) || parseProductCountRangeFromHistory(history);
+  const requested =
+    parseRequestedProductCount(message) ||
+    parseRequestedProductCountFromHistory(history);
+
+  if (requested) return Math.min(requested, 5);
+  if (range) return range.max;
+
+  if (target >= 1800) return 4;
+  if (target >= 1500) return 3;
+  if (target >= 900) return 2;
+  return 1;
+}
+
+function parseProductCountRangeFromHistory(history) {
+  if (!Array.isArray(history)) return null;
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    if (history[i]?.role !== 'user') continue;
+    const range = parseProductCountRange(history[i]?.content || history[i]?.text || '');
+    if (range) return range;
+  }
+  return null;
+}
+
+function resolveComboIntent(message, history = []) {
+  let target = parseTargetCalories(message);
+  if (
+    !target &&
+    (isComboCorrectionMessage(message) ||
+      parseRequestedProductCount(message) ||
+      parseProductCountRange(message))
+  ) {
+    target = parseTargetCaloriesFromHistory(history);
+  }
+
+  if (!target) return null;
+
+  const range =
+    parseProductCountRange(message) ||
+    parseProductCountRangeFromHistory(history);
+  const count = resolveComboCount(message, target, history);
+
+  return { target, count, range };
+}
+
+function suggestComboForTarget(target, menu, count = 1) {
+  if (!menu.length || count < 1) return [];
+
+  const sorted = [...menu].sort((a, b) => a.calories - b.calories);
+  const pickCount = Math.min(count, sorted.length);
+
+  if (pickCount === 1) {
+    let best = sorted[0];
+    let bestDiff = Math.abs(best.calories - target);
+    for (const item of sorted) {
+      const diff = Math.abs(item.calories - target);
+      if (diff < bestDiff) {
+        best = item;
+        bestDiff = diff;
       }
     }
+    return [best];
   }
 
-  if (bestPair && bestPairDiff <= bestSingleDiff * 0.85) {
-    return bestPair;
+  let bestCombo = null;
+  let bestDiff = Infinity;
+  const picked = [];
+
+  function search(start, remaining) {
+    if (remaining === 0) {
+      const sum = picked.reduce((acc, item) => acc + item.calories, 0);
+      const diff = Math.abs(sum - target);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestCombo = picked.map((item) => item);
+      }
+      return;
+    }
+
+    for (let i = start; i <= sorted.length - remaining; i += 1) {
+      picked.push(sorted[i]);
+      search(i + 1, remaining - 1);
+      picked.pop();
+    }
   }
-  return [bestSingle];
+
+  search(0, pickCount);
+  return bestCombo || [sorted[0]];
+}
+
+function suggestBestComboForTarget(target, menu, count, range = null) {
+  const counts = [];
+  if (range && range.min <= range.max) {
+    for (let c = range.min; c <= range.max; c += 1) counts.push(c);
+  } else if (count) {
+    counts.push(count);
+  } else {
+    counts.push(1);
+  }
+
+  let best = null;
+  let bestDiff = Infinity;
+
+  for (const pickCount of counts) {
+    const picks = suggestComboForTarget(target, menu, pickCount);
+    if (!picks.length) continue;
+    const sum = picks.reduce((acc, item) => acc + item.calories, 0);
+    const diff = Math.abs(sum - target);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = { picks, sum, count: picks.length };
+    }
+  }
+
+  return best;
+}
+
+function buildTargetComboReply(target, menu, message, history = []) {
+  const range =
+    parseProductCountRange(message) ||
+    parseProductCountRangeFromHistory(history);
+  const count = resolveComboCount(message, target, history);
+  const best = suggestBestComboForTarget(target, menu, count, range);
+  if (!best?.picks?.length) return null;
+
+  const { picks, sum } = best;
+  const lines = picks.map((p) => `• ${p.name}: ${p.calories} kcal`).join('\n');
+  const countLabel = picks.length === 1 ? 'ürün' : `${picks.length} ürün`;
+  const rangeNote =
+    range && range.min !== range.max
+      ? ` (${range.min}-${range.max} ürün isteğine göre)`
+      : '';
+
+  let reply =
+    `${target} kcal hedefin için menümüzden ${countLabel}lük bir kombinasyon${rangeNote} (~${sum} kcal):\n` +
+    `${lines}\n` +
+    'Toplam porsiyon başına yaklaşık değerlerdir; farklı bir hedef veya ürün sayısı da söyleyebilirsin.';
+
+  const maxPossible = suggestComboForTarget(
+    target,
+    menu,
+    Math.min(5, menu.length)
+  ).reduce((acc, item) => acc + item.calories, 0);
+  if (sum < target * 0.85 && maxPossible < target * 0.9) {
+    reply +=
+      `\nNot: Menümüzdeki onaylı ürünlerle tek seferde ~${maxPossible} kcal civarına ulaşabiliyoruz; hedefin biraz üstünde kalabilirsin.`;
+  }
+
+  return {
+    reply,
+    recommendedProductIds: picks.map((p) => p.id),
+    source: 'fast-target',
+  };
 }
 
 function buildCartReply(cartItems, menu) {
@@ -275,7 +488,7 @@ function buildCartReply(cartItems, menu) {
 }
 
 /** Basit / net sorularda Gemini beklemeden anında yanıt. */
-function tryFastChatReply({ message, menu, cartItems }) {
+function tryFastChatReply({ message, menu, cartItems, history = [] }) {
   const norm = normalizeTr(message);
 
   if (
@@ -283,6 +496,17 @@ function tryFastChatReply({ message, menu, cartItems }) {
     (norm.includes('kac') || norm.includes('kaç') || norm.includes('kalori') || norm.includes('toplam'))
   ) {
     return { ...buildCartReply(cartItems, menu), source: 'fast-cart' };
+  }
+
+  const comboIntent = resolveComboIntent(message, history);
+  if (comboIntent?.target) {
+    const comboReply = buildTargetComboReply(
+      comboIntent.target,
+      menu,
+      message,
+      history
+    );
+    if (comboReply) return comboReply;
   }
 
   const matched = findProductsInMessage(message, menu);
@@ -304,20 +528,6 @@ function tryFastChatReply({ message, menu, cartItems }) {
       reply: `Şunları buldum:\n${lines.join('\n')}`,
       recommendedProductIds: matched.slice(0, 3).map((p) => p.id),
       source: 'fast-product',
-    };
-  }
-
-  const target = parseTargetCalories(message);
-  if (target) {
-    const picks = suggestForTarget(target, menu);
-    const sum = picks.reduce((acc, p) => acc + p.calories, 0);
-    const names = picks.map((p) => p.name).join(' + ');
-    return {
-      reply:
-        `${target} kcal hedefine yakın bir öneri: ${names} (~${sum} kcal). ` +
-        'İstersen farklı bir hedef veya öğün tipi de söyleyebilirsin.',
-      recommendedProductIds: picks.map((p) => p.id),
-      source: 'fast-target',
     };
   }
 
@@ -378,8 +588,8 @@ function tryFastChatReply({ message, menu, cartItems }) {
   return null;
 }
 
-function ruleBasedChatReply({ message, menu, cartItems }) {
-  const fast = tryFastChatReply({ message, menu, cartItems });
+function ruleBasedChatReply({ message, menu, cartItems, history = [] }) {
+  const fast = tryFastChatReply({ message, menu, cartItems, history });
   if (fast) return fast;
 
   return {
@@ -573,6 +783,14 @@ function shouldUseGemini() {
   return true;
 }
 
+const FAST_REPLY_SOURCES = new Set([
+  'fast-cart',
+  'fast-product',
+  'fast-target',
+  'fast-light',
+  'fast-suggest',
+]);
+
 async function handleNutritionChat({
   branchId,
   message,
@@ -615,6 +833,21 @@ async function handleNutritionChat({
     };
   }
 
+  const fastReply = tryFastChatReply({
+    message: text,
+    menu,
+    cartItems: safeCart,
+    history: safeHistory,
+  });
+
+  if (fastReply && FAST_REPLY_SOURCES.has(fastReply.source)) {
+    return {
+      reply: fastReply.reply,
+      products: mapRecommendedProducts(menu, fastReply.recommendedProductIds || []),
+      source: fastReply.source,
+    };
+  }
+
   let result = null;
   if (shouldUseGemini()) {
     result = await askGeminiNutritionChat({
@@ -627,10 +860,21 @@ async function handleNutritionChat({
   }
 
   if (!result) {
-    const fallback = ruleBasedChatReply({
+    result = await askOpenAINutritionChat({
+      branchName,
+      menu,
+      message: text,
+      history: safeHistory,
+      cartItems: safeCart,
+    });
+  }
+
+  if (!result) {
+    const fallback = fastReply || ruleBasedChatReply({
       message: text,
       menu,
       cartItems: safeCart,
+      history: safeHistory,
     });
     result = { ...fallback, source: fallback.source || 'rule-based' };
   }
