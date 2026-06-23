@@ -18,6 +18,7 @@
     "android": {
       "package": "com.selfkasa.mobile",
       "versionCode": 3,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F8F7F5"

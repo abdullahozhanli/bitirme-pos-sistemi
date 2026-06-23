@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
@@ -231,7 +232,6 @@ export default function CalorieEstimateScreen({ navigation }) {
   const [messages, setMessages] = useState(() => [buildWelcomeMessage(null, null)]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
   const listRef = useRef(null);
 
   const hasUserMessages = useMemo(
@@ -281,25 +281,16 @@ export default function CalorieEstimateScreen({ navigation }) {
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const onShow = Keyboard.addListener(showEvent, (event) => {
-      const height = Number(event?.endCoordinates?.height) || 0;
-      const inset =
-        Platform.OS === 'ios' ? Math.max(0, height - insets.bottom) : height;
-      setKeyboardInset(inset);
+    const onShow = Keyboard.addListener(showEvent, () => {
       scrollToEnd();
       setTimeout(() => scrollToEnd(), 120);
-    });
-    const onHide = Keyboard.addListener(hideEvent, () => {
-      setKeyboardInset(0);
     });
 
     return () => {
       onShow.remove();
-      onHide.remove();
     };
-  }, [insets.bottom, scrollToEnd]);
+  }, [scrollToEnd]);
 
   const sendMessage = useCallback(
     async (rawText) => {
@@ -386,17 +377,17 @@ export default function CalorieEstimateScreen({ navigation }) {
         <View style={styles.headerRightSpacer} />
       </View>
 
-      <View style={styles.flex}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <FlatList
           ref={listRef}
           style={styles.flex}
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ChatBubble message={item} />}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: 16 + keyboardInset },
-          ]}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -415,15 +406,7 @@ export default function CalorieEstimateScreen({ navigation }) {
           }
         />
 
-        <View
-          style={[
-            styles.composer,
-            {
-              marginBottom: keyboardInset,
-              paddingBottom: keyboardInset > 0 ? 10 : Math.max(insets.bottom, 10),
-            },
-          ]}
-        >
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
           <TextInput
             value={input}
             onChangeText={setInput}
@@ -460,7 +443,7 @@ export default function CalorieEstimateScreen({ navigation }) {
             </LinearGradient>
           </Pressable>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
